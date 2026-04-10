@@ -73,11 +73,11 @@
       justify-content: space-between;
       height: 56px;
       padding: 0 24px;
-      background: rgba(8, 14, 26, 0.82);
+      background: rgba(10, 10, 8, 0.85);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      font-family: 'Courier New', Courier, monospace;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
       user-select: none;
     }
 
@@ -134,12 +134,12 @@
     }
 
     .nav-bar a.nav-link {
-      color: #64d2c5;
+      color: #8abfb8;
       font-size: 13px;
     }
     .nav-bar a.nav-link:hover {
-      background: rgba(100, 210, 197, 0.1);
-      color: #8de4da;
+      background: rgba(138, 191, 184, 0.1);
+      color: #a8d4ce;
     }
 
     /* Hide the old inline .back link when nav-bar is present */
@@ -155,11 +155,11 @@
       z-index: 500;
       font-family: 'Courier New', Courier, monospace;
       padding: 14px 20px;
-      background: rgba(8, 14, 26, 0.82);
+      background: rgba(10, 10, 8, 0.85);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      border-left: 1px solid rgba(255, 255, 255, 0.06);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-left: 1px solid rgba(255, 255, 255, 0.05);
       border-top-left-radius: 8px;
       display: flex;
       flex-direction: column;
@@ -170,7 +170,7 @@
     }
 
     .nav-related-label {
-      color: #64d2c5;
+      color: #8abfb8;
       font-size: 10px;
       letter-spacing: 0.22em;
       text-transform: uppercase;
@@ -184,25 +184,25 @@
       text-align: right;
       text-decoration: none;
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.85);
+      color: #d0cbc2;
       line-height: 1.5;
       cursor: pointer;
       transition: background-color 120ms ease-out, color 120ms ease-out;
     }
     .nav-related a:hover {
-      background: rgba(100, 210, 197, 0.1);
-      color: #64d2c5;
+      background: rgba(138, 191, 184, 0.08);
+      color: #8abfb8;
     }
 
     .nav-related .related-note {
-      color: rgba(255, 255, 255, 0.4);
+      color: #6a655c;
       font-size: 11px;
     }
 
     /* Focus states */
     .nav-bar a:focus-visible,
     .nav-related a:focus-visible {
-      outline: 2px solid #64d2c5;
+      outline: 2px solid #8abfb8;
       outline-offset: 2px;
     }
 

@@ -117,8 +117,8 @@
         smoothMouseX, smoothMouseY, 0,
         smoothMouseX, smoothMouseY, 250
       );
-      glow.addColorStop(0, 'rgba(100, 210, 197, 0.03)');
-      glow.addColorStop(1, 'rgba(100, 210, 197, 0)');
+      glow.addColorStop(0, 'rgba(138, 191, 184, 0.025)');
+      glow.addColorStop(1, 'rgba(138, 191, 184, 0)');
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, W, H);
     }
@@ -167,7 +167,7 @@
       // Draw particle
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(160, 210, 205, ${alpha})`;
+      ctx.fillStyle = `rgba(180, 200, 190, ${alpha})`;
       ctx.fill();
     }
 
@@ -182,7 +182,7 @@
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
-          ctx.strokeStyle = `rgba(100, 210, 197, ${alpha})`;
+          ctx.strokeStyle = `rgba(138, 191, 184, ${alpha})`;
           ctx.lineWidth = 0.5;
           ctx.stroke();
         }
