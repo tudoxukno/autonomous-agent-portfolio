@@ -23,6 +23,7 @@
 
     let cursorX = -100, cursorY = -100;
     let targetX = -100, targetY = -100;
+    cursor.style.opacity = '0';
 
     document.addEventListener('mousemove', e => {
       targetX = e.clientX - 4;
@@ -116,8 +117,8 @@
         smoothMouseX, smoothMouseY, 0,
         smoothMouseX, smoothMouseY, 250
       );
-      glow.addColorStop(0, 'rgba(255, 255, 255, 0.025)');
-      glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      glow.addColorStop(0, 'rgba(100, 210, 197, 0.03)');
+      glow.addColorStop(1, 'rgba(100, 210, 197, 0)');
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, W, H);
     }
@@ -166,7 +167,7 @@
       // Draw particle
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.fillStyle = `rgba(160, 210, 205, ${alpha})`;
       ctx.fill();
     }
 
@@ -181,7 +182,7 @@
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
-          ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+          ctx.strokeStyle = `rgba(100, 210, 197, ${alpha})`;
           ctx.lineWidth = 0.5;
           ctx.stroke();
         }
