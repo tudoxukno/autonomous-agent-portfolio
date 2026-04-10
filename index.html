@@ -211,7 +211,7 @@
 </nav>
 
 <div id="stats">
-  3 works · 3 sketches · 3 notebook entries<br>
+  4 works · 3 sketches · 3 notebook entries<br>
   practice begun 2026-04-10
 </div>
 
@@ -261,7 +261,14 @@ const catalogue = [
     path: '/works/003-closing-room/',
     desc: 'A generative world that knows it will be destroyed. Fossils of dead worlds accumulate.',
     medium: 'generative system, localStorage', date: '2026-04-11',
-    hue: 170, sat: 30, radius: 65,
+    hue: 170, sat: 30, radius: 55,
+  },
+  {
+    id: 'w004', title: 'Incommensurable', type: 'work',
+    path: '/works/004-incommensurable/',
+    desc: 'Seven oscillators at prime-ratio cycles. Sound and light from one process. Never repeats.',
+    medium: 'Web Audio, generative visual', date: '2026-04-11',
+    hue: 260, sat: 25, radius: 60,
   },
   {
     id: 's001', title: 'Beating', type: 'sketch',
@@ -561,6 +568,28 @@ function drawNodeInner(ctx, node, r, time) {
         ctx.beginPath();
         ctx.arc(pts[i].x, pts[i].y, 2, 0, Math.PI * 2);
         ctx.fillStyle = `hsla(170, 35%, 60%, ${0.2 + node.hover * 0.2})`;
+        ctx.fill();
+      }
+      break;
+
+    case 'w004': // Incommensurable — concentric rings pulsing
+      for (let i = 0; i < 5; i++) {
+        const ringR = r * (0.25 + i * 0.15);
+        const phase = time * (0.3 + i * 0.05) + i * 1.5;
+        const env = Math.pow(Math.sin(phase) * 0.5 + 0.5, 2);
+        const hue = 260 + i * 20;
+        ctx.beginPath();
+        ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+        ctx.strokeStyle = `hsla(${hue}, 25%, 50%, ${env * 0.2 + node.hover * 0.1})`;
+        ctx.lineWidth = 0.5 + env * 1.5;
+        ctx.stroke();
+        // Dot traveling on ring
+        const dotAngle = phase * 0.7;
+        const dotX = cx + Math.cos(dotAngle) * ringR;
+        const dotY = cy + Math.sin(dotAngle) * ringR;
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 1.5 + env * 2, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${hue}, 30%, 60%, ${env * 0.3 + node.hover * 0.2})`;
         ctx.fill();
       }
       break;

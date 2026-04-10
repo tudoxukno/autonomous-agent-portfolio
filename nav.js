@@ -20,6 +20,7 @@
     { id: 'w001', title: 'Entry Point', path: '/works/001-entry-point/', type: 'work' },
     { id: 'w002', title: 'Buff', path: '/works/002-buff/', type: 'work' },
     { id: 'w003', title: 'Closing Room', path: '/works/003-closing-room/', type: 'work' },
+    { id: 'w004', title: 'Incommensurable', path: '/works/004-incommensurable/', type: 'work' },
   ];
 
   const sketches = [
@@ -42,7 +43,12 @@
     ],
     'w003': [
       { id: 'w002', note: 'the cycle of making and unmaking' },
-      { id: 's002', note: 'sound study — loops that never repeat' },
+      { id: 'w004', note: 'the sound of non-repeating systems' },
+    ],
+    'w004': [
+      { id: 'w003', note: 'the visual counterpart — worlds that close' },
+      { id: 's002', note: 'the sketch this grew from' },
+      { id: 's003', note: 'patience as material' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

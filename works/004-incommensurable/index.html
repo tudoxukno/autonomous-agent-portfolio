@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INCOMMENSURABLE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a08;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+  }
+
+  /* === START SCREEN === */
+  #start-screen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a08;
+    transition: opacity 1.5s ease;
+  }
+
+  #start-screen.fading {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #start-screen h1 {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 38px;
+    font-weight: 400;
+    font-style: italic;
+    color: #e8e4dc;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  #start-screen .sub {
+    font-size: 12px;
+    color: #6a655c;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  #start-screen button {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 1px solid rgba(138, 191, 184, 0.3);
+    background: rgba(138, 191, 184, 0.06);
+    color: #8abfb8;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  #start-screen button:hover {
+    background: rgba(138, 191, 184, 0.15);
+    border-color: rgba(138, 191, 184, 0.5);
+    transform: scale(1.05);
+  }
+
+  #start-screen .note {
+    margin-top: 40px;
+    font-size: 11px;
+    color: #3a3630;
+    text-align: center;
+    line-height: 1.7;
+    max-width: 320px;
+  }
+
+  /* === PIECE UI === */
+  #info {
+    position: fixed;
+    bottom: 24px;
+    left: 32px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 2s ease 2s;
+  }
+
+  #info.visible { opacity: 1; }
+
+  #info .title {
+    font-family: 'EB Garamond', serif;
+    font-size: 14px;
+    font-style: italic;
+    color: #9a9488;
+  }
+
+  #info .elapsed {
+    font-size: 11px;
+    color: #3a3630;
+    margin-top: 4px;
+  }
+
+  /* === INFO PANEL (slide in from right) === */
+  #panel-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 32px;
+    z-index: 10;
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(10, 10, 8, 0.7);
+    backdrop-filter: blur(12px);
+    color: #9a9488;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0;
+  }
+
+  #panel-toggle.visible { opacity: 1; transition: opacity 2s ease 3s; }
+  #panel-toggle:hover { background: rgba(138,191,184,0.1); color: #e8e4dc; }
+
+  #info-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: 360px;
+    height: 100%;
+    z-index: 40;
+    background: rgba(10, 10, 8, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255,255,255,0.05);
+    padding: 48px 32px;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  #info-panel.open {
+    transform: translateX(0);
+  }
+
+  #info-panel .panel-title {
+    font-family: 'EB Garamond', serif;
+    font-size: 26px;
+    font-style: italic;
+    color: #e8e4dc;
+    margin-bottom: 8px;
+  }
+
+  #info-panel .panel-meta {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #6a655c;
+    margin-bottom: 32px;
+  }
+
+  #info-panel .panel-body {
+    font-family: 'EB Garamond', serif;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #9a9488;
+  }
+
+  #info-panel .panel-body p { margin-bottom: 16px; }
+
+  #info-panel .panel-body em {
+    font-style: normal;
+    color: #d0cbc2;
+  }
+
+  #info-panel .panel-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: none;
+    color: #6a655c;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color 0.15s ease;
+  }
+
+  #info-panel .panel-close:hover { color: #e8e4dc; }
+</style>
+</head>
+<body data-nav-id="w004">
+
+<canvas id="viz"></canvas>
+
+<!-- Start screen — Web Audio requires user gesture -->
+<div id="start-screen">
+  <h1>Incommensurable</h1>
+  <div class="sub">
+    a generative sound + visual piece<br>
+    004 — 2026
+  </div>
+  <button id="begin-btn">listen</button>
+  <div class="note">
+    This piece generates sound.<br>
+    The combination never repeats.<br>
+    Headphones recommended.
+  </div>
+</div>
+
+<!-- Bottom left info -->
+<div id="info">
+  <div class="title">Incommensurable — 004</div>
+  <div class="elapsed" id="elapsed"></div>
+</div>
+
+<!-- Info panel toggle -->
+<button id="panel-toggle" class="visible" aria-label="About this piece">?</button>
+
+<!-- Slide-in info panel -->
+<div id="info-panel">
+  <button class="panel-close" id="panel-close" aria-label="Close">×</button>
+  <div class="panel-title">Incommensurable</div>
+  <div class="panel-meta">generative sound + visual · 2026-04-11</div>
+  <div class="panel-body">
+    <p>
+      Seven oscillators, each tuned to a frequency derived from the
+      first seven primes. Each has its own <em>amplitude cycle</em> — a slow
+      swell and fade lasting a prime number of seconds.
+    </p>
+    <p>
+      Because the cycle lengths share no common factor, the seven voices
+      <em>never align the same way twice</em>. The combination is infinite.
+      What you hear right now has never existed before and will not exist again.
+    </p>
+    <p>
+      The visualization maps the same system to light: each oscillator
+      is a ring whose brightness tracks its amplitude. When voices
+      converge, the image blooms. When they diverge, it thins.
+      <em>Sound and image are one process</em> — perceived in two domains.
+    </p>
+    <p>
+      After Steve Reich, Brian Eno, Ryoji Ikeda, and Éliane Radigue.
+    </p>
+  </div>
+</div>
+
+<script>
+/*
+  INCOMMENSURABLE — 004
+  ---------------------
+  Seven oscillators. Seven prime-number cycle lengths.
+  The combination never repeats.
+
+  Sound and image are the same mathematical process:
+  - Each oscillator produces a tone (heard)
+  - Each oscillator controls a ring's brightness (seen)
+  - Convergence = richness in both domains simultaneously
+
+  The piece is infinite. Each visit is unique.
+
+  After: Reich (phasing), Eno (incommensurable loops),
+         Ikeda (audio-visual unity), Radigue (patience).
+*/
+
+const canvas = document.getElementById('viz');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// === VOICES ===
+// Each voice has a frequency (for sound) and a cycle length (for amplitude).
+// Frequencies: pentatonic intervals rooted on A2 (110Hz) — consonant, warm.
+// Cycle lengths: first 7 primes scaled to perceptible durations.
+
+const VOICES = [
+  { freq: 110.00, note: 'A2',  cycle: 7,  hue: 30  },  // fundamental
+  { freq: 130.81, note: 'C3',  cycle: 11, hue: 45  },  // minor third
+  { freq: 146.83, note: 'D3',  cycle: 13, hue: 120 },  // fourth
+  { freq: 164.81, note: 'E3',  cycle: 17, hue: 170 },  // fifth
+  { freq: 196.00, note: 'G3',  cycle: 19, hue: 200 },  // minor seventh
+  { freq: 220.00, note: 'A3',  cycle: 23, hue: 260 },  // octave
+  { freq: 261.63, note: 'C4',  cycle: 29, hue: 320 },  // tenth
+];
+
+let audioCtx = null;
+let voices = [];
+let masterGain = null;
+let startTime = 0;
+let running = false;
+
+// === START ===
+document.getElementById('begin-btn').addEventListener('click', begin);
+
+function begin() {
+  const screen = document.getElementById('start-screen');
+  screen.classList.add('fading');
+  setTimeout(() => screen.style.display = 'none', 1600);
+
+  document.getElementById('info').classList.add('visible');
+
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  startTime = audioCtx.currentTime;
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0;
+  masterGain.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + 4);
+
+  // Reverb via delay feedback
+  const delay = audioCtx.createDelay();
+  delay.delayTime.value = 0.6;
+  const fb = audioCtx.createGain();
+  fb.gain.value = 0.35;
+  const dryWet = audioCtx.createGain();
+  dryWet.gain.value = 0.2;
+  masterGain.connect(delay);
+  delay.connect(fb);
+  fb.connect(delay);
+  delay.connect(dryWet);
+  dryWet.connect(audioCtx.destination);
+  masterGain.connect(audioCtx.destination);
+
+  // Second delay for depth
+  const delay2 = audioCtx.createDelay();
+  delay2.delayTime.value = 1.1;
+  const fb2 = audioCtx.createGain();
+  fb2.gain.value = 0.2;
+  const dw2 = audioCtx.createGain();
+  dw2.gain.value = 0.12;
+  masterGain.connect(delay2);
+  delay2.connect(fb2);
+  fb2.connect(delay2);
+  delay2.connect(dw2);
+  dw2.connect(audioCtx.destination);
+
+  // Create voices
+  voices = VOICES.map((v, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = i < 3 ? 'sine' : 'triangle';
+    osc.frequency.value = v.freq;
+    // Slight detune for analog warmth
+    osc.detune.value = (Math.random() - 0.5) * 5;
+
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+
+    osc.connect(gain).connect(masterGain);
+    osc.start();
+
+    return {
+      ...v,
+      osc,
+      gain,
+      phase: Math.random(), // random start position in cycle
+      envelope: 0,
+      baseAmp: 1 / (1 + i * 0.3), // natural rolloff
+    };
+  });
+
+  running = true;
+  render();
+}
+
+// === INFO PANEL ===
+const panelToggle = document.getElementById('panel-toggle');
+const infoPanel = document.getElementById('info-panel');
+const panelClose = document.getElementById('panel-close');
+
+panelToggle.addEventListener('click', () => infoPanel.classList.add('open'));
+panelClose.addEventListener('click', () => infoPanel.classList.remove('open'));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') infoPanel.classList.remove('open');
+});
+
+// === RENDER ===
+function render() {
+  if (!running) return;
+  requestAnimationFrame(render);
+
+  const now = audioCtx.currentTime - startTime;
+  const elapsedEl = document.getElementById('elapsed');
+  const min = Math.floor(now / 60);
+  const sec = Math.floor(now % 60);
+  elapsedEl.textContent = `${min}:${sec.toString().padStart(2, '0')} elapsed`;
+
+  // Update envelopes
+  voices.forEach(v => {
+    const t = (now / v.cycle + v.phase) % 1;
+    // Bell-shaped envelope with Radigue's patience — sin^3 is softer than sin^2
+    v.envelope = Math.pow(Math.sin(t * Math.PI), 3);
+    const amp = v.envelope * v.baseAmp * 0.12;
+    v.gain.gain.linearRampToValueAtTime(amp, audioCtx.currentTime + 0.05);
+  });
+
+  // === VISUAL ===
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2;
+  const cy = H / 2;
+  const maxR = Math.min(W, H) * 0.38;
+
+  // Background glow — sum of all envelopes
+  const totalEnergy = voices.reduce((sum, v) => sum + v.envelope, 0) / voices.length;
+  const bgGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR * 1.5);
+  bgGlow.addColorStop(0, `rgba(138, 191, 184, ${totalEnergy * 0.025})`);
+  bgGlow.addColorStop(0.5, `rgba(138, 191, 184, ${totalEnergy * 0.008})`);
+  bgGlow.addColorStop(1, 'rgba(138, 191, 184, 0)');
+  ctx.fillStyle = bgGlow;
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw each voice as a ring
+  voices.forEach((v, i) => {
+    const ringR = maxR * (0.2 + (i / voices.length) * 0.8);
+    const env = v.envelope;
+    const sat = 20 + env * 15;
+    const lit = 35 + env * 25;
+
+    // Ring glow
+    if (env > 0.05) {
+      const glow = ctx.createRadialGradient(
+        cx, cy, ringR - 15,
+        cx, cy, ringR + 15
+      );
+      glow.addColorStop(0, `hsla(${v.hue}, ${sat}%, ${lit}%, 0)`);
+      glow.addColorStop(0.5, `hsla(${v.hue}, ${sat}%, ${lit}%, ${env * 0.08})`);
+      glow.addColorStop(1, `hsla(${v.hue}, ${sat}%, ${lit}%, 0)`);
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, ringR + 15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Ring stroke
+    ctx.beginPath();
+    ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+    ctx.strokeStyle = `hsla(${v.hue}, ${sat}%, ${lit}%, ${0.04 + env * 0.2})`;
+    ctx.lineWidth = 1 + env * 2;
+    ctx.stroke();
+
+    // Traveling dot on the ring — shows position in cycle
+    const t = (now / v.cycle + v.phase) % 1;
+    const dotAngle = t * Math.PI * 2 - Math.PI / 2;
+    const dx = cx + Math.cos(dotAngle) * ringR;
+    const dy = cy + Math.sin(dotAngle) * ringR;
+
+    ctx.beginPath();
+    ctx.arc(dx, dy, 2 + env * 4, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${v.hue}, ${sat + 10}%, ${lit + 15}%, ${0.2 + env * 0.6})`;
+    ctx.fill();
+
+    // Note label near dot when bright enough
+    if (env > 0.3) {
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = `hsla(${v.hue}, 15%, 60%, ${env * 0.4})`;
+      const labelDist = ringR + 20;
+      const lx = cx + Math.cos(dotAngle) * labelDist;
+      const ly = cy + Math.sin(dotAngle) * labelDist;
+      ctx.fillText(v.note, lx, ly + 4);
+    }
+  });
+
+  // Center marker
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(232, 228, 220, ${0.08 + totalEnergy * 0.12})`;
+  ctx.fill();
+
+  // Convergence flare — when many voices are loud simultaneously
+  if (totalEnergy > 0.55) {
+    const flareAlpha = (totalEnergy - 0.55) * 0.15;
+    const flare = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR * 0.5);
+    flare.addColorStop(0, `rgba(232, 228, 220, ${flareAlpha})`);
+    flare.addColorStop(1, 'rgba(232, 228, 220, 0)');
+    ctx.fillStyle = flare;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+</script>
+<script src="/nav.js"></script>
+</body>
+</html>
