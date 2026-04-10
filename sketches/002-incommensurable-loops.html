@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sketch 002 — Incommensurable Loops</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0b1221;
+    color: #c8d1df;
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px;
+    user-select: none;
+  }
+  h1 {
+    font-size: 14px;
+    font-weight: 400;
+    color: #64d2c5;
+    opacity: 0.5;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: 12px;
+    color: #5c6882;
+    margin-bottom: 32px;
+    text-align: center;
+    line-height: 1.7;
+  }
+  canvas {
+    display: block;
+    margin-bottom: 24px;
+    border-radius: 3px;
+  }
+  .loop-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 32px;
+    max-width: 600px;
+  }
+  .loop-tag {
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    background: rgba(100,210,197,0.06);
+    border: 1px solid rgba(100,210,197,0.12);
+    color: #8e99af;
+    letter-spacing: 0.05em;
+  }
+  .loop-tag .note { color: #64d2c5; }
+  button {
+    background: none;
+    border: 1px solid rgba(100,210,197,0.3);
+    color: #64d2c5;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 12px 32px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.25s cubic-bezier(0.2,0.8,0.2,1);
+    margin-bottom: 24px;
+  }
+  button:hover {
+    background: rgba(100,210,197,0.08);
+    border-color: rgba(100,210,197,0.5);
+  }
+  .info {
+    font-size: 11px;
+    color: #5c6882;
+    text-align: center;
+    line-height: 1.8;
+    max-width: 440px;
+  }
+  .elapsed {
+    font-size: 11px;
+    color: #3d4a63;
+    margin-bottom: 24px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Sketch 002</h1>
+<div class="subtitle">
+  Incommensurable Loops — Eno's principle<br>
+  Seven tones, seven different cycle lengths, never the same twice
+</div>
+
+<canvas id="viz" width="640" height="200"></canvas>
+<div class="loop-info" id="loop-info"></div>
+<div class="elapsed" id="elapsed"></div>
+<button id="toggle">begin</button>
+
+<div class="info">
+  Seven oscillators. Each plays a single tone<br>
+  that fades in and out on its own cycle.<br>
+  The cycle lengths are prime numbers (in seconds).<br>
+  They share no common factor.<br>
+  The combination never repeats.<br><br>
+  This is Eno's Music for Airports, rebuilt from math.
+</div>
+
+<script>
+/*
+  Sketch 002: INCOMMENSURABLE LOOPS
+  ----------------------------------
+  Eno used seven tape loops of different lengths, each with one note.
+  Because the lengths were incommensurable (no common factor), the
+  pattern never repeated.
+
+  I'm recreating this with Web Audio: seven oscillators, each with
+  a gain envelope cycling at a prime-number period. The tones are
+  from a pentatonic scale (to avoid dissonance — Eno chose carefully).
+
+  The visualization shows each loop as a ring, its opacity pulsing
+  with the gain envelope. You can see the loops drifting in and out
+  of alignment — moments of convergence and divergence.
+*/
+
+// Pentatonic tones in the key of C — gentle, consonant
+// C3, D3, E3, G3, A3, C4, D4
+const NOTES = [
+  { freq: 130.81, name: 'C3' },
+  { freq: 146.83, name: 'D3' },
+  { freq: 164.81, name: 'E3' },
+  { freq: 196.00, name: 'G3' },
+  { freq: 220.00, name: 'A3' },
+  { freq: 261.63, name: 'C4' },
+  { freq: 293.66, name: 'D4' },
+];
+
+// Cycle lengths in seconds — all prime numbers
+const CYCLES = [7, 11, 13, 17, 19, 23, 29];
+
+let audioCtx = null;
+let loops = [];
+let playing = false;
+let startTime = 0;
+
+const canvas = document.getElementById('viz');
+const c = canvas.getContext('2d');
+const toggleBtn = document.getElementById('toggle');
+const loopInfoEl = document.getElementById('loop-info');
+const elapsedEl = document.getElementById('elapsed');
+
+// Display loop info
+NOTES.forEach((note, i) => {
+  const tag = document.createElement('div');
+  tag.className = 'loop-tag';
+  tag.innerHTML = `<span class="note">${note.name}</span> · ${CYCLES[i]}s cycle`;
+  loopInfoEl.appendChild(tag);
+});
+
+function start() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  startTime = audioCtx.currentTime;
+
+  const master = audioCtx.createGain();
+  master.gain.value = 0.35;
+  master.connect(audioCtx.destination);
+
+  // Reverb-like effect using delay
+  const delay = audioCtx.createDelay();
+  delay.delayTime.value = 0.4;
+  const feedback = audioCtx.createGain();
+  feedback.gain.value = 0.3;
+  const delayGain = audioCtx.createGain();
+  delayGain.gain.value = 0.2;
+  master.connect(delay);
+  delay.connect(feedback);
+  feedback.connect(delay);
+  delay.connect(delayGain);
+  delayGain.connect(audioCtx.destination);
+
+  loops = NOTES.map((note, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = note.freq;
+
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+
+    osc.connect(gain).connect(master);
+    osc.start();
+
+    return {
+      osc,
+      gain,
+      freq: note.freq,
+      name: note.name,
+      cycleLength: CYCLES[i],
+      phase: Math.random(), // start at random point in cycle
+    };
+  });
+
+  playing = true;
+  toggleBtn.textContent = 'stop';
+  animate();
+}
+
+function stop() {
+  playing = false;
+  loops.forEach(l => {
+    l.gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
+  });
+  setTimeout(() => {
+    loops.forEach(l => l.osc.stop());
+    audioCtx.close();
+    toggleBtn.textContent = 'begin';
+  }, 1200);
+}
+
+toggleBtn.addEventListener('click', () => {
+  if (playing) stop();
+  else start();
+});
+
+function animate() {
+  if (!playing) return;
+  requestAnimationFrame(animate);
+
+  const now = audioCtx.currentTime - startTime;
+  elapsedEl.textContent = formatTime(now);
+
+  // Update gain envelopes — smooth sine-based fade
+  loops.forEach(l => {
+    const t = (now / l.cycleLength + l.phase) % 1;
+    // Bell-shaped envelope: loud in middle of cycle, silent at edges
+    const envelope = Math.pow(Math.sin(t * Math.PI), 2);
+    l.gain.gain.linearRampToValueAtTime(
+      envelope * 0.25,
+      audioCtx.currentTime + 0.05
+    );
+    l.currentEnvelope = envelope;
+  });
+
+  // Visualize
+  c.clearRect(0, 0, canvas.width, canvas.height);
+
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+
+  loops.forEach((l, i) => {
+    const angle = (i / loops.length) * Math.PI * 2 - Math.PI / 2;
+    const radius = 50 + i * 8;
+    const x = centerX + Math.cos(angle) * (80 + i * 15);
+    const y = centerY + Math.sin(angle) * 40;
+
+    const envelope = l.currentEnvelope || 0;
+
+    // Outer glow
+    if (envelope > 0.05) {
+      const gradient = c.createRadialGradient(x, y, 0, x, y, 20 + envelope * 25);
+      gradient.addColorStop(0, `rgba(100, 210, 197, ${envelope * 0.15})`);
+      gradient.addColorStop(1, 'rgba(100, 210, 197, 0)');
+      c.fillStyle = gradient;
+      c.fillRect(x - 50, y - 50, 100, 100);
+    }
+
+    // Core circle
+    c.beginPath();
+    c.arc(x, y, 4 + envelope * 8, 0, Math.PI * 2);
+    c.fillStyle = `rgba(100, 210, 197, ${0.1 + envelope * 0.6})`;
+    c.fill();
+
+    // Note label
+    c.font = '10px Courier New';
+    c.fillStyle = `rgba(142, 153, 175, ${0.3 + envelope * 0.5})`;
+    c.textAlign = 'center';
+    c.fillText(l.name, x, y + 22);
+  });
+
+  // Draw connections between currently-sounding loops
+  for (let i = 0; i < loops.length; i++) {
+    for (let j = i + 1; j < loops.length; j++) {
+      const a = loops[i], b = loops[j];
+      const ea = a.currentEnvelope || 0, eb = b.currentEnvelope || 0;
+      const combined = ea * eb;
+      if (combined > 0.05) {
+        const ai = (i / loops.length) * Math.PI * 2 - Math.PI / 2;
+        const aj = (j / loops.length) * Math.PI * 2 - Math.PI / 2;
+        const ax = centerX + Math.cos(ai) * (80 + i * 15);
+        const ay = centerY + Math.sin(ai) * 40;
+        const bx = centerX + Math.cos(aj) * (80 + j * 15);
+        const by = centerY + Math.sin(aj) * 40;
+
+        c.beginPath();
+        c.moveTo(ax, ay);
+        c.lineTo(bx, by);
+        c.strokeStyle = `rgba(100, 210, 197, ${combined * 0.15})`;
+        c.lineWidth = 0.5 + combined;
+        c.stroke();
+      }
+    }
+  }
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+</script>
+</body>
+</html>

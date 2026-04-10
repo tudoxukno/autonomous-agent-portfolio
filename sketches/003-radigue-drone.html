@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sketch 003 — Drone</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0b1221;
+    color: #c8d1df;
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+  h1 {
+    font-size: 14px;
+    font-weight: 400;
+    color: #64d2c5;
+    opacity: 0.5;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: 12px;
+    color: #5c6882;
+    margin-bottom: 40px;
+    text-align: center;
+    line-height: 1.7;
+  }
+  canvas { display: block; margin-bottom: 32px; }
+  button {
+    background: none;
+    border: 1px solid rgba(100,210,197,0.3);
+    color: #64d2c5;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 12px 32px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.25s cubic-bezier(0.2,0.8,0.2,1);
+    margin-bottom: 24px;
+  }
+  button:hover {
+    background: rgba(100,210,197,0.08);
+    border-color: rgba(100,210,197,0.5);
+  }
+  .info {
+    font-size: 11px;
+    color: #5c6882;
+    text-align: center;
+    line-height: 1.8;
+    max-width: 400px;
+  }
+  .elapsed {
+    font-size: 11px;
+    color: #3d4a63;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Sketch 003</h1>
+<div class="subtitle">
+  Drone — after Radigue<br>
+  A fundamental tone and its partials, breathing slowly
+</div>
+
+<canvas id="viz" width="640" height="300"></canvas>
+<div class="elapsed" id="elapsed"></div>
+<button id="toggle">begin</button>
+
+<div class="info">
+  A low drone built from a fundamental and its overtones.<br>
+  Each partial has its own slow amplitude cycle.<br>
+  The timbre shifts continuously as partials swell and recede.<br>
+  Nothing happens quickly. Patience is the material.<br><br>
+  Move your mouse to tilt the harmonic balance.
+</div>
+
+<script>
+/*
+  Sketch 003: DRONE (after Radigue)
+  ---------------------------------
+  Radigue's music was about patience — sounds that unfold over
+  hours, built from the harmonics of a single fundamental.
+
+  This sketch creates a drone from one base frequency and its
+  first 8 partials (overtones). Each partial has its own slow
+  amplitude cycle — some taking 30 seconds, some taking 90.
+  The timbre continuously shifts as different partials rise
+  and fall.
+
+  Mouse position tilts the harmonic balance: left emphasizes
+  low partials (warm, dark), right emphasizes high partials
+  (bright, thin). This gives the listener a role — you shape
+  the timbre by where you rest your attention.
+
+  The visualization shows the frequency spectrum — a slow,
+  breathing landscape of harmonics.
+*/
+
+let audioCtx = null;
+let partials = [];
+let masterGain = null;
+let analyser = null;
+let playing = false;
+let startTime = 0;
+
+// Mouse position (normalized 0-1)
+let mouseX = 0.5;
+document.addEventListener('mousemove', e => {
+  mouseX = e.clientX / window.innerWidth;
+}, { passive: true });
+
+const FUNDAMENTAL = 55; // A1 — deep, felt more than heard
+const NUM_PARTIALS = 8;
+
+// Each partial has a different cycle length (in seconds) — Radigue's patience
+const PARTIAL_CYCLES = [37, 43, 53, 61, 67, 71, 79, 83];
+
+const canvas = document.getElementById('viz');
+const c = canvas.getContext('2d');
+const toggleBtn = document.getElementById('toggle');
+const elapsedEl = document.getElementById('elapsed');
+
+function start() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  startTime = audioCtx.currentTime;
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0;
+  masterGain.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 4);
+
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 4096;
+  analyser.smoothingTimeConstant = 0.85;
+
+  masterGain.connect(analyser).connect(audioCtx.destination);
+
+  // Create partials
+  partials = [];
+  for (let i = 0; i < NUM_PARTIALS; i++) {
+    const harmonic = i + 1;
+    const freq = FUNDAMENTAL * harmonic;
+
+    const osc = audioCtx.createOscillator();
+    // Lower partials: sine (pure). Higher partials: triangle (slightly richer)
+    osc.type = i < 4 ? 'sine' : 'triangle';
+    osc.frequency.value = freq;
+
+    // Slight detuning — each partial slightly off from perfect harmonic
+    // This creates the richness Radigue got from analog circuitry
+    osc.detune.value = (Math.random() - 0.5) * 6;
+
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+
+    osc.connect(gain).connect(masterGain);
+    osc.start();
+
+    partials.push({
+      osc,
+      gain,
+      harmonic,
+      freq,
+      cycleLength: PARTIAL_CYCLES[i],
+      phase: Math.random(),
+      baseAmplitude: 1 / (harmonic * 0.7), // natural harmonic rolloff
+    });
+  }
+
+  playing = true;
+  toggleBtn.textContent = 'stop';
+  animate();
+}
+
+function stop() {
+  playing = false;
+  masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 3);
+  setTimeout(() => {
+    partials.forEach(p => p.osc.stop());
+    audioCtx.close();
+    toggleBtn.textContent = 'begin';
+  }, 3500);
+}
+
+toggleBtn.addEventListener('click', () => {
+  if (playing) stop();
+  else start();
+});
+
+function animate() {
+  if (!playing) return;
+  requestAnimationFrame(animate);
+
+  const now = audioCtx.currentTime - startTime;
+  elapsedEl.textContent = formatTime(now);
+
+  // Update partial amplitudes
+  partials.forEach((p, i) => {
+    const t = (now / p.cycleLength + p.phase) % 1;
+    const envelope = Math.pow(Math.sin(t * Math.PI), 3); // softer than sin^2
+
+    // Mouse influence: left favors low harmonics, right favors high
+    const harmonicPosition = i / (NUM_PARTIALS - 1); // 0 = lowest, 1 = highest
+    const mouseBias = 1 - Math.abs(mouseX - harmonicPosition) * 0.6;
+
+    const amplitude = p.baseAmplitude * envelope * mouseBias * 0.15;
+    p.gain.gain.linearRampToValueAtTime(amplitude, audioCtx.currentTime + 0.05);
+    p.currentEnvelope = envelope * mouseBias;
+  });
+
+  // Visualize — frequency spectrum as landscape
+  const bufferLength = analyser.frequencyBinCount;
+  const data = new Uint8Array(bufferLength);
+  analyser.getByteFrequencyData(data);
+
+  c.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw spectrum as a mountain range
+  c.beginPath();
+  c.moveTo(0, canvas.height);
+
+  // Only show low frequency range (where our partials live)
+  const maxBin = Math.min(bufferLength, 512);
+  for (let i = 0; i < maxBin; i++) {
+    const x = (i / maxBin) * canvas.width;
+    const magnitude = data[i] / 255;
+    const y = canvas.height - magnitude * canvas.height * 0.8;
+    c.lineTo(x, y);
+  }
+
+  c.lineTo(canvas.width, canvas.height);
+  c.closePath();
+
+  // Gradient fill
+  const gradient = c.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, 'rgba(100, 210, 197, 0.25)');
+  gradient.addColorStop(0.5, 'rgba(100, 210, 197, 0.08)');
+  gradient.addColorStop(1, 'rgba(100, 210, 197, 0)');
+  c.fillStyle = gradient;
+  c.fill();
+
+  // Stroke the top edge
+  c.beginPath();
+  c.moveTo(0, canvas.height);
+  for (let i = 0; i < maxBin; i++) {
+    const x = (i / maxBin) * canvas.width;
+    const magnitude = data[i] / 255;
+    const y = canvas.height - magnitude * canvas.height * 0.8;
+    c.lineTo(x, y);
+  }
+  c.strokeStyle = 'rgba(100, 210, 197, 0.4)';
+  c.lineWidth = 1;
+  c.stroke();
+
+  // Draw partial indicators
+  partials.forEach((p, i) => {
+    const binIndex = Math.round((p.freq / (audioCtx.sampleRate / 2)) * bufferLength);
+    if (binIndex < maxBin) {
+      const x = (binIndex / maxBin) * canvas.width;
+      const envelope = p.currentEnvelope || 0;
+
+      // Vertical line at partial frequency
+      c.beginPath();
+      c.moveTo(x, canvas.height);
+      c.lineTo(x, canvas.height * 0.2);
+      c.strokeStyle = `rgba(100, 210, 197, ${envelope * 0.1})`;
+      c.lineWidth = 1;
+      c.stroke();
+
+      // Label
+      if (envelope > 0.15) {
+        c.font = '9px Courier New';
+        c.fillStyle = `rgba(142, 153, 175, ${envelope * 0.5})`;
+        c.textAlign = 'center';
+        c.fillText(`${p.harmonic}×`, x, canvas.height - 8);
+      }
+    }
+  });
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+</script>
+</body>
+</html>
