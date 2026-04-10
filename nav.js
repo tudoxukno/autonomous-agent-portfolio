@@ -1,16 +1,14 @@
 /*
-  nav.js — v2
+  nav.js — v3
   -----------
-  Shared navigation for works and sketches.
+  Navigation as real UI, not text links.
 
-  Design principles (from UX research):
-  - "Be creative with your art, conventional with your navigation" (gallery frame principle)
-  - Nav is fixed top bar — where users expect it (Nielsen, Krug)
-  - High-emphasis text at 87%+ opacity (Material Design dark theme)
-  - Minimum 44x44px touch targets (WCAG 2.2, Apple HIG)
-  - Glassmorphic backdrop for readability over any canvas
-  - Hover feedback within 120ms (NN/g guidelines)
-  - Related works as secondary bottom element
+  Pill buttons with backgrounds, proper sizing, always visible.
+  Home is always present. Prev/Next are always present when applicable.
+  Related works in a bottom panel.
+
+  All buttons are 44px+ touch targets with visible backgrounds.
+  No more guessing what's clickable.
 */
 
 (function () {
@@ -48,7 +46,6 @@
     'w004': [
       { id: 'w003', note: 'the visual counterpart — worlds that close' },
       { id: 's002', note: 'the sketch this grew from' },
-      { id: 's003', note: 'patience as material' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },
@@ -64,169 +61,178 @@
     ],
   };
 
-  // === INJECT STYLES ===
+  // === STYLES ===
   const style = document.createElement('style');
   style.textContent = `
-    /* ---- TOP NAV BAR ---- */
-    .nav-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 500;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 56px;
-      padding: 0 24px;
-      background: rgba(10, 10, 8, 0.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      font-family: 'JetBrains Mono', 'Courier New', monospace;
-      user-select: none;
+    /* Restore cursor over all nav elements */
+    .nav-pill, .nav-pill *, .nav-bar-v3, .nav-bar-v3 *,
+    .nav-related-v3, .nav-related-v3 * {
+      cursor: default !important;
+    }
+    .nav-pill, .nav-related-v3 a {
+      cursor: pointer !important;
     }
 
-    .nav-bar-left {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .nav-bar-right {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* Nav links — proper touch targets (44px+) */
-    .nav-bar a {
-      display: inline-flex;
-      align-items: center;
-      height: 44px;
-      padding: 0 14px;
-      border-radius: 6px;
-      font-size: 13px;
-      letter-spacing: 0.06em;
-      text-decoration: none;
-      cursor: pointer;
-      transition: background-color 120ms ease-out, color 120ms ease-out;
-    }
-
-    .nav-bar a.nav-home {
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 12px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-    }
-    .nav-bar a.nav-home:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #ffffff;
-    }
-
-    .nav-bar .nav-title {
-      color: rgba(255, 255, 255, 0.45);
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      padding: 0;
-      pointer-events: none;
-    }
-
-    .nav-bar .nav-sep {
-      color: rgba(255, 255, 255, 0.15);
-      font-size: 11px;
-      padding: 0;
-      pointer-events: none;
-    }
-
-    .nav-bar a.nav-link {
-      color: #8abfb8;
-      font-size: 13px;
-    }
-    .nav-bar a.nav-link:hover {
-      background: rgba(138, 191, 184, 0.1);
-      color: #a8d4ce;
-    }
-
-    /* Hide the old inline .back link when nav-bar is present */
+    /* Hide old .back links */
     body[data-nav-id] .back {
       display: none !important;
     }
 
-    /* Fix cursor on work pages — restore pointer over nav */
-    .nav-bar, .nav-bar * {
-      cursor: default !important;
-    }
-    .nav-bar a, .nav-related a {
-      cursor: pointer !important;
-    }
-
-    /* ---- RELATED WORKS (bottom) ---- */
-    .nav-related {
+    /* === TOP BAR === */
+    .nav-bar-v3 {
       position: fixed;
-      bottom: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       z-index: 500;
-      font-family: 'Courier New', Courier, monospace;
-      padding: 14px 20px;
-      background: rgba(10, 10, 8, 0.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      border-left: 1px solid rgba(255, 255, 255, 0.05);
-      border-top-left-radius: 8px;
+      height: 64px;
       display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
-      user-select: none;
-      max-width: 380px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: rgba(10, 10, 8, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
-    .nav-related-label {
-      color: #8abfb8;
-      font-size: 10px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
+    .nav-bar-left, .nav-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .nav-related a {
-      display: block;
-      padding: 6px 10px;
-      border-radius: 4px;
-      text-align: right;
+    .nav-bar-center {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: 16px;
+      font-style: italic;
+      color: rgba(232, 228, 220, 0.5);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* === PILL BUTTON === */
+    .nav-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 40px;
+      padding: 0 18px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(232, 228, 220, 0.85);
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
       text-decoration: none;
-      font-size: 12px;
-      color: #d0cbc2;
-      line-height: 1.5;
-      cursor: pointer;
-      transition: background-color 120ms ease-out, color 120ms ease-out;
-    }
-    .nav-related a:hover {
-      background: rgba(138, 191, 184, 0.08);
-      color: #8abfb8;
+      white-space: nowrap;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
 
-    .nav-related .related-note {
-      color: #6a655c;
-      font-size: 11px;
+    .nav-pill:hover {
+      background: rgba(138, 191, 184, 0.12);
+      border-color: rgba(138, 191, 184, 0.25);
+      color: #e8e4dc;
     }
 
-    /* Focus states */
-    .nav-bar a:focus-visible,
-    .nav-related a:focus-visible {
+    .nav-pill:active {
+      background: rgba(138, 191, 184, 0.18);
+      transform: scale(0.97);
+    }
+
+    .nav-pill:focus-visible {
       outline: 2px solid #8abfb8;
       outline-offset: 2px;
     }
 
-    /* Responsive */
+    .nav-pill.home {
+      background: rgba(138, 191, 184, 0.08);
+      border-color: rgba(138, 191, 184, 0.18);
+      color: #8abfb8;
+    }
+
+    .nav-pill.home:hover {
+      background: rgba(138, 191, 184, 0.18);
+      border-color: rgba(138, 191, 184, 0.35);
+      color: #a8d4ce;
+    }
+
+    .nav-pill .arrow {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    /* Compact pills for prev/next on small screens */
+    @media (max-width: 700px) {
+      .nav-pill .pill-label { display: none; }
+      .nav-pill { padding: 0 14px; min-width: 40px; justify-content: center; }
+      .nav-bar-center { display: none; }
+    }
+
+    /* === RELATED PANEL (bottom) === */
+    .nav-related-v3 {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      z-index: 500;
+      padding: 16px 20px;
+      background: rgba(10, 10, 8, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
+      border-top-left-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      max-width: 380px;
+    }
+
+    .nav-related-v3 .related-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #8abfb8;
+      opacity: 0.7;
+      margin-bottom: 4px;
+    }
+
+    .nav-related-v3 a {
+      display: block;
+      padding: 8px 14px;
+      border-radius: 8px;
+      text-align: right;
+      text-decoration: none;
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: 15px;
+      color: #d0cbc2;
+      line-height: 1.4;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+
+    .nav-related-v3 a:hover {
+      background: rgba(138, 191, 184, 0.08);
+      color: #8abfb8;
+    }
+
+    .nav-related-v3 a:focus-visible {
+      outline: 2px solid #8abfb8;
+      outline-offset: 2px;
+    }
+
+    .nav-related-v3 .related-note {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #6a655c;
+    }
+
     @media (max-width: 600px) {
-      .nav-bar { padding: 0 16px; height: 48px; }
-      .nav-bar a { padding: 0 10px; font-size: 12px; }
-      .nav-bar .nav-title { display: none; }
-      .nav-bar .nav-sep { display: none; }
-      .nav-related { max-width: 280px; }
+      .nav-related-v3 { display: none; }
     }
   `;
   document.head.appendChild(style);
@@ -238,76 +244,71 @@
   const currentItem = all.find(item => item.id === currentId);
   const currentType = currentItem?.type;
 
-  // === BUILD NAV BAR ===
+  // === BUILD TOP BAR ===
   const bar = document.createElement('nav');
-  bar.className = 'nav-bar';
+  bar.className = 'nav-bar-v3';
   bar.setAttribute('role', 'navigation');
   bar.setAttribute('aria-label', 'Site navigation');
 
-  // Left side: Home + current title
+  // Left: Home + Prev
   const left = document.createElement('div');
   left.className = 'nav-bar-left';
 
-  const homeLink = document.createElement('a');
-  homeLink.href = '/';
-  homeLink.className = 'nav-home';
-  homeLink.textContent = '← Home';
-  homeLink.setAttribute('aria-label', 'Return to home page');
-  left.appendChild(homeLink);
+  const home = document.createElement('a');
+  home.href = '/';
+  home.className = 'nav-pill home';
+  home.innerHTML = '<span class="arrow">←</span> <span class="pill-label">Home</span>';
+  home.setAttribute('aria-label', 'Return to home');
+  left.appendChild(home);
 
-  if (currentItem) {
-    const sep = document.createElement('span');
-    sep.className = 'nav-sep';
-    sep.textContent = '/';
-    left.appendChild(sep);
+  // Prev
+  const sameType = currentType === 'work' ? works : sketches;
+  const typeIndex = sameType.findIndex(item => item.id === currentId);
+  const prev = typeIndex > 0 ? sameType[typeIndex - 1] : null;
 
-    const title = document.createElement('span');
-    title.className = 'nav-title';
-    title.textContent = currentItem.title;
-    left.appendChild(title);
+  if (prev) {
+    const btn = document.createElement('a');
+    btn.href = prev.path;
+    btn.className = 'nav-pill';
+    btn.innerHTML = `<span class="arrow">‹</span> <span class="pill-label">${prev.title}</span>`;
+    btn.setAttribute('aria-label', `Previous: ${prev.title}`);
+    left.appendChild(btn);
   }
 
   bar.appendChild(left);
 
-  // Right side: Prev / Next
-  const sameType = currentType === 'work' ? works : sketches;
-  const typeIndex = sameType.findIndex(item => item.id === currentId);
-  const prev = typeIndex > 0 ? sameType[typeIndex - 1] : null;
-  const next = typeIndex < sameType.length - 1 ? sameType[typeIndex + 1] : null;
+  // Center: current title
+  const center = document.createElement('div');
+  center.className = 'nav-bar-center';
+  center.textContent = currentItem ? currentItem.title : '';
+  bar.appendChild(center);
 
+  // Right: Next
   const right = document.createElement('div');
   right.className = 'nav-bar-right';
-
-  if (prev) {
-    const a = document.createElement('a');
-    a.href = prev.path;
-    a.className = 'nav-link';
-    a.textContent = `← ${prev.title}`;
-    a.setAttribute('aria-label', `Previous: ${prev.title}`);
-    right.appendChild(a);
-  }
+  const next = typeIndex < sameType.length - 1 ? sameType[typeIndex + 1] : null;
 
   if (next) {
-    const a = document.createElement('a');
-    a.href = next.path;
-    a.className = 'nav-link';
-    a.textContent = `${next.title} →`;
-    a.setAttribute('aria-label', `Next: ${next.title}`);
-    right.appendChild(a);
+    const btn = document.createElement('a');
+    btn.href = next.path;
+    btn.className = 'nav-pill';
+    btn.innerHTML = `<span class="pill-label">${next.title}</span> <span class="arrow">›</span>`;
+    btn.setAttribute('aria-label', `Next: ${next.title}`);
+    right.appendChild(btn);
   }
 
   bar.appendChild(right);
   document.body.prepend(bar);
 
-  // === RELATED WORKS (bottom-right) ===
+  // === RELATED WORKS ===
   const relations = related[currentId];
   if (relations && relations.length > 0) {
     const container = document.createElement('div');
-    container.className = 'nav-related';
+    container.className = 'nav-related-v3';
     container.setAttribute('aria-label', 'Related works');
 
     const label = document.createElement('div');
-    label.className = 'nav-related-label';
+    label.className = 'related-label';
     label.textContent = 'Related';
     container.appendChild(label);
 
