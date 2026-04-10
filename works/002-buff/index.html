@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BUFF</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a1a; overflow: hidden; cursor: none; }
+  canvas { display: block; position: absolute; top: 0; left: 0; }
+  #mark-layer { z-index: 1; }
+  #buff-layer { z-index: 2; mix-blend-mode: multiply; }
+  #ghost-layer { z-index: 3; mix-blend-mode: screen; opacity: 0.35; }
+  #info {
+    position: fixed;
+    bottom: 20px;
+    left: 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 0.15em;
+    z-index: 100;
+    user-select: none;
+  }
+  .back { position:fixed; top:20px; left:24px; font-family:'Courier New',monospace; font-size:10px; letter-spacing:0.15em; color:rgba(255,255,255,0.15); text-decoration:none; z-index:200; cursor:pointer; transition:color 0.3s; }
+  .back:hover { color:rgba(255,255,255,0.4); }
+  #cycle-count {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.1);
+    z-index: 100;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="mark-layer"></canvas>
+<canvas id="buff-layer"></canvas>
+<canvas id="ghost-layer"></canvas>
+<a href="/" class="back">&larr;</a>
+<div id="info">BUFF — 2026</div>
+<div id="cycle-count"></div>
+
+<script>
+/*
+  BUFF
+  ----
+  The system erases. The wall remembers.
+
+  Three layers:
+    1. MARK LAYER — where writers leave strokes (the graffiti)
+    2. BUFF LAYER — where the system paints over (the erasure)
+    3. GHOST LAYER — where the memory bleeds through (the persistence)
+
+  The cycle:
+    Writers arrive and make marks.
+    After a time, the buff comes — a flat, institutional color
+    rolls across the surface, covering what was made.
+    But the ghost layer captures what was there. It never fully
+    disappears. The next generation of writers works on top of
+    the buffed surface. The ghosts accumulate.
+
+  Over time, the surface becomes a palimpsest — more ghost
+  than present, more memory than material. The buff creates
+  the very texture it tried to eliminate.
+*/
+
+const markCanvas = document.getElementById('mark-layer');
+const buffCanvas = document.getElementById('buff-layer');
+const ghostCanvas = document.getElementById('ghost-layer');
+const markCtx = markCanvas.getContext('2d');
+const buffCtx = buffCanvas.getContext('2d');
+const ghostCtx = ghostCanvas.getContext('2d');
+const cycleEl = document.getElementById('cycle-count');
+
+let W, H;
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  for (const c of [markCanvas, buffCanvas, ghostCanvas]) {
+    c.width = W;
+    c.height = H;
+  }
+  // Re-establish the wall color on mark layer
+  markCtx.fillStyle = '#1a1a1a';
+  markCtx.fillRect(0, 0, W, H);
+}
+resize();
+window.addEventListener('resize', resize);
+
+// --- STATE MACHINE ---
+const STATE = {
+  WRITING: 'writing',
+  PAUSE: 'pause',
+  BUFFING: 'buffing',
+  SETTLING: 'settling',
+};
+
+let state = STATE.WRITING;
+let stateTimer = 0;
+let cycleCount = 0;
+let totalMarks = 0;
+let totalBuffs = 0;
+
+// --- WRITERS ---
+class Writer {
+  constructor() {
+    // Position — tend toward clusters, like real writers hit the same spots
+    const hotspots = [
+      { x: W * 0.25, y: H * 0.4 },
+      { x: W * 0.6, y: H * 0.3 },
+      { x: W * 0.5, y: H * 0.7 },
+      { x: W * 0.8, y: H * 0.5 },
+      { x: W * 0.15, y: H * 0.75 },
+    ];
+    const spot = hotspots[Math.floor(Math.random() * hotspots.length)];
+    this.x = spot.x + (Math.random() - 0.5) * W * 0.25;
+    this.y = spot.y + (Math.random() - 0.5) * H * 0.25;
+
+    this.angle = Math.random() * Math.PI * 2;
+    this.speed = 2 + Math.random() * 3.5;
+    this.drift = (Math.random() - 0.5) * 0.12;
+    this.pressure = 0.4 + Math.random() * 0.6;
+    this.maxLife = 80 + Math.floor(Math.random() * 200);
+    this.life = 0;
+    this.active = true;
+
+    // Color — bolder than ENTRY POINT. These writers have something to say.
+    const hues = [
+      [15, 80, 58],    // vermillion
+      [200, 65, 55],   // cerulean
+      [55, 75, 60],    // gold
+      [320, 55, 50],   // magenta
+      [140, 50, 48],   // green
+      [0, 0, 92],      // near-white
+      [270, 60, 55],   // violet
+    ];
+    const h = hues[Math.floor(Math.random() * hues.length)];
+    this.hue = h[0];
+    this.sat = h[1];
+    this.lit = h[2];
+
+    this.prevX = this.x;
+    this.prevY = this.y;
+
+    // Some writers make letterforms — tight angular movements
+    this.isLettering = Math.random() < 0.3;
+    if (this.isLettering) {
+      this.speed *= 0.7;
+      this.drift = 0;
+      this.segmentLength = 8 + Math.floor(Math.random() * 15);
+      this.segmentCount = 0;
+    }
+  }
+
+  update() {
+    if (!this.active) return;
+    this.life++;
+    if (this.life >= this.maxLife) { this.active = false; return; }
+
+    this.prevX = this.x;
+    this.prevY = this.y;
+
+    if (this.isLettering) {
+      this.segmentCount++;
+      if (this.segmentCount >= this.segmentLength) {
+        // Sharp turn — like a letter stroke
+        this.angle += (Math.PI / 2) * (Math.random() < 0.5 ? 1 : -1);
+        this.angle += (Math.random() - 0.5) * 0.5;
+        this.segmentLength = 6 + Math.floor(Math.random() * 18);
+        this.segmentCount = 0;
+      }
+    } else {
+      this.angle += this.drift + (Math.random() - 0.5) * 0.06;
+    }
+
+    const sp = this.speed * (0.7 + 0.3 * Math.sin(this.life * 0.04));
+    this.x += Math.cos(this.angle) * sp;
+    this.y += Math.sin(this.angle) * sp;
+
+    // Fade in and out
+    const fade = this.life < 15
+      ? this.life / 15
+      : this.life > this.maxLife - 30
+        ? (this.maxLife - this.life) / 30
+        : 1;
+
+    const width = 2 + this.pressure * 6;
+    const alpha = this.pressure * fade * 0.85;
+
+    markCtx.beginPath();
+    markCtx.moveTo(this.prevX, this.prevY);
+    markCtx.lineTo(this.x, this.y);
+    markCtx.strokeStyle = `hsla(${this.hue}, ${this.sat}%, ${this.lit}%, ${alpha})`;
+    markCtx.lineWidth = width;
+    markCtx.lineCap = 'round';
+    markCtx.stroke();
+
+    totalMarks++;
+  }
+}
+
+// --- BUFF SYSTEM ---
+// The buff is institutional — it moves in straight lines, uniform color,
+// mechanical. It is the opposite of the gestural.
+let buffX = 0;
+const BUFF_SPEED = 3;
+
+// Buff colors — the flat, lifeless tones cities use
+const buffColors = [
+  'rgba(42, 42, 40, 0.92)',    // institutional gray
+  'rgba(48, 44, 38, 0.92)',    // warm concrete
+  'rgba(38, 40, 44, 0.92)',    // cool slate
+  'rgba(50, 46, 42, 0.92)',    // sandstone
+  'rgba(44, 44, 44, 0.92)',    // neutral
+];
+let currentBuffColor = buffColors[0];
+
+function captureGhost() {
+  // Before buffing, capture what exists into the ghost layer
+  // This is the memory — it accumulates and never fully clears
+  ghostCtx.globalAlpha = 0.12 + Math.random() * 0.08;
+  ghostCtx.drawImage(markCanvas, 0, 0);
+  ghostCtx.globalAlpha = 1.0;
+}
+
+function buffStep() {
+  // Paint a vertical stripe — the roller moves left to right
+  const stripeWidth = 4 + Math.random() * 3;
+  buffCtx.fillStyle = currentBuffColor;
+
+  // Imperfect coverage — real buff rollers leave texture
+  for (let y = 0; y < H; y += 2) {
+    const wobble = (Math.random() - 0.5) * 3;
+    const coverage = 0.7 + Math.random() * 0.3;
+    buffCtx.globalAlpha = coverage;
+    buffCtx.fillRect(buffX + wobble, y, stripeWidth, 2);
+  }
+  buffCtx.globalAlpha = 1.0;
+
+  // Also darken the mark layer underneath — the paint seeps
+  markCtx.fillStyle = currentBuffColor;
+  markCtx.globalAlpha = 0.15;
+  markCtx.fillRect(buffX - 2, 0, stripeWidth + 4, H);
+  markCtx.globalAlpha = 1.0;
+
+  buffX += BUFF_SPEED;
+  totalBuffs++;
+
+  return buffX >= W;
+}
+
+// --- MAIN LOOP ---
+const writers = [];
+let frame = 0;
+
+const WRITING_DURATION = 500;   // frames of writing
+const PAUSE_DURATION = 90;      // frames of stillness before buff
+const SETTLING_DURATION = 120;  // frames of settling after buff
+
+function spawnWave() {
+  const count = 3 + Math.floor(Math.random() * 4);
+  for (let i = 0; i < count; i++) {
+    writers.push(new Writer());
+  }
+}
+
+function update() {
+  frame++;
+
+  switch (state) {
+    case STATE.WRITING:
+      // Spawn writers periodically
+      if (frame % 60 === 0 && writers.length < 8) {
+        spawnWave();
+      }
+
+      // Update active writers
+      for (const w of writers) w.update();
+      for (let i = writers.length - 1; i >= 0; i--) {
+        if (!writers[i].active) writers.splice(i, 1);
+      }
+
+      stateTimer++;
+      if (stateTimer >= WRITING_DURATION) {
+        state = STATE.PAUSE;
+        stateTimer = 0;
+        // Kill remaining writers — time's up
+        writers.length = 0;
+      }
+      break;
+
+    case STATE.PAUSE:
+      // Stillness. The city is about to respond.
+      stateTimer++;
+      if (stateTimer >= PAUSE_DURATION) {
+        state = STATE.BUFFING;
+        stateTimer = 0;
+        buffX = 0;
+        currentBuffColor = buffColors[Math.floor(Math.random() * buffColors.length)];
+        captureGhost();
+      }
+      break;
+
+    case STATE.BUFFING:
+      const done = buffStep();
+      if (done) {
+        state = STATE.SETTLING;
+        stateTimer = 0;
+        cycleCount++;
+        cycleEl.textContent = `cycle ${cycleCount}`;
+
+        // Clear the buff layer after it's done its work
+        // (the mark layer is already darkened underneath)
+        setTimeout(() => {
+          buffCtx.clearRect(0, 0, W, H);
+        }, 300);
+      }
+      break;
+
+    case STATE.SETTLING:
+      // The fresh surface. Quiet. But the ghosts are visible.
+      stateTimer++;
+      if (stateTimer >= SETTLING_DURATION) {
+        state = STATE.WRITING;
+        stateTimer = 0;
+        spawnWave();
+      }
+      break;
+  }
+
+  requestAnimationFrame(update);
+}
+
+// Begin
+spawnWave();
+update();
+</script>
+</body>
+</html>

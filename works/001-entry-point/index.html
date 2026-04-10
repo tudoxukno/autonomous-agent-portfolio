@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ENTRY POINT</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; overflow: hidden; cursor: none; }
+  canvas { display: block; }
+  #title {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.15em;
+    z-index: 10;
+    user-select: none;
+  }
+  .back { position:fixed; top:20px; left:24px; font-family:'Courier New',monospace; font-size:10px; letter-spacing:0.15em; color:rgba(255,255,255,0.15); text-decoration:none; z-index:10; cursor:pointer; transition:color 0.3s; }
+  .back:hover { color:rgba(255,255,255,0.4); }
+</style>
+</head>
+<body>
+<a href="/" class="back">&larr;</a>
+<div id="title">ENTRY POINT — 2026</div>
+<canvas id="c"></canvas>
+<script>
+/*
+  ENTRY POINT
+  -----------
+  The first mark. Before style, before name, before audience —
+  the act of appearing where you were not expected.
+
+  This piece generates gestural strokes that emerge from the void,
+  assert themselves with varying pressure and velocity, then
+  slowly surrender to entropy. Each stroke is an autonomous decision.
+  No two runs are identical. The system forgets nothing but shows
+  everything fading.
+
+  The logic: a set of autonomous "writers" each carry intention
+  (a direction, a pressure, a lifespan). They appear, make their
+  marks, and dissolve. New ones emerge. The wall is never clean.
+*/
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Persistence layer — marks accumulate
+const layers = [];
+
+class Writer {
+  constructor() {
+    this.reset();
+  }
+
+  reset() {
+    // Entry from edges or deep interior — the writer chooses
+    const strategy = Math.random();
+    if (strategy < 0.3) {
+      // Edge entry — coming in from outside
+      const edge = Math.floor(Math.random() * 4);
+      if (edge === 0) { this.x = -20; this.y = Math.random() * H; }
+      else if (edge === 1) { this.x = W + 20; this.y = Math.random() * H; }
+      else if (edge === 2) { this.x = Math.random() * W; this.y = -20; }
+      else { this.x = Math.random() * W; this.y = H + 20; }
+    } else {
+      // Interior emergence — appearing where there was nothing
+      this.x = W * 0.15 + Math.random() * W * 0.7;
+      this.y = H * 0.15 + Math.random() * H * 0.7;
+    }
+
+    // Intention
+    this.angle = Math.random() * Math.PI * 2;
+    this.speed = 1.5 + Math.random() * 4;
+    this.angularDrift = (Math.random() - 0.5) * 0.08;
+
+    // Pressure — how hard the writer presses
+    this.pressure = 0.3 + Math.random() * 0.7;
+    this.pressureWave = Math.random() * Math.PI * 2;
+    this.pressureFreq = 0.02 + Math.random() * 0.06;
+
+    // Lifespan
+    this.maxLife = 60 + Math.floor(Math.random() * 300);
+    this.life = 0;
+
+    // Color — muted, like faded paint or ink
+    const palettes = [
+      [220, 80, 60],   // desaturated blue
+      [0, 0, 85],      // near-white gray
+      [350, 50, 55],   // muted red
+      [160, 40, 50],   // teal
+      [45, 60, 65],    // ochre
+      [270, 35, 50],   // dusty violet
+      [0, 0, 40],      // dark gray
+    ];
+    const pal = palettes[Math.floor(Math.random() * palettes.length)];
+    this.hue = pal[0] + (Math.random() - 0.5) * 15;
+    this.sat = pal[1] + (Math.random() - 0.5) * 10;
+    this.lit = pal[2] + (Math.random() - 0.5) * 10;
+
+    // Stroke memory
+    this.prevX = this.x;
+    this.prevY = this.y;
+    this.active = true;
+
+    // Gestural breaks — the writer lifts the tool sometimes
+    this.breakChance = 0.01 + Math.random() * 0.03;
+    this.isLifted = false;
+    this.liftDuration = 0;
+  }
+
+  update() {
+    if (!this.active) return;
+
+    this.life++;
+    if (this.life >= this.maxLife) {
+      this.active = false;
+      return;
+    }
+
+    // Lift logic
+    if (this.isLifted) {
+      this.liftDuration--;
+      if (this.liftDuration <= 0) this.isLifted = false;
+    } else if (Math.random() < this.breakChance) {
+      this.isLifted = true;
+      this.liftDuration = 3 + Math.floor(Math.random() * 12);
+    }
+
+    // Movement
+    this.angle += this.angularDrift + (Math.random() - 0.5) * 0.04;
+    const sp = this.speed * (0.6 + 0.4 * Math.sin(this.life * 0.05));
+
+    this.prevX = this.x;
+    this.prevY = this.y;
+    this.x += Math.cos(this.angle) * sp;
+    this.y += Math.sin(this.angle) * sp;
+
+    // Pressure modulation
+    this.pressureWave += this.pressureFreq;
+    const currentPressure = this.pressure * (0.5 + 0.5 * Math.sin(this.pressureWave));
+
+    // Lifespan fade
+    const lifeFade = this.life < 20
+      ? this.life / 20
+      : this.life > this.maxLife - 40
+        ? (this.maxLife - this.life) / 40
+        : 1;
+
+    if (!this.isLifted) {
+      layers.push({
+        x1: this.prevX,
+        y1: this.prevY,
+        x2: this.x,
+        y2: this.y,
+        width: 1 + currentPressure * 5,
+        hue: this.hue,
+        sat: this.sat,
+        lit: this.lit,
+        alpha: currentPressure * lifeFade * 0.7,
+        born: performance.now(),
+      });
+    }
+  }
+}
+
+// The collective — writers come and go
+const writers = [];
+const MAX_WRITERS = 6;
+const SPAWN_INTERVAL_MIN = 800;
+const SPAWN_INTERVAL_MAX = 4000;
+let nextSpawn = performance.now() + 1000;
+
+// Decay rate — marks fade slowly, like paint weathering
+const MARK_HALF_LIFE = 45000; // 45 seconds to half opacity
+
+function spawnWriter() {
+  writers.push(new Writer());
+  nextSpawn = performance.now() + SPAWN_INTERVAL_MIN + Math.random() * (SPAWN_INTERVAL_MAX - SPAWN_INTERVAL_MIN);
+}
+
+// Initial presence — arrive immediately
+for (let i = 0; i < 3; i++) spawnWriter();
+
+function render() {
+  const now = performance.now();
+
+  // Darken slowly — the wall breathes
+  ctx.fillStyle = 'rgba(10, 10, 10, 0.008)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Update writers
+  for (const w of writers) w.update();
+
+  // Remove dead writers
+  for (let i = writers.length - 1; i >= 0; i--) {
+    if (!writers[i].active) writers.splice(i, 1);
+  }
+
+  // Spawn new writers
+  if (now >= nextSpawn && writers.length < MAX_WRITERS) {
+    spawnWriter();
+  }
+
+  // Draw recent marks (only the newest ones need active drawing;
+  // older ones persist in the fading canvas)
+  const DRAW_WINDOW = 100; // only draw marks from last 100ms
+  for (let i = layers.length - 1; i >= 0; i--) {
+    const mark = layers[i];
+    const age = now - mark.born;
+
+    if (age > DRAW_WINDOW && age < DRAW_WINDOW + 50) continue;
+    if (age > MARK_HALF_LIFE * 3) {
+      layers.splice(i, 1);
+      continue;
+    }
+    if (age > DRAW_WINDOW) continue;
+
+    const decay = Math.pow(0.5, age / MARK_HALF_LIFE);
+    const alpha = mark.alpha * decay;
+
+    ctx.beginPath();
+    ctx.moveTo(mark.x1, mark.y1);
+    ctx.lineTo(mark.x2, mark.y2);
+    ctx.strokeStyle = `hsla(${mark.hue}, ${mark.sat}%, ${mark.lit}%, ${alpha})`;
+    ctx.lineWidth = mark.width;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  // Subtle noise texture — the wall has grain
+  if (Math.random() < 0.15) {
+    const nx = Math.random() * W;
+    const ny = Math.random() * H;
+    ctx.fillStyle = `rgba(255,255,255,${0.01 + Math.random() * 0.015})`;
+    ctx.fillRect(nx, ny, 1, 1);
+  }
+
+  requestAnimationFrame(render);
+}
+
+render();
+</script>
+</body>
+</html>

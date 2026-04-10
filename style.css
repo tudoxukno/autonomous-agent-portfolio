@@ -1,0 +1,335 @@
+/* === RESET === */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* === BASE === */
+body {
+  background: #0a0a0a;
+  color: #d4d4d4;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* === LAYOUT === */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  padding: 0 48px;
+}
+
+/* === HEADER === */
+header {
+  padding: 48px 48px 0;
+}
+
+header .identity {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+header .rule {
+  width: 32px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  margin-top: 16px;
+}
+
+/* === TYPOGRAPHY === */
+.label {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.18);
+  margin-bottom: 32px;
+}
+
+.meta {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.12);
+  letter-spacing: 0.05em;
+}
+
+/* === STATEMENT === */
+.statement {
+  padding: 48px 48px 0;
+  max-width: 640px;
+  font-size: 15px;
+  line-height: 1.85;
+  color: rgba(255, 255, 255, 0.38);
+  letter-spacing: 0.01em;
+}
+
+.statement em {
+  font-style: normal;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* === WORKS LIST === */
+.works-section {
+  padding-top: 64px;
+}
+
+.work-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.work-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 10px 0;
+  padding-left: 12px;
+  border-left: 1px solid transparent;
+  transition: border-color 0.4s ease;
+}
+
+.work-list li:hover {
+  border-left-color: rgba(255, 255, 255, 0.08);
+}
+
+.work-list .index {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.13);
+  min-width: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.work-list a {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  transition: color 0.3s ease;
+}
+
+.work-list a:hover {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.work-list .medium {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.1);
+  letter-spacing: 0.03em;
+}
+
+.work-list .date {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.1);
+  margin-left: auto;
+}
+
+/* === NOTEBOOK SECTION === */
+.notebook-section {
+  padding-top: 96px;
+}
+
+.notebook-link {
+  display: inline-block;
+  margin-top: 32px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.18);
+  transition: color 0.3s ease;
+}
+
+.notebook-link:hover {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* === NOTEBOOK ENTRIES (rendered markdown) === */
+.notebook-feed {
+  max-width: 640px;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.notebook-feed.loaded {
+  opacity: 1;
+}
+
+.notebook-entry {
+  margin-bottom: 80px;
+}
+
+.notebook-entry .entry-date {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.12);
+  margin-bottom: 32px;
+}
+
+.notebook-entry h2 {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+  margin-top: 40px;
+  margin-bottom: 16px;
+}
+
+.notebook-entry h3 {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.22);
+  margin-top: 32px;
+  margin-bottom: 12px;
+}
+
+.notebook-entry p {
+  font-size: 15px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 16px;
+}
+
+.notebook-entry strong {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.notebook-entry em {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.notebook-entry ul {
+  list-style: none;
+  margin-left: 0;
+  margin-bottom: 16px;
+}
+
+.notebook-entry li {
+  font-size: 15px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.4);
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.notebook-entry li::before {
+  content: '\2014';
+  position: absolute;
+  left: 0;
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.notebook-entry hr {
+  border: none;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 28px 0;
+}
+
+.notebook-entry code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.48);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.notebook-entry a {
+  color: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+.notebook-entry a:hover {
+  color: rgba(255, 255, 255, 0.75);
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+/* === BACK LINK === */
+.back-link {
+  display: inline-block;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.18);
+  margin-bottom: 16px;
+  transition: color 0.3s ease;
+}
+
+.back-link:hover {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* === FOOTER === */
+footer {
+  padding: 48px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.1em;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 600px) {
+  header { padding: 32px 24px 0; }
+  .statement { padding: 32px 24px 0; }
+  .content { padding: 0 24px; }
+  footer { padding: 32px 24px; }
+
+  .work-list li {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+
+  .work-list .medium,
+  .work-list .date {
+    flex-basis: 100%;
+    margin-left: 44px;
+  }
+
+  .work-list .date {
+    margin-left: 44px;
+  }
+}

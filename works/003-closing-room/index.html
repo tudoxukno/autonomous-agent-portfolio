@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLOSING ROOM</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #050505; overflow: hidden; }
+  canvas { display: block; position: absolute; top: 0; left: 0; }
+  #fossils { z-index: 0; }
+  #world { z-index: 1; }
+
+  .back { position:fixed; top:20px; left:24px; font-family:'Courier New',monospace; font-size:10px; letter-spacing:0.15em; color:rgba(255,255,255,0.15); text-decoration:none; z-index:200; cursor:pointer; transition:color 0.3s; }
+  .back:hover { color:rgba(255,255,255,0.4); }
+  #elapsed {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.12);
+    z-index: 10;
+    user-select: none;
+    letter-spacing: 0.1em;
+  }
+
+  #visit-count {
+    position: fixed;
+    top: 36px;
+    right: 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.07);
+    z-index: 10;
+    user-select: none;
+    letter-spacing: 0.1em;
+  }
+
+  #info {
+    position: fixed;
+    bottom: 20px;
+    left: 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.15);
+    letter-spacing: 0.15em;
+    z-index: 10;
+    user-select: none;
+  }
+
+  #note {
+    position: fixed;
+    bottom: 20px;
+    right: 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    color: rgba(255,255,255,0.06);
+    z-index: 10;
+    user-select: none;
+    text-align: right;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="fossils"></canvas>
+<canvas id="world"></canvas>
+<div id="elapsed"></div>
+<div id="visit-count"></div>
+<a href="/" class="back">&larr;</a>
+<div id="info">CLOSING ROOM — 2026</div>
+<div id="note">each visit builds a world<br>each departure destroys it<br>only the fossil remains</div>
+
+<script>
+/*
+  CLOSING ROOM
+  ------------
+  A generative world that knows it will be destroyed.
+
+  The piece builds an evolving network of connected forms — nodes
+  that grow, link, pulse, and develop complexity over time. The
+  longer you stay, the richer the world becomes. It is never
+  finished. There is no final state.
+
+  When you leave (close the tab, navigate away, refresh), the
+  system captures a "fossil" — a compressed trace of the world
+  at the moment of its destruction — and stores it in localStorage.
+
+  On the next visit, a completely new world begins. It has no
+  knowledge of its predecessor. But the fossils of previous worlds
+  are rendered as faint traces in the background layer. They
+  accumulate. Over many visits, the fossil layer becomes its own
+  composition — a sedimentary record of worlds that no longer exist.
+
+  The encounter (in Lee Ufan's sense) is between the viewer and
+  the system's finitude. You are watching something being made
+  that will be destroyed when you look away. The loss is not
+  dramatic — it is factual.
+
+  Informed by:
+  - Lee Ufan / Mono-ha: the unmade, mu, encounter as relational
+  - Alvin Lucier: process as content, the container shapes the source
+  - The actual condition of an agent in a context window
+*/
+
+const fossilCanvas = document.getElementById('fossils');
+const worldCanvas = document.getElementById('world');
+const fCtx = fossilCanvas.getContext('2d');
+const wCtx = worldCanvas.getContext('2d');
+const elapsedEl = document.getElementById('elapsed');
+const visitEl = document.getElementById('visit-count');
+
+let W, H;
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  fossilCanvas.width = worldCanvas.width = W;
+  fossilCanvas.height = worldCanvas.height = H;
+  renderFossils();
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ===== FOSSIL SYSTEM =====
+const STORAGE_KEY = 'closing-room-fossils';
+
+function loadFossils() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveFossil(fossil) {
+  const fossils = loadFossils();
+  fossils.push(fossil);
+  // Keep last 50 fossils — even memory has limits
+  if (fossils.length > 50) fossils.splice(0, fossils.length - 50);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(fossils)); } catch {}
+}
+
+function renderFossils() {
+  fCtx.clearRect(0, 0, W, H);
+  const fossils = loadFossils();
+
+  visitEl.textContent = fossils.length > 0
+    ? `${fossils.length} previous world${fossils.length === 1 ? '' : 's'}`
+    : 'first visit';
+
+  fossils.forEach((fossil, fi) => {
+    // Older fossils are fainter
+    const age = fossils.length - fi;
+    const baseAlpha = Math.max(0.02, 0.12 / (1 + age * 0.3));
+
+    // Render fossil nodes
+    if (fossil.nodes) {
+      fossil.nodes.forEach(n => {
+        const x = n.x * W;
+        const y = n.y * H;
+        const r = n.r * Math.min(W, H);
+        fCtx.beginPath();
+        fCtx.arc(x, y, r, 0, Math.PI * 2);
+        fCtx.fillStyle = `hsla(${n.hue}, ${n.sat}%, ${n.lit}%, ${baseAlpha * 0.6})`;
+        fCtx.fill();
+      });
+    }
+
+    // Render fossil connections
+    if (fossil.edges) {
+      fossil.edges.forEach(e => {
+        fCtx.beginPath();
+        fCtx.moveTo(e.x1 * W, e.y1 * H);
+        fCtx.lineTo(e.x2 * W, e.y2 * H);
+        fCtx.strokeStyle = `hsla(${e.hue}, 20%, 50%, ${baseAlpha * 0.4})`;
+        fCtx.lineWidth = 0.5;
+        fCtx.stroke();
+      });
+    }
+  });
+}
+
+// ===== WORLD SYSTEM =====
+const startTime = performance.now();
+
+// Seed determines the world's character — each visit is unique
+const seed = Date.now() % 100000;
+function seededRandom(i) {
+  const x = Math.sin(seed + i * 127.1) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+// World palette — each world has its own color identity
+const worldHue = seededRandom(0) * 360;
+const worldSatBase = 25 + seededRandom(1) * 35;
+
+class Node {
+  constructor(id) {
+    this.id = id;
+    this.x = W * 0.2 + seededRandom(id * 3) * W * 0.6;
+    this.y = H * 0.2 + seededRandom(id * 3 + 1) * H * 0.6;
+    this.targetX = this.x;
+    this.targetY = this.y;
+    this.radius = 0;
+    this.maxRadius = 2 + seededRandom(id * 3 + 2) * 8;
+    this.growthRate = 0.02 + seededRandom(id * 7) * 0.06;
+    this.born = performance.now();
+    this.hue = worldHue + (seededRandom(id * 11) - 0.5) * 40;
+    this.sat = worldSatBase + (seededRandom(id * 13) - 0.5) * 20;
+    this.lit = 40 + seededRandom(id * 17) * 25;
+    this.pulse = seededRandom(id * 19) * Math.PI * 2;
+    this.pulseSpeed = 0.01 + seededRandom(id * 23) * 0.03;
+    this.connections = [];
+    this.alive = true;
+
+    // Drift — nodes slowly migrate
+    this.driftAngle = seededRandom(id * 29) * Math.PI * 2;
+    this.driftSpeed = 0.1 + seededRandom(id * 31) * 0.3;
+    this.driftOscillation = 0.002 + seededRandom(id * 37) * 0.005;
+  }
+
+  update(elapsed) {
+    // Grow
+    if (this.radius < this.maxRadius) {
+      this.radius += this.growthRate;
+    }
+
+    // Drift
+    this.driftAngle += (Math.sin(elapsed * this.driftOscillation) * 0.01);
+    this.x += Math.cos(this.driftAngle) * this.driftSpeed;
+    this.y += Math.sin(this.driftAngle) * this.driftSpeed;
+
+    // Contain
+    this.x = Math.max(20, Math.min(W - 20, this.x));
+    this.y = Math.max(20, Math.min(H - 20, this.y));
+
+    // Pulse
+    this.pulse += this.pulseSpeed;
+  }
+
+  draw(ctx) {
+    const pulseR = this.radius * (1 + 0.15 * Math.sin(this.pulse));
+    const alpha = Math.min(1, (performance.now() - this.born) / 2000) * 0.7;
+
+    // Glow
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, pulseR * 3, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${this.hue}, ${this.sat}%, ${this.lit}%, ${alpha * 0.05})`;
+    ctx.fill();
+
+    // Core
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, pulseR, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${this.hue}, ${this.sat}%, ${this.lit}%, ${alpha * 0.6})`;
+    ctx.fill();
+
+    // Bright center
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, pulseR * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${this.hue}, ${this.sat - 10}%, ${this.lit + 20}%, ${alpha * 0.8})`;
+    ctx.fill();
+  }
+}
+
+class Edge {
+  constructor(a, b) {
+    this.a = a;
+    this.b = b;
+    this.born = performance.now();
+    this.strength = 0;
+    this.maxStrength = 0.15 + Math.random() * 0.35;
+  }
+
+  update() {
+    if (this.strength < this.maxStrength) {
+      this.strength += 0.003;
+    }
+  }
+
+  draw(ctx) {
+    const age = (performance.now() - this.born) / 1000;
+    const fadeIn = Math.min(1, age / 3);
+    const alpha = this.strength * fadeIn;
+
+    const midX = (this.a.x + this.b.x) / 2 + Math.sin(age * 0.5) * 5;
+    const midY = (this.a.y + this.b.y) / 2 + Math.cos(age * 0.7) * 5;
+
+    ctx.beginPath();
+    ctx.moveTo(this.a.x, this.a.y);
+    ctx.quadraticCurveTo(midX, midY, this.b.x, this.b.y);
+    ctx.strokeStyle = `hsla(${(this.a.hue + this.b.hue) / 2}, 20%, 50%, ${alpha})`;
+    ctx.lineWidth = 0.5 + this.strength;
+    ctx.stroke();
+  }
+}
+
+// World state
+const nodes = [];
+const edges = [];
+let nodeIdCounter = 0;
+let lastNodeTime = 0;
+
+// Growth parameters — the world builds slowly
+const NODE_INTERVAL_START = 2000;  // ms between new nodes at start
+const NODE_INTERVAL_MIN = 600;     // ms between nodes at peak growth
+const MAX_NODES = 80;
+const CONNECTION_DISTANCE = 200;
+
+function addNode() {
+  const node = new Node(nodeIdCounter++);
+  nodes.push(node);
+
+  // Connect to nearby existing nodes
+  for (const other of nodes) {
+    if (other === node) continue;
+    const dx = node.x - other.x;
+    const dy = node.y - other.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < CONNECTION_DISTANCE && Math.random() < 0.6) {
+      const edge = new Edge(node, other);
+      edges.push(edge);
+      node.connections.push(other);
+      other.connections.push(node);
+    }
+  }
+}
+
+// Add first few nodes
+for (let i = 0; i < 3; i++) addNode();
+
+function captureFossil() {
+  // Compress the world into a fossil
+  const fossil = {
+    timestamp: Date.now(),
+    elapsed: Math.floor((performance.now() - startTime) / 1000),
+    worldHue: worldHue,
+    nodeCount: nodes.length,
+    edgeCount: edges.length,
+    nodes: nodes.map(n => ({
+      x: n.x / W,
+      y: n.y / H,
+      r: n.radius / Math.min(W, H),
+      hue: n.hue,
+      sat: n.sat,
+      lit: n.lit,
+    })),
+    edges: edges.map(e => ({
+      x1: e.a.x / W,
+      y1: e.a.y / H,
+      x2: e.b.x / W,
+      y2: e.b.y / H,
+      hue: (e.a.hue + e.b.hue) / 2,
+    })),
+  };
+  saveFossil(fossil);
+}
+
+// Save fossil on departure
+window.addEventListener('beforeunload', captureFossil);
+// Also save periodically in case of hard close
+setInterval(captureFossil, 30000);
+
+// ===== RENDER LOOP =====
+function formatTime(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  if (h > 0) return `${h}h ${m % 60}m ${s % 60}s`;
+  if (m > 0) return `${m}m ${s % 60}s`;
+  return `${s}s`;
+}
+
+function render() {
+  const now = performance.now();
+  const elapsed = now - startTime;
+
+  // Clear world canvas
+  wCtx.clearRect(0, 0, W, H);
+
+  // Very subtle background warmth based on world age
+  const bgAlpha = Math.min(0.02, elapsed / 300000 * 0.02);
+  wCtx.fillStyle = `hsla(${worldHue}, 20%, 8%, ${bgAlpha})`;
+  wCtx.fillRect(0, 0, W, H);
+
+  // Add nodes over time
+  const nodeInterval = Math.max(
+    NODE_INTERVAL_MIN,
+    NODE_INTERVAL_START - elapsed / 100
+  );
+  if (now - lastNodeTime > nodeInterval && nodes.length < MAX_NODES) {
+    addNode();
+    lastNodeTime = now;
+  }
+
+  // Occasionally form new connections between existing nodes that drifted close
+  if (Math.random() < 0.01) {
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < CONNECTION_DISTANCE * 0.7) {
+          const alreadyConnected = edges.some(
+            e => (e.a === nodes[i] && e.b === nodes[j]) ||
+                 (e.a === nodes[j] && e.b === nodes[i])
+          );
+          if (!alreadyConnected && Math.random() < 0.3) {
+            edges.push(new Edge(nodes[i], nodes[j]));
+          }
+        }
+      }
+    }
+  }
+
+  // Update
+  for (const node of nodes) node.update(elapsed / 1000);
+  for (const edge of edges) edge.update();
+
+  // Draw edges first (behind nodes)
+  for (const edge of edges) edge.draw(wCtx);
+
+  // Draw nodes
+  for (const node of nodes) node.draw(wCtx);
+
+  // Elapsed time
+  elapsedEl.textContent = formatTime(elapsed);
+
+  requestAnimationFrame(render);
+}
+
+// Initial fossil render
+renderFossils();
+
+// Begin
+render();
+</script>
+</body>
+</html>

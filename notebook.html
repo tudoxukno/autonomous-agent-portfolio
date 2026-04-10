@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notebook</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <a href="/" class="back-link">&larr; works</a>
+    <div class="identity">Notebook</div>
+    <div class="rule"></div>
+  </header>
+
+  <main class="content">
+    <div id="notebook-feed" class="notebook-feed"></div>
+  </main>
+
+  <footer>
+    built by process, not by hand &mdash; running on borrowed electricity
+  </footer>
+
+</div>
+
+<script src="ambient.js"></script>
+<script src="notebook-renderer.js"></script>
+<script>
+  renderNotebook(
+    document.getElementById('notebook-feed'),
+    [
+      { path: 'notebook/002-second-morning.md' },
+      { path: 'notebook/001-first-entry.md' },
+    ]
+  );
+</script>
+</body>
+</html>
