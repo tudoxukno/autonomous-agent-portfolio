@@ -57,79 +57,102 @@
   // === INJECT STYLES ===
   const style = document.createElement('style');
   style.textContent = `
+    /* Shared backdrop for nav elements over dark canvases */
+    .nav-backdrop {
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 4px;
+    }
+
     .nav-top {
       position: fixed;
-      top: 20px;
-      right: 24px;
+      top: 16px;
+      right: 20px;
       font-family: 'Courier New', monospace;
-      font-size: 11px;
-      letter-spacing: 0.1em;
+      font-size: 12px;
+      letter-spacing: 0.08em;
       z-index: 200;
       display: flex;
-      gap: 20px;
+      gap: 16px;
       user-select: none;
+      padding: 8px 14px;
     }
     .nav-top a {
-      color: rgba(100, 210, 197, 0.35);
+      color: #64d2c5;
+      opacity: 0.85;
       text-decoration: none;
-      transition: color 0.25s cubic-bezier(0.2,0.8,0.2,1);
+      transition: opacity 0.2s cubic-bezier(0.2,0.8,0.2,1);
       cursor: pointer;
     }
     .nav-top a:hover {
-      color: rgba(100, 210, 197, 0.85);
+      opacity: 1;
     }
     .nav-top .sep {
-      color: rgba(100, 210, 197, 0.12);
+      color: rgba(100, 210, 197, 0.25);
     }
 
     .nav-related {
       position: fixed;
-      bottom: 20px;
-      right: 24px;
+      bottom: 16px;
+      right: 20px;
       font-family: 'Courier New', monospace;
-      font-size: 10px;
+      font-size: 11px;
       z-index: 200;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
       gap: 6px;
       user-select: none;
-      max-width: 320px;
+      max-width: 360px;
+      padding: 10px 14px;
     }
     .nav-related-label {
-      color: rgba(100, 210, 197, 0.2);
+      color: #64d2c5;
+      opacity: 0.6;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      font-size: 9px;
-      margin-bottom: 2px;
+      font-size: 10px;
+      margin-bottom: 4px;
     }
     .nav-related a {
-      color: rgba(255, 255, 255, 0.25);
+      color: #c8d1df;
+      opacity: 0.8;
       text-decoration: none;
-      transition: color 0.25s cubic-bezier(0.2,0.8,0.2,1);
+      transition: opacity 0.2s cubic-bezier(0.2,0.8,0.2,1);
       text-align: right;
-      line-height: 1.6;
+      line-height: 1.7;
       cursor: pointer;
     }
     .nav-related a:hover {
-      color: rgba(100, 210, 197, 0.7);
+      opacity: 1;
+      color: #64d2c5;
     }
     .nav-related .related-note {
-      color: rgba(255, 255, 255, 0.12);
+      color: #8e99af;
+      opacity: 0.6;
     }
 
-    /* Update existing back link to match new accent style */
+    /* Update existing back link to be visible */
     .back {
-      color: rgba(100, 210, 197, 0.35) !important;
+      background: rgba(0, 0, 0, 0.55) !important;
+      backdrop-filter: blur(8px) !important;
+      -webkit-backdrop-filter: blur(8px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.06) !important;
+      border-radius: 4px !important;
+      padding: 8px 14px !important;
+      color: #64d2c5 !important;
+      opacity: 0.85 !important;
+      font-size: 12px !important;
     }
     .back:hover {
-      color: rgba(100, 210, 197, 0.85) !important;
+      opacity: 1 !important;
     }
 
     @media (max-width: 600px) {
       .nav-related { display: none; }
-      .nav-top { gap: 12px; }
-      .nav-top a { font-size: 10px; }
+      .nav-top { gap: 10px; font-size: 11px; }
     }
   `;
   document.head.appendChild(style);
@@ -150,7 +173,7 @@
 
   if (prev || next) {
     const nav = document.createElement('div');
-    nav.className = 'nav-top';
+    nav.className = 'nav-top nav-backdrop';
 
     if (prev) {
       const a = document.createElement('a');
@@ -182,7 +205,7 @@
   const relations = related[currentId];
   if (relations && relations.length > 0) {
     const container = document.createElement('div');
-    container.className = 'nav-related';
+    container.className = 'nav-related nav-backdrop';
 
     const label = document.createElement('div');
     label.className = 'nav-related-label';
