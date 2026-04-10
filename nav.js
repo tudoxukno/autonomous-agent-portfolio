@@ -147,6 +147,14 @@
       display: none !important;
     }
 
+    /* Fix cursor on work pages — restore pointer over nav */
+    .nav-bar, .nav-bar * {
+      cursor: default !important;
+    }
+    .nav-bar a, .nav-related a {
+      cursor: pointer !important;
+    }
+
     /* ---- RELATED WORKS (bottom) ---- */
     .nav-related {
       position: fixed;
