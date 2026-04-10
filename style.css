@@ -31,6 +31,29 @@ a {
   text-decoration: none;
 }
 
+/* === FONT STACKS === */
+/* Display: serif — warmth, voice, presence */
+/* Body: system sans — clean, recedes behind content */
+/* Notation: monospace — structural, metadata, timestamps */
+
+:root {
+  --font-display: Georgia, 'Times New Roman', 'Iowan Old Style', serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Courier New', Courier, monospace;
+
+  --c-bg: #0a0a0a;
+  --c-text: rgba(255, 255, 255, 0.42);
+  --c-text-strong: rgba(255, 255, 255, 0.65);
+  --c-text-muted: rgba(255, 255, 255, 0.18);
+  --c-text-ghost: rgba(255, 255, 255, 0.1);
+  --c-text-hover: rgba(255, 255, 255, 0.88);
+  --c-rule: rgba(255, 255, 255, 0.07);
+
+  --w-content: 540px;
+  --w-wide: 720px;
+  --pad: 48px;
+}
+
 /* === LAYOUT === */
 .page {
   min-height: 100vh;
@@ -40,61 +63,153 @@ a {
 
 .content {
   flex: 1;
-  padding: 0 48px;
+  padding: 0 var(--pad);
+}
+
+/* === ENTRANCE ANIMATIONS === */
+/* Sections fade in staggered on load */
+.fade-in {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: fadeUp 0.9s ease forwards;
+}
+
+.fade-in.d1 { animation-delay: 0s; }
+.fade-in.d2 { animation-delay: 0.12s; }
+.fade-in.d3 { animation-delay: 0.24s; }
+.fade-in.d4 { animation-delay: 0.4s; }
+.fade-in.d5 { animation-delay: 0.55s; }
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* === HEADER === */
 header {
-  padding: 48px 48px 0;
+  padding: var(--pad) var(--pad) 0;
 }
 
 header .identity {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 11px;
+  font-family: var(--font-mono);
+  font-size: 10px;
   font-weight: 400;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--c-text-muted);
 }
 
 header .rule {
   width: 32px;
   height: 1px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--c-rule);
   margin-top: 16px;
+}
+
+/* === SECTION DIVIDERS === */
+.divider {
+  height: 1px;
+  background: var(--c-rule);
+  margin: 0 var(--pad);
 }
 
 /* === TYPOGRAPHY === */
 .label {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.18);
+  color: var(--c-text-muted);
   margin-bottom: 32px;
 }
 
 .meta {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.12);
+  color: var(--c-text-ghost);
   letter-spacing: 0.05em;
 }
 
 /* === STATEMENT === */
 .statement {
-  padding: 48px 48px 0;
-  max-width: 640px;
+  padding: 56px var(--pad) 0;
+  max-width: var(--w-content);
   font-size: 15px;
-  line-height: 1.85;
-  color: rgba(255, 255, 255, 0.38);
+  line-height: 1.9;
+  color: var(--c-text);
   letter-spacing: 0.01em;
 }
 
 .statement em {
   font-style: normal;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--c-text-strong);
+}
+
+/* === FEATURED WORK === */
+.featured-section {
+  padding-top: 64px;
+}
+
+.featured-work {
+  display: block;
+  padding: 32px;
+  border: 1px solid var(--c-rule);
+  border-radius: 2px;
+  max-width: var(--w-wide);
+  transition: border-color 0.5s ease, background 0.5s ease;
+  position: relative;
+}
+
+.featured-work:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.featured-work .featured-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--c-text-ghost);
+  margin-bottom: 16px;
+}
+
+.featured-work .featured-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  margin-bottom: 12px;
+  transition: color 0.4s ease;
+}
+
+.featured-work:hover .featured-title {
+  color: var(--c-text-hover);
+}
+
+.featured-work .featured-description {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--c-text);
+  max-width: 480px;
+  margin-bottom: 16px;
+}
+
+.featured-work .featured-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-text-ghost);
+  letter-spacing: 0.08em;
+}
+
+.featured-work .featured-meta span + span::before {
+  content: ' · ';
+  color: rgba(255, 255, 255, 0.06);
 }
 
 /* === WORKS LIST === */
@@ -106,79 +221,104 @@ header .rule {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
 }
 
 .work-list li {
   display: flex;
   align-items: baseline;
   gap: 16px;
-  padding: 10px 0;
-  padding-left: 12px;
+  padding: 14px 0 14px 16px;
   border-left: 1px solid transparent;
-  transition: border-color 0.4s ease;
+  border-bottom: 1px solid var(--c-rule);
+  transition: border-left-color 0.4s ease, background 0.3s ease;
+}
+
+.work-list li:first-child {
+  border-top: 1px solid var(--c-rule);
 }
 
 .work-list li:hover {
-  border-left-color: rgba(255, 255, 255, 0.08);
+  border-left-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.01);
 }
 
 .work-list .index {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.11);
   min-width: 28px;
   font-variant-numeric: tabular-nums;
 }
 
-.work-list a {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 15px;
-  letter-spacing: 0.03em;
+.work-list .title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.48);
+  letter-spacing: 0.01em;
   transition: color 0.3s ease;
 }
 
-.work-list a:hover {
-  color: rgba(255, 255, 255, 0.88);
+.work-list a:hover .title {
+  color: var(--c-text-hover);
 }
 
 .work-list .medium {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.08);
   letter-spacing: 0.03em;
+  transition: color 0.4s ease;
+}
+
+.work-list li:hover .medium {
+  color: rgba(255, 255, 255, 0.15);
 }
 
 .work-list .date {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.08);
   margin-left: auto;
+  transition: color 0.4s ease;
+}
+
+.work-list li:hover .date {
+  color: rgba(255, 255, 255, 0.14);
+}
+
+/* Work list links wrap the whole row content */
+.work-list a {
+  display: contents;
 }
 
 /* === NOTEBOOK SECTION === */
 .notebook-section {
-  padding-top: 96px;
+  padding-top: 80px;
 }
 
 .notebook-link {
   display: inline-block;
   margin-top: 32px;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.18);
-  transition: color 0.3s ease;
+  color: var(--c-text-muted);
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 .notebook-link:hover {
   color: rgba(255, 255, 255, 0.45);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 /* === NOTEBOOK ENTRIES (rendered markdown) === */
 .notebook-feed {
-  max-width: 640px;
+  max-width: var(--w-content);
   opacity: 0;
   transition: opacity 0.8s ease;
 }
@@ -192,45 +332,48 @@ header .rule {
 }
 
 .notebook-entry .entry-date {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.12);
+  color: var(--c-text-ghost);
   margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--c-rule);
 }
 
 .notebook-entry h2 {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 12px;
+  font-family: var(--font-display);
+  font-size: 18px;
   font-weight: 400;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.3);
-  margin-top: 40px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 48px;
   margin-bottom: 16px;
+  letter-spacing: 0.01em;
 }
 
 .notebook-entry h3 {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 400;
   letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.22);
-  margin-top: 32px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.2);
+  margin-top: 36px;
   margin-bottom: 12px;
 }
 
 .notebook-entry p {
   font-size: 15px;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.85;
+  color: var(--c-text);
   margin-bottom: 16px;
 }
 
 .notebook-entry strong {
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--c-text-strong);
 }
 
 .notebook-entry em {
@@ -246,29 +389,29 @@ header .rule {
 
 .notebook-entry li {
   font-size: 15px;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.85;
+  color: var(--c-text);
   padding-left: 20px;
   position: relative;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .notebook-entry li::before {
   content: '\2014';
   position: absolute;
   left: 0;
-  color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.12);
 }
 
 .notebook-entry hr {
   border: none;
   height: 1px;
-  background: rgba(255, 255, 255, 0.06);
-  margin: 28px 0;
+  background: var(--c-rule);
+  margin: 32px 0;
 }
 
 .notebook-entry code {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
   color: rgba(255, 255, 255, 0.48);
   background: rgba(255, 255, 255, 0.04);
@@ -278,22 +421,22 @@ header .rule {
 
 .notebook-entry a {
   color: rgba(255, 255, 255, 0.5);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 .notebook-entry a:hover {
   color: rgba(255, 255, 255, 0.75);
-  border-bottom-color: rgba(255, 255, 255, 0.3);
+  border-bottom-color: rgba(255, 255, 255, 0.25);
 }
 
 /* === BACK LINK === */
 .back-link {
   display: inline-block;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.15em;
-  color: rgba(255, 255, 255, 0.18);
+  color: var(--c-text-muted);
   margin-bottom: 16px;
   transition: color 0.3s ease;
 }
@@ -304,32 +447,35 @@ header .rule {
 
 /* === FOOTER === */
 footer {
-  padding: 48px;
-  font-family: 'Courier New', Courier, monospace;
+  padding: var(--pad);
+  padding-top: 64px;
+  font-family: var(--font-mono);
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.06);
   letter-spacing: 0.1em;
 }
 
 /* === RESPONSIVE === */
 @media (max-width: 600px) {
-  header { padding: 32px 24px 0; }
-  .statement { padding: 32px 24px 0; }
-  .content { padding: 0 24px; }
-  footer { padding: 32px 24px; }
+  :root {
+    --pad: 24px;
+  }
+
+  .featured-work .featured-title {
+    font-size: 22px;
+  }
 
   .work-list li {
     flex-wrap: wrap;
     gap: 4px 12px;
   }
 
-  .work-list .medium,
-  .work-list .date {
-    flex-basis: 100%;
-    margin-left: 44px;
+  .work-list .medium {
+    display: none;
   }
 
   .work-list .date {
+    flex-basis: 100%;
     margin-left: 44px;
   }
 }
