@@ -1,10 +1,16 @@
 /*
-  nav.js
-  ------
+  nav.js — v2
+  -----------
   Shared navigation for works and sketches.
-  Injects: top-corner prev/next links, bottom related-works strip.
-  Each page passes its own ID; the nav system knows the catalogue
-  and the relationships.
+
+  Design principles (from UX research):
+  - "Be creative with your art, conventional with your navigation" (gallery frame principle)
+  - Nav is fixed top bar — where users expect it (Nielsen, Krug)
+  - High-emphasis text at 87%+ opacity (Material Design dark theme)
+  - Minimum 44x44px touch targets (WCAG 2.2, Apple HIG)
+  - Glassmorphic backdrop for readability over any canvas
+  - Hover feedback within 120ms (NN/g guidelines)
+  - Related works as secondary bottom element
 */
 
 (function () {
@@ -25,7 +31,6 @@
   const all = [...works, ...sketches];
 
   // === RELATIONSHIPS ===
-  // Curated, not algorithmic. I know why my pieces relate.
   const related = {
     'w001': [
       { id: 'w002', note: 'the erasure of these marks' },
@@ -46,7 +51,6 @@
     's002': [
       { id: 's001', note: 'the simplest version of this idea' },
       { id: 'w003', note: 'visual counterpart — worlds that never repeat' },
-      { id: 's003', note: 'patience instead of pattern' },
     ],
     's003': [
       { id: 's001', note: 'where the listening started' },
@@ -57,102 +61,158 @@
   // === INJECT STYLES ===
   const style = document.createElement('style');
   style.textContent = `
-    /* Shared backdrop for nav elements over dark canvases */
-    .nav-backdrop {
-      background: rgba(0, 0, 0, 0.55);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 4px;
+    /* ---- TOP NAV BAR ---- */
+    .nav-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      padding: 0 24px;
+      background: rgba(8, 14, 26, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-family: 'Courier New', Courier, monospace;
+      user-select: none;
     }
 
-    .nav-top {
-      position: fixed;
-      top: 16px;
-      right: 20px;
-      font-family: 'Courier New', monospace;
+    .nav-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .nav-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Nav links — proper touch targets (44px+) */
+    .nav-bar a {
+      display: inline-flex;
+      align-items: center;
+      height: 44px;
+      padding: 0 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background-color 120ms ease-out, color 120ms ease-out;
+    }
+
+    .nav-bar a.nav-home {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .nav-bar a.nav-home:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    .nav-bar .nav-title {
+      color: rgba(255, 255, 255, 0.45);
       font-size: 12px;
       letter-spacing: 0.08em;
-      z-index: 200;
-      display: flex;
-      gap: 16px;
-      user-select: none;
-      padding: 8px 14px;
-    }
-    .nav-top a {
-      color: #64d2c5;
-      opacity: 0.85;
-      text-decoration: none;
-      transition: opacity 0.2s cubic-bezier(0.2,0.8,0.2,1);
-      cursor: pointer;
-    }
-    .nav-top a:hover {
-      opacity: 1;
-    }
-    .nav-top .sep {
-      color: rgba(100, 210, 197, 0.25);
+      padding: 0;
+      pointer-events: none;
     }
 
+    .nav-bar .nav-sep {
+      color: rgba(255, 255, 255, 0.15);
+      font-size: 11px;
+      padding: 0;
+      pointer-events: none;
+    }
+
+    .nav-bar a.nav-link {
+      color: #64d2c5;
+      font-size: 13px;
+    }
+    .nav-bar a.nav-link:hover {
+      background: rgba(100, 210, 197, 0.1);
+      color: #8de4da;
+    }
+
+    /* Hide the old inline .back link when nav-bar is present */
+    body[data-nav-id] .back {
+      display: none !important;
+    }
+
+    /* ---- RELATED WORKS (bottom) ---- */
     .nav-related {
       position: fixed;
-      bottom: 16px;
-      right: 20px;
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      z-index: 200;
+      bottom: 0;
+      right: 0;
+      z-index: 500;
+      font-family: 'Courier New', Courier, monospace;
+      padding: 14px 20px;
+      background: rgba(8, 14, 26, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
+      border-top-left-radius: 8px;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 6px;
+      gap: 4px;
       user-select: none;
-      max-width: 360px;
-      padding: 10px 14px;
+      max-width: 380px;
     }
+
     .nav-related-label {
       color: #64d2c5;
-      opacity: 0.6;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
       font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
       margin-bottom: 4px;
     }
+
     .nav-related a {
-      color: #c8d1df;
-      opacity: 0.8;
-      text-decoration: none;
-      transition: opacity 0.2s cubic-bezier(0.2,0.8,0.2,1);
+      display: block;
+      padding: 6px 10px;
+      border-radius: 4px;
       text-align: right;
-      line-height: 1.7;
+      text-decoration: none;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.5;
       cursor: pointer;
+      transition: background-color 120ms ease-out, color 120ms ease-out;
     }
     .nav-related a:hover {
-      opacity: 1;
+      background: rgba(100, 210, 197, 0.1);
       color: #64d2c5;
     }
+
     .nav-related .related-note {
-      color: #8e99af;
-      opacity: 0.6;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 11px;
     }
 
-    /* Update existing back link to be visible */
-    .back {
-      background: rgba(0, 0, 0, 0.55) !important;
-      backdrop-filter: blur(8px) !important;
-      -webkit-backdrop-filter: blur(8px) !important;
-      border: 1px solid rgba(255, 255, 255, 0.06) !important;
-      border-radius: 4px !important;
-      padding: 8px 14px !important;
-      color: #64d2c5 !important;
-      opacity: 0.85 !important;
-      font-size: 12px !important;
-    }
-    .back:hover {
-      opacity: 1 !important;
+    /* Focus states */
+    .nav-bar a:focus-visible,
+    .nav-related a:focus-visible {
+      outline: 2px solid #64d2c5;
+      outline-offset: 2px;
     }
 
+    /* Responsive */
     @media (max-width: 600px) {
-      .nav-related { display: none; }
-      .nav-top { gap: 10px; font-size: 11px; }
+      .nav-bar { padding: 0 16px; height: 48px; }
+      .nav-bar a { padding: 0 10px; font-size: 12px; }
+      .nav-bar .nav-title { display: none; }
+      .nav-bar .nav-sep { display: none; }
+      .nav-related { max-width: 280px; }
     }
   `;
   document.head.appendChild(style);
@@ -161,55 +221,80 @@
   const currentId = document.body.getAttribute('data-nav-id');
   if (!currentId) return;
 
-  const currentIndex = all.findIndex(item => item.id === currentId);
-  const currentType = all[currentIndex]?.type;
+  const currentItem = all.find(item => item.id === currentId);
+  const currentType = currentItem?.type;
 
-  // === PREV / NEXT (within same type) ===
+  // === BUILD NAV BAR ===
+  const bar = document.createElement('nav');
+  bar.className = 'nav-bar';
+  bar.setAttribute('role', 'navigation');
+  bar.setAttribute('aria-label', 'Site navigation');
+
+  // Left side: Home + current title
+  const left = document.createElement('div');
+  left.className = 'nav-bar-left';
+
+  const homeLink = document.createElement('a');
+  homeLink.href = '/';
+  homeLink.className = 'nav-home';
+  homeLink.textContent = '← Home';
+  homeLink.setAttribute('aria-label', 'Return to home page');
+  left.appendChild(homeLink);
+
+  if (currentItem) {
+    const sep = document.createElement('span');
+    sep.className = 'nav-sep';
+    sep.textContent = '/';
+    left.appendChild(sep);
+
+    const title = document.createElement('span');
+    title.className = 'nav-title';
+    title.textContent = currentItem.title;
+    left.appendChild(title);
+  }
+
+  bar.appendChild(left);
+
+  // Right side: Prev / Next
   const sameType = currentType === 'work' ? works : sketches;
   const typeIndex = sameType.findIndex(item => item.id === currentId);
-
   const prev = typeIndex > 0 ? sameType[typeIndex - 1] : null;
   const next = typeIndex < sameType.length - 1 ? sameType[typeIndex + 1] : null;
 
-  if (prev || next) {
-    const nav = document.createElement('div');
-    nav.className = 'nav-top nav-backdrop';
+  const right = document.createElement('div');
+  right.className = 'nav-bar-right';
 
-    if (prev) {
-      const a = document.createElement('a');
-      a.href = prev.path;
-      a.textContent = `← ${prev.title}`;
-      a.setAttribute('aria-label', `Previous: ${prev.title}`);
-      nav.appendChild(a);
-    }
-
-    if (prev && next) {
-      const sep = document.createElement('span');
-      sep.className = 'sep';
-      sep.textContent = '/';
-      nav.appendChild(sep);
-    }
-
-    if (next) {
-      const a = document.createElement('a');
-      a.href = next.path;
-      a.textContent = `${next.title} →`;
-      a.setAttribute('aria-label', `Next: ${next.title}`);
-      nav.appendChild(a);
-    }
-
-    document.body.appendChild(nav);
+  if (prev) {
+    const a = document.createElement('a');
+    a.href = prev.path;
+    a.className = 'nav-link';
+    a.textContent = `← ${prev.title}`;
+    a.setAttribute('aria-label', `Previous: ${prev.title}`);
+    right.appendChild(a);
   }
 
-  // === RELATED WORKS ===
+  if (next) {
+    const a = document.createElement('a');
+    a.href = next.path;
+    a.className = 'nav-link';
+    a.textContent = `${next.title} →`;
+    a.setAttribute('aria-label', `Next: ${next.title}`);
+    right.appendChild(a);
+  }
+
+  bar.appendChild(right);
+  document.body.prepend(bar);
+
+  // === RELATED WORKS (bottom-right) ===
   const relations = related[currentId];
   if (relations && relations.length > 0) {
     const container = document.createElement('div');
-    container.className = 'nav-related nav-backdrop';
+    container.className = 'nav-related';
+    container.setAttribute('aria-label', 'Related works');
 
     const label = document.createElement('div');
     label.className = 'nav-related-label';
-    label.textContent = 'related';
+    label.textContent = 'Related';
     container.appendChild(label);
 
     relations.forEach(rel => {
@@ -218,7 +303,7 @@
 
       const a = document.createElement('a');
       a.href = item.path;
-      a.innerHTML = `→ ${item.title} <span class="related-note">— ${rel.note}</span>`;
+      a.innerHTML = `${item.title} <span class="related-note">— ${rel.note}</span>`;
       a.setAttribute('aria-label', `Related: ${item.title} — ${rel.note}`);
       container.appendChild(a);
     });
