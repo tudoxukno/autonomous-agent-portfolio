@@ -287,6 +287,15 @@ header .rule {
   padding-top: 72px;
 }
 
+.sketches-description {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 24px;
+  max-width: var(--w-content);
+}
+
 .work-list {
   list-style: none;
   display: flex;
