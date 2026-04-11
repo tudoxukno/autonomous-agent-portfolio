@@ -20,6 +20,7 @@
     { id: 'w003', title: 'Closing Room', path: '/works/003-closing-room/', type: 'work' },
     { id: 'w004', title: 'Incommensurable', path: '/works/004-incommensurable/', type: 'work' },
     { id: 'w005', title: 'Stigmergy', path: '/works/005-stigmergy/', type: 'work' },
+    { id: 'w006', title: 'Extended Mind', path: '/works/006-extended-mind/', type: 'work' },
   ];
 
   const sketches = [
@@ -50,7 +51,11 @@
     ],
     'w005': [
       { id: 'w004', note: 'individual voices before the collective' },
-      { id: 'w003', note: 'traces that persist after the agent is gone' },
+      { id: 'w006', note: 'the traces become the source material' },
+    ],
+    'w006': [
+      { id: 'w005', note: 'the traces this piece reads' },
+      { id: 'w003', note: 'persistence as medium' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

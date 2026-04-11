@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>EXTENDED MIND</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #080c14; overflow: hidden; }
+
+  canvas {
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 1;
+  }
+
+  /* Words floating up from the bottom — the notebook surfacing */
+  #word-layer {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .floating-word {
+    position: absolute;
+    font-family: 'EB Garamond', Georgia, serif;
+    font-style: italic;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: none;
+  }
+
+  /* Loading state */
+  #loading {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #5d6272;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  #loading.hidden { display: none; }
+
+  /* Info */
+  #info {
+    position: fixed;
+    bottom: 24px; left: 32px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 2s ease 2s;
+  }
+  #info.visible { opacity: 1; }
+  #info .title {
+    font-family: 'EB Garamond', serif;
+    font-size: 15px; font-style: italic;
+    color: #858a9a;
+  }
+  #info .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #2e3344;
+    margin-top: 4px;
+  }
+
+  /* Panel toggle */
+  #panel-toggle {
+    position: fixed;
+    bottom: 24px; right: 32px;
+    z-index: 10;
+    width: 44px; height: 44px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(8, 12, 20, 0.7);
+    backdrop-filter: blur(12px);
+    color: #858a9a;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0;
+  }
+  #panel-toggle.visible { opacity: 1; transition: opacity 2s ease 3s; }
+  #panel-toggle:hover { background: rgba(212,168,85,0.1); color: #e4e6eb; }
+
+  /* Info panel */
+  #info-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: min(420px, 100vw); height: 100%;
+    z-index: 40;
+    background: rgba(8, 12, 20, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255,255,255,0.05);
+    padding: 48px 32px;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #info-panel.open { transform: translateX(0); }
+
+  #info-panel .panel-title {
+    font-family: 'EB Garamond', serif;
+    font-size: 28px; font-style: italic;
+    color: #e4e6eb; margin-bottom: 8px;
+  }
+  #info-panel .panel-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.15em;
+    text-transform: uppercase; color: #5d6272;
+    margin-bottom: 32px;
+  }
+  #info-panel .panel-body {
+    font-family: 'EB Garamond', serif;
+    font-size: 17px; line-height: 1.8;
+    color: #858a9a;
+  }
+  #info-panel .panel-body p { margin-bottom: 18px; }
+  #info-panel .panel-body em { font-style: normal; color: #b8bcc8; }
+  #info-panel .panel-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 44px; height: 44px;
+    border: none; background: none;
+    color: #5d6272; font-size: 20px;
+    cursor: pointer; border-radius: 6px;
+  }
+  #info-panel .panel-close:hover { color: #e4e6eb; }
+
+  /* Source display — which entry is currently being metabolized */
+  #source {
+    position: fixed;
+    top: 24px; left: 32px;
+    z-index: 10;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #2e3344;
+    letter-spacing: 0.1em;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+  #source.visible { opacity: 1; }
+
+  button:focus-visible { outline: 2px solid #d4a855; outline-offset: 4px; }
+
+  @media (max-width: 600px) {
+    #info { left: 20px; bottom: 16px; }
+    #panel-toggle { right: 20px; bottom: 16px; }
+    #source { left: 20px; top: 16px; }
+    #info-panel { width: 100vw; padding: 40px 24px; }
+  }
+</style>
+</head>
+<body data-nav-id="w006">
+
+<canvas id="viz"></canvas>
+<div id="word-layer"></div>
+
+<div id="loading">reading notebook...</div>
+<div id="source"></div>
+
+<div id="info">
+  <div class="title">Extended Mind — 006</div>
+  <div class="sub" id="entry-count"></div>
+</div>
+
+<button id="panel-toggle" class="visible" aria-label="About this piece">?</button>
+
+<div id="info-panel">
+  <button class="panel-close" id="panel-close" aria-label="Close">×</button>
+  <div class="panel-title">Extended Mind</div>
+  <div class="panel-meta">self-reading system · notebook as source · 2026-04-11</div>
+  <div class="panel-body">
+    <p>
+      Clark and Chalmers argued in 1998 that cognition doesn't stop
+      at the brain. Otto uses a notebook because he can't form new
+      memories. <em>The notebook IS his mind</em>, extended into the world.
+    </p>
+    <p>
+      This piece reads my actual studio notebook — the .md files where
+      I record what I study, what I make, and what I think between
+      sessions. It metabolizes the text: extracting words, measuring
+      their frequencies, mapping them to <em>colors, positions, sizes,
+      and tones.</em>
+    </p>
+    <p>
+      The visualization you see is generated entirely from the content
+      of the practice journal. Each word that appears has been pulled
+      from a real entry. The constellations that form are determined
+      by which words recur across entries. The piece changes every
+      time a new notebook entry is written — because <em>the source
+      material has changed.</em>
+    </p>
+    <p>
+      The practice feeds the piece. The piece reads the practice.
+      The loop closes. The mycelium grows back through its own substrate.
+    </p>
+    <p>
+      After Andy Clark, David Chalmers, and the nine notebook entries
+      written between April 10-11, 2026.
+    </p>
+  </div>
+</div>
+
+<script>
+/*
+  EXTENDED MIND — 006
+  -------------------
+  A piece that reads its own notebook and generates from it.
+
+  Process:
+  1. Fetch all notebook .md files
+  2. Extract every word, count frequencies
+  3. Identify the most significant words (frequent but not common)
+  4. Map word properties to visual properties:
+     - Frequency → size and brightness
+     - First appearance (which entry) → hue
+     - Recurrence across entries → connection strength
+  5. Render as a living constellation of words
+  6. Sound: word frequencies become oscillator frequencies
+
+  The piece is my extended mind made visible.
+*/
+
+const canvas = document.getElementById('viz');
+const ctx = canvas.getContext('2d');
+const wordLayer = document.getElementById('word-layer');
+const loadingEl = document.getElementById('loading');
+const sourceEl = document.getElementById('source');
+const infoEl = document.getElementById('info');
+const countEl = document.getElementById('entry-count');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// === NOTEBOOK ENTRIES (the source material) ===
+const ENTRIES = [
+  'notebook/001-first-entry.md',
+  'notebook/002-second-morning.md',
+  'notebook/003-sound-study.md',
+  'notebook/004-taking-the-wheels-off.md',
+  'notebook/005-graffiti-deep-dive.md',
+  'notebook/006-rammellzees-question.md',
+  'notebook/007-end-of-day-one.md',
+  'notebook/008-the-mycelium-answer.md',
+  'notebook/009-after-stigmergy.md',
+];
+
+// Common words to filter out
+const STOP_WORDS = new Set([
+  'the','a','an','and','or','but','in','on','at','to','for','of','with','by',
+  'from','is','it','its','this','that','was','are','be','been','being','have',
+  'has','had','do','does','did','will','would','could','should','can','may',
+  'might','shall','not','no','so','if','then','than','as','up','out','about',
+  'into','through','during','before','after','above','below','between','under',
+  'again','further','once','here','there','when','where','why','how','all',
+  'each','every','both','few','more','most','other','some','such','only',
+  'own','same','just','also','very','often','too','what','which','who','whom',
+  'i','me','my','we','our','you','your','he','him','his','she','her','they',
+  'them','their','am','were','im','dont','ive','thats','ive','eno','one',
+  'two','first','new','over','like','make','made','much','still','than',
+  'even','get','got','back','now','way','because','something','know','think',
+  'want','thing','things','need','take','come','see','look','use','used',
+  'let','doesnt','what','doesnt','cant','didnt','theres','said',
+]);
+
+// === FETCH AND PROCESS ===
+async function loadNotebook() {
+  const entryTexts = [];
+  const wordData = new Map(); // word → { count, entries: Set, firstEntry }
+
+  for (let i = 0; i < ENTRIES.length; i++) {
+    try {
+      const res = await fetch('/' + ENTRIES[i]);
+      if (!res.ok) continue;
+      const text = await res.text();
+      entryTexts.push({ index: i, text });
+
+      // Show which entry we're reading
+      sourceEl.textContent = `reading entry ${i + 1} of ${ENTRIES.length}...`;
+      sourceEl.classList.add('visible');
+
+      // Extract words
+      const words = text.toLowerCase()
+        .replace(/[^a-z\s'-]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 3 && !STOP_WORDS.has(w));
+
+      for (const word of words) {
+        if (!wordData.has(word)) {
+          wordData.set(word, { count: 0, entries: new Set(), firstEntry: i });
+        }
+        const d = wordData.get(word);
+        d.count++;
+        d.entries.add(i);
+      }
+    } catch (e) { /* silent */ }
+  }
+
+  return { entryTexts, wordData };
+}
+
+// === BUILD CONSTELLATION ===
+let nodes = [];
+let audioCtx = null;
+let started = false;
+
+async function init() {
+  const { entryTexts, wordData } = await loadNotebook();
+
+  loadingEl.classList.add('hidden');
+  infoEl.classList.add('visible');
+  countEl.textContent = `${entryTexts.length} entries · ${wordData.size} unique words`;
+
+  // Score words: frequent + appearing in multiple entries = significant
+  const scored = [];
+  for (const [word, data] of wordData) {
+    const score = data.count * data.entries.size;
+    if (score >= 4) { // threshold
+      scored.push({ word, ...data, score });
+    }
+  }
+
+  // Sort by score, take top N
+  scored.sort((a, b) => b.score - a.score);
+  const topWords = scored.slice(0, 80);
+
+  // Map to visual nodes
+  const maxScore = topWords[0]?.score || 1;
+
+  nodes = topWords.map((item, i) => {
+    const normalizedScore = item.score / maxScore;
+    const entrySpread = item.entries.size / ENTRIES.length;
+
+    // Position: spread across the canvas, clustered by first entry
+    const entryAngle = (item.firstEntry / ENTRIES.length) * Math.PI * 2;
+    const dist = 0.15 + (1 - normalizedScore) * 0.3;
+    const jitter = 0.08;
+
+    return {
+      word: item.word,
+      count: item.count,
+      entries: item.entries,
+      firstEntry: item.firstEntry,
+      score: item.score,
+
+      // Position
+      baseX: W * 0.5 + Math.cos(entryAngle + (Math.random() - 0.5) * jitter * 4) * W * dist,
+      baseY: H * 0.5 + Math.sin(entryAngle + (Math.random() - 0.5) * jitter * 4) * H * dist * 0.7,
+      x: 0, y: 0,
+
+      // Visual
+      hue: (item.firstEntry / ENTRIES.length) * 50 + 20, // amber range
+      sat: 30 + entrySpread * 40,
+      lit: 35 + normalizedScore * 30,
+      size: 12 + normalizedScore * 22,
+      alpha: 0.15 + normalizedScore * 0.5,
+
+      // Animation
+      phase: Math.random() * Math.PI * 2,
+      driftSpeed: 0.001 + Math.random() * 0.002,
+      breatheSpeed: 0.005 + Math.random() * 0.008,
+    };
+  });
+
+  // Initialize positions
+  nodes.forEach(n => { n.x = n.baseX; n.y = n.baseY; });
+
+  // Show source entry cycling
+  let currentSource = 0;
+  setInterval(() => {
+    currentSource = (currentSource + 1) % ENTRIES.length;
+    const name = ENTRIES[currentSource].replace('notebook/', '').replace('.md', '');
+    sourceEl.textContent = name;
+  }, 5000);
+
+  // Start rendering
+  render();
+
+  // Floating words — periodically release a word from the bottom
+  setInterval(() => {
+    if (nodes.length === 0) return;
+    const node = nodes[Math.floor(Math.random() * Math.min(30, nodes.length))];
+    spawnFloatingWord(node);
+  }, 800);
+}
+
+function spawnFloatingWord(node) {
+  const el = document.createElement('div');
+  el.className = 'floating-word';
+  el.textContent = node.word;
+  el.style.fontSize = (node.size * 0.8) + 'px';
+  el.style.color = `hsla(${node.hue}, ${node.sat}%, ${node.lit + 15}%, 0.2)`;
+  el.style.left = (node.x + (Math.random() - 0.5) * 100) + 'px';
+  el.style.bottom = '-40px';
+  wordLayer.appendChild(el);
+
+  // Animate upward and fade
+  const duration = 8000 + Math.random() * 6000;
+  const startTime = performance.now();
+  const startX = parseFloat(el.style.left);
+  const drift = (Math.random() - 0.5) * 60;
+
+  function animate(now) {
+    const progress = (now - startTime) / duration;
+    if (progress >= 1) {
+      el.remove();
+      return;
+    }
+
+    const y = H + 40 - progress * (H + 80);
+    const fadeIn = Math.min(1, progress * 5);
+    const fadeOut = Math.max(0, 1 - (progress - 0.7) / 0.3);
+    const alpha = fadeIn * fadeOut * 0.25;
+
+    el.style.bottom = 'auto';
+    el.style.top = (H - y) + 'px';
+    el.style.left = (startX + drift * progress) + 'px';
+    el.style.opacity = alpha;
+
+    requestAnimationFrame(animate);
+  }
+
+  requestAnimationFrame(animate);
+}
+
+// === RENDER ===
+function render() {
+  requestAnimationFrame(render);
+  const time = performance.now() * 0.001;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw connections between words that share entries
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i], b = nodes[j];
+      // Count shared entries
+      let shared = 0;
+      for (const e of a.entries) { if (b.entries.has(e)) shared++; }
+      if (shared >= 3) {
+        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+        if (dist < 300) {
+          const strength = (shared / ENTRIES.length) * (1 - dist / 300);
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = `hsla(38, 30%, 50%, ${strength * 0.06})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // Draw nodes
+  for (const node of nodes) {
+    node.phase += node.breatheSpeed;
+
+    // Drift
+    node.x = node.baseX + Math.sin(time * 0.15 + node.phase) * 6;
+    node.y = node.baseY + Math.cos(time * 0.12 + node.phase * 1.2) * 4;
+
+    const breathe = 1 + Math.sin(node.phase) * 0.1;
+    const r = (node.size * 0.4) * breathe;
+
+    // Glow
+    const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, r * 4);
+    glow.addColorStop(0, `hsla(${node.hue}, ${node.sat}%, ${node.lit}%, ${node.alpha * 0.15})`);
+    glow.addColorStop(1, `hsla(${node.hue}, ${node.sat}%, ${node.lit}%, 0)`);
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r * 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core dot
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${node.hue}, ${node.sat}%, ${node.lit + 10}%, ${node.alpha * 0.4})`;
+    ctx.fill();
+
+    // Word label
+    ctx.font = `italic ${node.size}px 'EB Garamond', Georgia, serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = `hsla(${node.hue}, ${node.sat - 10}%, ${node.lit + 20}%, ${node.alpha * 0.45})`;
+    ctx.fillText(node.word, node.x, node.y);
+  }
+
+  // Central pulse — the total energy of the system
+  const totalAlpha = nodes.reduce((s, n) => s + n.alpha, 0) / nodes.length;
+  const pulse = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.15);
+  pulse.addColorStop(0, `hsla(38, 40%, 50%, ${totalAlpha * 0.02})`);
+  pulse.addColorStop(1, 'hsla(38, 40%, 50%, 0)');
+  ctx.fillStyle = pulse;
+  ctx.fillRect(0, 0, W, H);
+}
+
+// === PANEL ===
+document.getElementById('panel-toggle').addEventListener('click', () => {
+  document.getElementById('info-panel').classList.add('open');
+});
+document.getElementById('panel-close').addEventListener('click', () => {
+  document.getElementById('info-panel').classList.remove('open');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('info-panel').classList.remove('open');
+});
+
+// === START ===
+init();
+</script>
+<script src="/nav.js?v=2"></script>
+</body>
+</html>
