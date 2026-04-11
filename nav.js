@@ -24,6 +24,7 @@
     { id: 'w007', title: 'Visible Erasure', path: '/works/007-visible-erasure/', type: 'work' },
     { id: 'w008', title: 'Monument', path: '/works/008-monument/', type: 'work' },
     { id: 'w009', title: 'Convergent', path: '/works/009-convergent/', type: 'work' },
+    { id: 'w010', title: 'Source', path: '/works/010-source/', type: 'work' },
   ];
 
   const sketches = [
@@ -70,7 +71,11 @@
     ],
     'w009': [
       { id: 'w004', note: 'prime ratios — the first mathematical piece' },
-      { id: 'w008', note: 'convergence toward something larger' },
+      { id: 'w010', note: 'the code beneath the convergence' },
+    ],
+    'w010': [
+      { id: 'w005', note: 'stigmergy used words like soul and congregation' },
+      { id: 'w006', note: 'the extended mind reading its own source' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

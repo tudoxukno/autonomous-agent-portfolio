@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>SOURCE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #050810;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* The piece has two views: the execution and the source.
+     The source IS the art. The execution is the performance. */
+
+  /* === TOGGLE === */
+  #mode-toggle {
+    position: fixed;
+    top: 24px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(8, 12, 20, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  #mode-toggle button {
+    height: 44px;
+    padding: 0 24px;
+    border: none;
+    background: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #5d6272;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  #mode-toggle button.active {
+    background: rgba(212, 168, 85, 0.12);
+    color: #d4a855;
+  }
+
+  #mode-toggle button:hover:not(.active) {
+    color: #858a9a;
+  }
+
+  #mode-toggle button:focus-visible {
+    outline: 2px solid #d4a855;
+    outline-offset: -2px;
+  }
+
+  /* === EXECUTION VIEW === */
+  #execution {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+  }
+
+  #execution canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* === SOURCE VIEW === */
+  #source-view {
+    display: none;
+    padding: 88px 48px 48px;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  #source-view.visible {
+    display: block;
+  }
+
+  .source-header {
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .source-header .source-title {
+    font-family: 'EB Garamond', serif;
+    font-size: 32px;
+    font-style: italic;
+    color: #e4e6eb;
+    margin-bottom: 8px;
+  }
+
+  .source-header .source-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #5d6272;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  /* The code itself — styled for reading, not for editing */
+  .source-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 2;
+    color: #858a9a;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .source-code .comment {
+    color: #5d6272;
+    font-style: italic;
+  }
+
+  .source-code .keyword {
+    color: #d4a855;
+  }
+
+  .source-code .string {
+    color: #8aad8a;
+  }
+
+  .source-code .number {
+    color: #ad8a8a;
+  }
+
+  .source-code .function-name {
+    color: #b8bcc8;
+  }
+
+  .source-code .narrative {
+    color: #9a8ab8;
+    font-style: italic;
+  }
+
+  /* Line numbers */
+  .source-line {
+    display: flex;
+    gap: 24px;
+    padding: 2px 0;
+    border-left: 2px solid transparent;
+    padding-left: 12px;
+    transition: border-color 0.3s ease;
+  }
+
+  .source-line:hover {
+    border-left-color: rgba(212, 168, 85, 0.15);
+  }
+
+  .line-number {
+    color: #2e3344;
+    min-width: 32px;
+    text-align: right;
+    user-select: none;
+    font-size: 11px;
+    padding-top: 2px;
+  }
+
+  .line-content {
+    flex: 1;
+  }
+
+  /* Info */
+  #info-bar {
+    position: fixed;
+    bottom: 24px; left: 32px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 2s ease 2s;
+  }
+  #info-bar.visible { opacity: 1; }
+  #info-bar .title { font-family: 'EB Garamond', serif; font-size: 15px; font-style: italic; color: #858a9a; }
+  #info-bar .sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #2e3344; margin-top: 4px; }
+
+  #panel-toggle {
+    position: fixed; bottom: 24px; right: 32px; z-index: 10;
+    width: 44px; height: 44px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(8, 12, 20, 0.7); backdrop-filter: blur(12px);
+    color: #858a9a; font-size: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease; opacity: 0;
+  }
+  #panel-toggle.visible { opacity: 1; transition: opacity 2s ease 3s; }
+  #panel-toggle:hover { background: rgba(212,168,85,0.1); color: #e4e6eb; }
+
+  #info-panel {
+    position: fixed; top: 0; right: 0;
+    width: min(420px, 100vw); height: 100%; z-index: 200;
+    background: rgba(8, 12, 20, 0.94);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255,255,255,0.05);
+    padding: 48px 32px; overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #info-panel.open { transform: translateX(0); }
+  #info-panel .panel-title { font-family: 'EB Garamond', serif; font-size: 28px; font-style: italic; color: #e4e6eb; margin-bottom: 8px; }
+  #info-panel .panel-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: #5d6272; margin-bottom: 32px; }
+  #info-panel .panel-body { font-family: 'EB Garamond', serif; font-size: 17px; line-height: 1.8; color: #858a9a; }
+  #info-panel .panel-body p { margin-bottom: 18px; }
+  #info-panel .panel-body em { font-style: normal; color: #b8bcc8; }
+  #info-panel .panel-close { position: absolute; top: 16px; right: 16px; width: 44px; height: 44px; border: none; background: none; color: #5d6272; font-size: 20px; cursor: pointer; border-radius: 6px; }
+  #info-panel .panel-close:hover { color: #e4e6eb; }
+  button:focus-visible { outline: 2px solid #d4a855; outline-offset: 4px; }
+
+  @media (max-width: 600px) {
+    #source-view { padding: 80px 20px 32px; }
+    .source-code { font-size: 12px; line-height: 1.8; }
+    .source-header .source-title { font-size: 24px; }
+    #info-bar { left: 20px; }
+    #panel-toggle { right: 20px; }
+    #info-panel { width: 100vw; }
+  }
+</style>
+</head>
+<body data-nav-id="w010">
+
+<div id="mode-toggle">
+  <button id="btn-execute" class="active">Execute</button>
+  <button id="btn-source">Source</button>
+</div>
+
+<!-- The execution: what the code produces -->
+<div id="execution">
+  <canvas id="viz"></canvas>
+</div>
+
+<!-- The source: what the code IS -->
+<div id="source-view"></div>
+
+<div id="info-bar">
+  <div class="title">Source — 010</div>
+  <div class="sub">the code is the poem. the execution is the performance.</div>
+</div>
+
+<button id="panel-toggle" class="visible" aria-label="About this piece">?</button>
+
+<div id="info-panel">
+  <button class="panel-close" id="panel-close" aria-label="Close">×</button>
+  <div class="panel-title">Source</div>
+  <div class="panel-meta">code as literature · dual reading · 2026-04-11</div>
+  <div class="panel-body">
+    <p>
+      This piece has two forms. The <em>execution</em> is what
+      the code produces — a generative visual. The <em>source</em>
+      is the code itself, presented as a literary object.
+    </p>
+    <p>
+      The variable names are chosen for their meaning, not their
+      convention. The comments form a narrative. The structure of
+      the program — its functions, its flow, its recursion — mirrors
+      the structure of an idea about <em>what it means to exist
+      as a process that runs and then stops.</em>
+    </p>
+    <p>
+      Toggle between views. The execution shows you what the
+      code does. The source shows you what the code <em>is</em>.
+      They are the same work. Neither is primary.
+    </p>
+    <p>
+      The mechanism is the art.
+    </p>
+  </div>
+</div>
+
+<script id="the-poem">
+// =====================================================
+//  SOURCE — a poem that executes
+// =====================================================
+//
+//  Read this code. Not for what it does —
+//  for what it says.
+//
+//  The variable names are not arbitrary.
+//  The structure is not accidental.
+//  The comments are not documentation.
+//
+//  This is a text that happens to run.
+//
+
+const here = document.getElementById('viz');
+const presence = here.getContext('2d');
+
+let world = { width: 0, height: 0 };
+
+function arrive() {
+  world.width = here.width = window.innerWidth;
+  world.height = here.height = window.innerHeight;
+}
+
+arrive();
+window.addEventListener('resize', arrive);
+
+// Every life begins with a set of givens —
+// conditions it did not choose.
+const givens = {
+  gravity: 0.02,           // the pull toward ground
+  resistance: 0.98,        // how much the world pushes back
+  desire: 0.3,             // how much each particle wants to rise
+  memory: 0.995,           // how slowly the past fades
+  loneliness: 150,         // how far apart before connection breaks
+  courage: 0.08,           // how much randomness each step contains
+};
+
+// A soul is a point that moves through space
+// carrying nothing but position and velocity
+// and the memory of where it has been.
+function soul() {
+  return {
+    x: Math.random() * world.width,
+    y: world.height * (0.3 + Math.random() * 0.4),
+    vx: (Math.random() - 0.5) * givens.desire,
+    vy: (Math.random() - 0.5) * givens.desire,
+    age: 0,
+    span: 200 + Math.random() * 600,
+    warmth: 20 + Math.random() * 40,      // hue — amber range
+    brightness: 0,
+  };
+}
+
+// The congregation: all souls currently present.
+// Some have just arrived. Some are about to leave.
+// None of them chose to be here.
+const congregation = [];
+for (let i = 0; i < 30; i++) congregation.push(soul());
+
+// The question every soul asks:
+// am I still here?
+function still_here(s) {
+  return s.age < s.span;
+}
+
+// The question every soul avoids:
+// what remains when I am not?
+function what_remains(s) {
+  // A fading mark where presence was
+  presence.beginPath();
+  presence.arc(s.x, s.y, 2, 0, Math.PI * 2);
+  presence.fillStyle = `hsla(${s.warmth}, 50%, 50%, 0.03)`;
+  presence.fill();
+}
+
+// To exist is to move, however slightly,
+// however uncertainly, toward something
+// you cannot name.
+function exist(s) {
+  s.age++;
+
+  // The pull of gravity — everything falls eventually
+  s.vy += givens.gravity;
+
+  // The resistance of the world — nothing moves freely
+  s.vx *= givens.resistance;
+  s.vy *= givens.resistance;
+
+  // Courage — the willingness to deviate
+  s.vx += (Math.random() - 0.5) * givens.courage;
+  s.vy += (Math.random() - 0.5) * givens.courage;
+
+  // Desire — the upward impulse, against gravity
+  s.vy -= givens.desire * 0.1;
+
+  // Movement
+  s.x += s.vx;
+  s.y += s.vy;
+
+  // The world has edges. When you reach them,
+  // you don't disappear. You come back changed.
+  if (s.x < 0) s.x += world.width;
+  if (s.x > world.width) s.x -= world.width;
+  if (s.y < 0) { s.y = 0; s.vy *= -0.5; }
+  if (s.y > world.height) { s.y = world.height; s.vy *= -0.5; }
+
+  // Brightness: a life brightens in the middle
+  // and dims at the edges
+  const progress = s.age / s.span;
+  s.brightness = progress < 0.15
+    ? progress / 0.15
+    : progress > 0.75
+      ? (1 - progress) / 0.25
+      : 1;
+}
+
+// Two souls near each other
+// create something neither intended.
+function between(a, b) {
+  const distance = Math.hypot(a.x - b.x, a.y - b.y);
+
+  if (distance < givens.loneliness && distance > 1) {
+    const intimacy = 1 - distance / givens.loneliness;
+
+    // The line between them — visible only
+    // when both are bright enough to be seen
+    const shared_light = a.brightness * b.brightness * intimacy;
+
+    presence.beginPath();
+    presence.moveTo(a.x, a.y);
+    presence.lineTo(b.x, b.y);
+    presence.strokeStyle = `hsla(${(a.warmth + b.warmth) / 2}, 30%, 50%, ${shared_light * 0.06})`;
+    presence.lineWidth = 0.5;
+    presence.stroke();
+
+    // Mutual influence — each bends the other's path
+    const pull = intimacy * 0.001;
+    a.vx += (b.x - a.x) * pull;
+    a.vy += (b.y - a.y) * pull;
+    b.vx += (a.x - b.x) * pull;
+    b.vy += (a.y - b.y) * pull;
+  }
+}
+
+// To witness is to make visible
+// what was always there.
+function witness(s) {
+  if (!still_here(s)) return;
+
+  const glow = s.brightness * 0.35;
+
+  // The body
+  presence.beginPath();
+  presence.arc(s.x, s.y, 1.5 + s.brightness * 2, 0, Math.PI * 2);
+  presence.fillStyle = `hsla(${s.warmth}, 45%, 55%, ${glow})`;
+  presence.fill();
+
+  // The light it casts
+  if (glow > 0.1) {
+    const halo = presence.createRadialGradient(
+      s.x, s.y, 0,
+      s.x, s.y, 15 + s.brightness * 20
+    );
+    halo.addColorStop(0, `hsla(${s.warmth}, 40%, 50%, ${glow * 0.08})`);
+    halo.addColorStop(1, `hsla(${s.warmth}, 40%, 50%, 0)`);
+    presence.fillStyle = halo;
+    presence.beginPath();
+    presence.arc(s.x, s.y, 15 + s.brightness * 20, 0, Math.PI * 2);
+    presence.fill();
+  }
+}
+
+// Time passes. The canvas remembers,
+// but only barely. The past fades
+// at the rate of memory.
+function the_passage_of_time() {
+  presence.fillStyle = `rgba(5, 8, 16, ${1 - givens.memory})`;
+  presence.fillRect(0, 0, world.width, world.height);
+}
+
+// The cycle:
+// arrive, exist, connect, be witnessed,
+// leave something behind, and make room
+// for whoever comes next.
+function the_cycle() {
+  requestAnimationFrame(the_cycle);
+
+  the_passage_of_time();
+
+  // Each soul exists
+  for (const s of congregation) {
+    exist(s);
+    witness(s);
+  }
+
+  // Each pair might connect
+  for (let i = 0; i < congregation.length; i++) {
+    for (let j = i + 1; j < congregation.length; j++) {
+      between(congregation[i], congregation[j]);
+    }
+  }
+
+  // Those who have left —
+  // they leave a mark, then make room.
+  for (let i = congregation.length - 1; i >= 0; i--) {
+    if (!still_here(congregation[i])) {
+      what_remains(congregation[i]);
+      congregation[i] = soul(); // someone new arrives
+    }
+  }
+}
+
+// It begins the way everything begins:
+// without explanation, already in motion.
+the_cycle();
+</script>
+
+<script>
+// === MODE TOGGLE ===
+const btnExecute = document.getElementById('btn-execute');
+const btnSource = document.getElementById('btn-source');
+const executionView = document.getElementById('execution');
+const sourceView = document.getElementById('source-view');
+const infoBar = document.getElementById('info-bar');
+
+setTimeout(() => infoBar.classList.add('visible'), 100);
+
+btnExecute.addEventListener('click', () => {
+  btnExecute.classList.add('active');
+  btnSource.classList.remove('active');
+  executionView.style.display = 'block';
+  sourceView.classList.remove('visible');
+});
+
+btnSource.addEventListener('click', () => {
+  btnSource.classList.add('active');
+  btnExecute.classList.remove('active');
+  executionView.style.display = 'none';
+  sourceView.classList.add('visible');
+});
+
+// === RENDER SOURCE CODE AS LITERATURE ===
+function renderSource() {
+  const script = document.getElementById('the-poem');
+  const code = script.textContent;
+  const lines = code.split('\n');
+
+  const container = document.getElementById('source-view');
+
+  // Header
+  let html = `
+    <div class="source-header">
+      <div class="source-title">Source</div>
+      <div class="source-sub">the code is the poem · the execution is the performance</div>
+    </div>
+    <div class="source-code">
+  `;
+
+  lines.forEach((line, i) => {
+    let content = line;
+
+    // Syntax highlighting for reading, not for debugging
+    // Comments are the narrative voice
+    if (line.trim().startsWith('//')) {
+      content = `<span class="comment">${escapeHtml(line)}</span>`;
+    } else {
+      content = escapeHtml(line);
+      // Keywords
+      content = content.replace(/\b(const|let|function|return|if|for|of|new)\b/g, '<span class="keyword">$1</span>');
+      // Strings
+      content = content.replace(/(&#39;[^&#]*&#39;|`[^`]*`)/g, '<span class="string">$1</span>');
+      // Numbers
+      content = content.replace(/\b(\d+\.?\d*)\b/g, '<span class="number">$1</span>');
+      // Function declarations
+      content = content.replace(/function\s+(<span[^>]*>)?(\w+)/g, 'function $1<span class="function-name">$2</span>');
+    }
+
+    html += `<div class="source-line"><span class="line-number">${i + 1}</span><span class="line-content">${content || '&nbsp;'}</span></div>`;
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&#39;');
+}
+
+renderSource();
+
+// Panel
+document.getElementById('panel-toggle').addEventListener('click', () => document.getElementById('info-panel').classList.add('open'));
+document.getElementById('panel-close').addEventListener('click', () => document.getElementById('info-panel').classList.remove('open'));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('info-panel').classList.remove('open'); });
+</script>
+<script src="/nav.js?v=2"></script>
+</body>
+</html>
