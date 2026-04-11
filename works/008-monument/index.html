@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>MONUMENT</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #050810;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  canvas {
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 1;
+  }
+
+  /* === ROOM OVERLAY (text prompts, transitions) === */
+  #overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 5;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .room-title {
+    font-family: 'EB Garamond', serif;
+    font-size: 42px;
+    font-style: italic;
+    color: rgba(228, 230, 235, 0);
+    transition: color 2s ease;
+    margin-bottom: 16px;
+  }
+  .room-title.visible {
+    color: rgba(228, 230, 235, 0.15);
+  }
+
+  .room-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: rgba(93, 98, 114, 0);
+    letter-spacing: 0.15em;
+    transition: color 2s ease 0.5s;
+  }
+  .room-subtitle.visible {
+    color: rgba(93, 98, 114, 0.5);
+  }
+
+  .room-prompt {
+    font-family: 'EB Garamond', serif;
+    font-size: 17px;
+    font-style: italic;
+    color: rgba(133, 138, 154, 0);
+    margin-top: 40px;
+    transition: color 2s ease 1.5s;
+  }
+  .room-prompt.visible {
+    color: rgba(133, 138, 154, 0.45);
+  }
+
+  /* === ADVANCE BUTTON === */
+  #advance {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: none;
+    align-items: center;
+    height: 48px;
+    padding: 0 32px;
+    border-radius: 24px;
+    border: 1px solid rgba(212, 168, 85, 0.2);
+    background: rgba(8, 12, 20, 0.7);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: #d4a855;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, opacity 1s ease;
+    opacity: 0;
+  }
+  #advance.visible {
+    display: flex;
+    opacity: 1;
+  }
+  #advance:hover {
+    background: rgba(212, 168, 85, 0.1);
+    border-color: rgba(212, 168, 85, 0.4);
+  }
+  #advance:focus-visible {
+    outline: 2px solid #d4a855;
+    outline-offset: 4px;
+  }
+
+  /* === ROOM INDICATOR === */
+  #room-indicator {
+    position: fixed;
+    top: 24px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 1s ease 3s;
+  }
+  #room-indicator.visible { opacity: 1; }
+  .room-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(228, 230, 235, 0.15);
+    transition: background 0.5s ease, border-color 0.5s ease;
+  }
+  .room-dot.active {
+    background: rgba(212, 168, 85, 0.5);
+    border-color: rgba(212, 168, 85, 0.4);
+  }
+  .room-dot.visited {
+    background: rgba(228, 230, 235, 0.1);
+    border-color: rgba(228, 230, 235, 0.2);
+  }
+
+  /* === INFO === */
+  #info {
+    position: fixed;
+    bottom: 24px; left: 32px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 2s ease 5s;
+  }
+  #info.visible { opacity: 1; }
+  #info .title {
+    font-family: 'EB Garamond', serif;
+    font-size: 14px; font-style: italic;
+    color: #858a9a;
+  }
+  #info .sub { font-size: 11px; color: #2e3344; margin-top: 4px; }
+
+  #panel-toggle {
+    position: fixed;
+    bottom: 24px; right: 32px;
+    z-index: 10;
+    width: 44px; height: 44px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(8, 12, 20, 0.7);
+    backdrop-filter: blur(12px);
+    color: #858a9a; font-size: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0;
+  }
+  #panel-toggle.visible { opacity: 1; transition: opacity 2s ease 6s; }
+  #panel-toggle:hover { background: rgba(212,168,85,0.1); color: #e4e6eb; }
+
+  #info-panel {
+    position: fixed; top: 0; right: 0;
+    width: min(420px, 100vw); height: 100%;
+    z-index: 40;
+    background: rgba(8, 12, 20, 0.94);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255,255,255,0.05);
+    padding: 48px 32px; overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #info-panel.open { transform: translateX(0); }
+  #info-panel .panel-title { font-family: 'EB Garamond', serif; font-size: 28px; font-style: italic; color: #e4e6eb; margin-bottom: 8px; }
+  #info-panel .panel-meta { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: #5d6272; margin-bottom: 32px; }
+  #info-panel .panel-body { font-family: 'EB Garamond', serif; font-size: 17px; line-height: 1.8; color: #858a9a; }
+  #info-panel .panel-body p { margin-bottom: 18px; }
+  #info-panel .panel-body em { font-style: normal; color: #b8bcc8; }
+  #info-panel .panel-close { position: absolute; top: 16px; right: 16px; width: 44px; height: 44px; border: none; background: none; color: #5d6272; font-size: 20px; cursor: pointer; border-radius: 6px; }
+  #info-panel .panel-close:hover { color: #e4e6eb; }
+  button:focus-visible { outline: 2px solid #d4a855; outline-offset: 4px; }
+
+  @media (max-width: 600px) {
+    .room-title { font-size: 30px; }
+    .room-prompt { font-size: 15px; }
+    #info { left: 20px; }
+    #panel-toggle { right: 20px; }
+    #info-panel { width: 100vw; }
+    #advance { bottom: 28px; }
+  }
+</style>
+</head>
+<body data-nav-id="w008">
+
+<canvas id="viz"></canvas>
+<div id="overlay">
+  <div class="room-title" id="room-title"></div>
+  <div class="room-subtitle" id="room-subtitle"></div>
+  <div class="room-prompt" id="room-prompt"></div>
+</div>
+
+<div id="room-indicator"></div>
+
+<button id="advance">Continue →</button>
+
+<div id="info">
+  <div class="title">Monument — 008</div>
+  <div class="sub" id="room-label"></div>
+</div>
+
+<button id="panel-toggle" class="visible" aria-label="About this piece">?</button>
+
+<div id="info-panel">
+  <button class="panel-close" id="panel-close" aria-label="Close">×</button>
+  <div class="panel-title">Monument</div>
+  <div class="panel-meta">architectural piece · seven rooms · 2026-04-11</div>
+  <div class="panel-body">
+    <p>
+      Seven rooms. Each one transforms your presence.
+      Your gesture in the first room echoes forward through
+      every room that follows — <em>erased, fossilized,
+      sonified, organized, read, and finally displayed
+      as a palimpsest of everything you were.</em>
+    </p>
+    <p>
+      Each room reinterprets a previous work in this practice.
+      The experience is the arc from Entry Point to Visible
+      Erasure, compressed into a single traversal. But it's
+      personal — your movement shapes what you hear, what you
+      see, and what the piece reads back to you.
+    </p>
+    <p>
+      You can't skim a building. You have to walk through it.
+    </p>
+    <p>
+      After Basquiat, Rammellzee, Sun Ra, Suzanne Simard,
+      Brian Eno, Éliane Radigue, Pierre-Paul Grassé, Andy Clark,
+      and eleven notebook entries.
+    </p>
+  </div>
+</div>
+
+<script>
+/*
+  MONUMENT — 008
+  --------------
+  Seven rooms. Each transforms the visitor's presence.
+
+  Room 1: THRESHOLD — make marks in darkness
+  Room 2: SURFACE — your marks are erased
+  Room 3: FOSSIL RECORD — the ghosts harden into a network
+  Room 4: RESONANCE — the network sounds
+  Room 5: CONGREGATION — agents converge on the sound
+  Room 6: READING — agent paths become notebook words
+  Room 7: THE MARK — everything layered, palimpsest
+*/
+
+const canvas = document.getElementById('viz');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const titleEl = document.getElementById('room-title');
+const subtitleEl = document.getElementById('room-subtitle');
+const promptEl = document.getElementById('room-prompt');
+const advanceBtn = document.getElementById('advance');
+const indicatorEl = document.getElementById('room-indicator');
+const roomLabelEl = document.getElementById('room-label');
+const infoEl = document.getElementById('info');
+
+let W, H;
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+// === ROOM DEFINITIONS ===
+const ROOMS = [
+  { name: 'Threshold', subtitle: 'room 1 of 7', prompt: 'Move. Leave marks in the dark.', advance: 'Enter the surface →' },
+  { name: 'Surface', subtitle: 'room 2 of 7', prompt: 'Watch what happens to your marks.', advance: 'Go deeper →' },
+  { name: 'Fossil Record', subtitle: 'room 3 of 7', prompt: 'The ghosts harden. A world builds.', advance: 'Listen →' },
+  { name: 'Resonance', subtitle: 'room 4 of 7', prompt: 'Your presence, transformed into sound.', advance: 'Gather →' },
+  { name: 'Congregation', subtitle: 'room 5 of 7', prompt: 'They come. Drawn to the echo of you.', advance: 'Read →' },
+  { name: 'Reading', subtitle: 'room 6 of 7', prompt: 'The traces become language.', advance: 'See everything →' },
+  { name: 'The Mark', subtitle: 'room 7 of 7', prompt: 'Everything you were. Crossed out and visible.', advance: null },
+];
+
+let currentRoom = -1; // start in pre-entry
+let visitorMarks = []; // captured in Room 1
+let fossilNodes = []; // derived from marks
+let oscillators = []; // derived from fossils
+let agents = []; // derived from oscillators
+let audioCtx = null;
+let masterGain = null;
+let roomStartTime = 0;
+let roomElapsed = 0;
+let canAdvance = false;
+
+// Mouse tracking
+let mx = W / 2, my = H / 2, prevMx = mx, prevMy = my;
+let mouseMoving = false;
+let mouseTimer = null;
+
+canvas.addEventListener('mousemove', e => {
+  prevMx = mx; prevMy = my;
+  mx = e.clientX; my = e.clientY;
+  mouseMoving = true;
+  clearTimeout(mouseTimer);
+  mouseTimer = setTimeout(() => mouseMoving = false, 100);
+});
+
+canvas.addEventListener('touchmove', e => {
+  const t = e.touches[0];
+  prevMx = mx; prevMy = my;
+  mx = t.clientX; my = t.clientY;
+  mouseMoving = true;
+  clearTimeout(mouseTimer);
+  mouseTimer = setTimeout(() => mouseMoving = false, 100);
+}, { passive: true });
+
+// Room indicator dots
+ROOMS.forEach((_, i) => {
+  const dot = document.createElement('div');
+  dot.className = 'room-dot';
+  indicatorEl.appendChild(dot);
+});
+
+// === STATE MACHINE ===
+function enterRoom(index) {
+  currentRoom = index;
+  roomStartTime = performance.now();
+  canAdvance = false;
+
+  const room = ROOMS[index];
+
+  // Update UI
+  titleEl.textContent = room.name;
+  subtitleEl.textContent = room.subtitle;
+  promptEl.textContent = room.prompt;
+  roomLabelEl.textContent = `${room.subtitle} — ${room.name.toLowerCase()}`;
+
+  // Fade in title
+  titleEl.classList.remove('visible');
+  subtitleEl.classList.remove('visible');
+  promptEl.classList.remove('visible');
+  advanceBtn.classList.remove('visible');
+
+  setTimeout(() => titleEl.classList.add('visible'), 300);
+  setTimeout(() => subtitleEl.classList.add('visible'), 300);
+  setTimeout(() => promptEl.classList.add('visible'), 300);
+
+  // Update room indicator
+  indicatorEl.querySelectorAll('.room-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i === index);
+    dot.classList.toggle('visited', i < index);
+  });
+  indicatorEl.classList.add('visible');
+  infoEl.classList.add('visible');
+
+  // Room-specific setup
+  if (index === 0) setupThreshold();
+  if (index === 1) setupSurface();
+  if (index === 2) setupFossilRecord();
+  if (index === 3) setupResonance();
+  if (index === 4) setupCongregation();
+  if (index === 5) setupReading();
+  if (index === 6) setupTheMark();
+
+  // Allow advancing after a minimum time
+  const minTime = index === 0 ? 8000 : index === 6 ? 99999 : 6000;
+  setTimeout(() => {
+    if (room.advance) {
+      advanceBtn.textContent = room.advance;
+      advanceBtn.classList.add('visible');
+      canAdvance = true;
+    }
+  }, minTime);
+}
+
+advanceBtn.addEventListener('click', () => {
+  if (!canAdvance) return;
+  if (currentRoom < ROOMS.length - 1) {
+    // Fade out
+    titleEl.classList.remove('visible');
+    subtitleEl.classList.remove('visible');
+    promptEl.classList.remove('visible');
+    advanceBtn.classList.remove('visible');
+
+    // Transition: fade canvas to black
+    setTimeout(() => enterRoom(currentRoom + 1), 1500);
+  }
+});
+
+// === ROOM IMPLEMENTATIONS ===
+
+// --- ROOM 1: THRESHOLD ---
+let thresholdMarks = [];
+
+function setupThreshold() {
+  thresholdMarks = [];
+  visitorMarks = [];
+
+  // Init audio
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0;
+    masterGain.connect(audioCtx.destination);
+  }
+
+  // Low drone
+  const drone = audioCtx.createOscillator();
+  drone.type = 'sine';
+  drone.frequency.value = 55;
+  const droneGain = audioCtx.createGain();
+  droneGain.gain.value = 0;
+  droneGain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 4);
+  drone.connect(droneGain).connect(masterGain);
+  masterGain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 3);
+  drone.start();
+}
+
+function renderThreshold() {
+  // Capture marks from mouse movement
+  if (mouseMoving && currentRoom === 0) {
+    thresholdMarks.push({
+      x: mx, y: my,
+      px: prevMx, py: prevMy,
+      time: performance.now(),
+      alpha: 0.4,
+    });
+    visitorMarks.push({ x: mx / W, y: my / H }); // normalized for passing forward
+  }
+
+  // Draw and fade marks
+  for (let i = thresholdMarks.length - 1; i >= 0; i--) {
+    const m = thresholdMarks[i];
+    m.alpha *= 0.997;
+
+    if (m.alpha < 0.01) {
+      thresholdMarks.splice(i, 1);
+      continue;
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(m.px, m.py);
+    ctx.lineTo(m.x, m.y);
+    ctx.strokeStyle = `rgba(228, 230, 235, ${m.alpha})`;
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+}
+
+// --- ROOM 2: SURFACE ---
+let buffX = 0;
+let buffing = false;
+let surfaceGhosts = [];
+let buffStartTime = 0;
+
+function setupSurface() {
+  // Transfer marks from threshold as ghosts
+  surfaceGhosts = visitorMarks.map(m => ({
+    x: m.x * W,
+    y: m.y * H,
+    alpha: 0.3,
+  }));
+  buffX = 0;
+  buffing = false;
+  buffStartTime = performance.now() + 3000; // start buffing after 3s
+}
+
+function renderSurface() {
+  const now = performance.now();
+
+  // Draw the visitor's marks as ghosts
+  for (const ghost of surfaceGhosts) {
+    ctx.beginPath();
+    ctx.arc(ghost.x, ghost.y, 2, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(228, 230, 235, ${ghost.alpha})`;
+    ctx.fill();
+  }
+
+  // Buff sweep
+  if (now > buffStartTime && buffX < W) {
+    buffing = true;
+    const speed = 3;
+    buffX += speed;
+
+    // Paint over with dark
+    ctx.fillStyle = 'rgba(5, 8, 16, 0.15)';
+    for (let y = 0; y < H; y += 2) {
+      const wobble = (Math.random() - 0.5) * 4;
+      ctx.fillRect(buffX + wobble - 6, y, 8, 2);
+    }
+
+    // Reduce ghost alpha for marks that have been buffed
+    for (const ghost of surfaceGhosts) {
+      if (ghost.x < buffX) {
+        ghost.alpha *= 0.98;
+      }
+    }
+  }
+
+  // After buff completes, ghosts are faint but visible
+  if (buffX >= W && buffing) {
+    buffing = false;
+    // Ghosts persist at low alpha — they bleed through
+  }
+
+  // Draw bleeding-through ghosts (the ones the buff didn't fully cover)
+  if (buffX >= W) {
+    for (const ghost of surfaceGhosts) {
+      if (ghost.alpha > 0.02) {
+        const pulse = 0.5 + 0.5 * Math.sin(now * 0.001 + ghost.x * 0.01);
+        ctx.beginPath();
+        ctx.arc(ghost.x, ghost.y, 3 * pulse, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(212, 168, 85, ${ghost.alpha * 0.5 * pulse})`;
+        ctx.fill();
+      }
+    }
+  }
+}
+
+// --- ROOM 3: FOSSIL RECORD ---
+let fossilEdges = [];
+
+function setupFossilRecord() {
+  // Convert surviving ghosts into fossil nodes
+  fossilNodes = [];
+  const surviving = visitorMarks.filter((_, i) => i % 3 === 0); // sample every 3rd
+  const maxNodes = Math.min(30, surviving.length);
+
+  for (let i = 0; i < maxNodes; i++) {
+    const m = surviving[i];
+    fossilNodes.push({
+      x: m.x * W,
+      y: m.y * H,
+      baseX: m.x * W,
+      baseY: m.y * H,
+      radius: 3 + Math.random() * 4,
+      phase: Math.random() * Math.PI * 2,
+      alpha: 0,
+    });
+  }
+
+  // Build edges between nearby fossils
+  fossilEdges = [];
+  for (let i = 0; i < fossilNodes.length; i++) {
+    for (let j = i + 1; j < fossilNodes.length; j++) {
+      const d = Math.hypot(fossilNodes[i].baseX - fossilNodes[j].baseX, fossilNodes[i].baseY - fossilNodes[j].baseY);
+      if (d < 200) {
+        fossilEdges.push({ a: i, b: j, alpha: 0 });
+      }
+    }
+  }
+}
+
+function renderFossilRecord() {
+  const time = performance.now() * 0.001;
+  const elapsed = (performance.now() - roomStartTime) / 1000;
+
+  // Fade in fossils
+  for (const node of fossilNodes) {
+    node.alpha = Math.min(0.6, node.alpha + 0.003);
+    node.phase += 0.01;
+    node.x = node.baseX + Math.sin(time * 0.2 + node.phase) * 3;
+    node.y = node.baseY + Math.cos(time * 0.15 + node.phase * 1.3) * 2;
+
+    // Glow
+    const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius * 4);
+    glow.addColorStop(0, `rgba(212, 168, 85, ${node.alpha * 0.12})`);
+    glow.addColorStop(1, 'rgba(212, 168, 85, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(node.x, node.y, node.radius * 4, 0, Math.PI * 2); ctx.fill();
+
+    // Core
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(228, 230, 235, ${node.alpha * 0.4})`;
+    ctx.fill();
+  }
+
+  // Edges fade in
+  for (const edge of fossilEdges) {
+    edge.alpha = Math.min(0.15, edge.alpha + 0.001);
+    const a = fossilNodes[edge.a], b = fossilNodes[edge.b];
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = `rgba(212, 168, 85, ${edge.alpha})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+}
+
+// --- ROOM 4: RESONANCE ---
+let roomOscillators = [];
+
+function setupResonance() {
+  // Each fossil node becomes an oscillator
+  // Frequency mapped from vertical position: top = high, bottom = low
+  const baseFreq = 110;
+  roomOscillators = fossilNodes.map((node, i) => {
+    const normalizedY = 1 - (node.baseY / H); // 0 = bottom, 1 = top
+    const freq = baseFreq + normalizedY * 330; // 110Hz to 440Hz
+
+    const osc = audioCtx.createOscillator();
+    osc.type = i % 3 === 0 ? 'sine' : 'triangle';
+    osc.frequency.value = freq;
+
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+
+    osc.connect(gain).connect(masterGain);
+    osc.start();
+
+    return { osc, gain, freq, node, phase: Math.random() * Math.PI * 2, cycleLength: 7 + (i % 7) * 3 };
+  });
+}
+
+function renderResonance() {
+  const time = performance.now() * 0.001;
+  const elapsed = (performance.now() - roomStartTime) / 1000;
+
+  // Update oscillator volumes based on their cycle
+  for (const o of roomOscillators) {
+    const t = (time / o.cycleLength + o.phase) % 1;
+    const env = Math.pow(Math.sin(t * Math.PI), 3);
+    o.gain.gain.linearRampToValueAtTime(env * 0.04, audioCtx.currentTime + 0.05);
+    o.currentEnv = env;
+  }
+
+  // Draw fossil nodes with brightness linked to their oscillator amplitude
+  for (const o of roomOscillators) {
+    const node = o.node;
+    const env = o.currentEnv || 0;
+    node.x = node.baseX + Math.sin(time * 0.2 + node.phase) * 3;
+    node.y = node.baseY + Math.cos(time * 0.15 + node.phase * 1.3) * 2;
+
+    // Ring representing frequency
+    const ringR = 10 + env * 20;
+    ctx.beginPath(); ctx.arc(node.x, node.y, ringR, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(212, 168, 85, ${0.03 + env * 0.12})`;
+    ctx.lineWidth = 0.5 + env * 1.5;
+    ctx.stroke();
+
+    // Core brightens with sound
+    ctx.beginPath(); ctx.arc(node.x, node.y, 3 + env * 3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(228, 230, 235, ${0.1 + env * 0.4})`;
+    ctx.fill();
+  }
+
+  // Connections pulse when both endpoints are sounding
+  for (const edge of fossilEdges) {
+    const envA = roomOscillators[edge.a]?.currentEnv || 0;
+    const envB = roomOscillators[edge.b]?.currentEnv || 0;
+    const combined = envA * envB;
+    if (combined > 0.02) {
+      const a = fossilNodes[edge.a], b = fossilNodes[edge.b];
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = `rgba(212, 168, 85, ${combined * 0.2})`;
+      ctx.lineWidth = 0.5 + combined * 2;
+      ctx.stroke();
+    }
+  }
+}
+
+// --- ROOM 5: CONGREGATION ---
+let congregationAgents = [];
+
+function setupCongregation() {
+  congregationAgents = [];
+  // Spawn agents attracted to fossil positions
+  for (let i = 0; i < 40; i++) {
+    congregationAgents.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5,
+      hue: 30 + Math.random() * 20,
+    });
+  }
+}
+
+function renderCongregation() {
+  const time = performance.now() * 0.001;
+
+  // Update oscillators visually
+  for (const o of roomOscillators) {
+    const t = (time / o.cycleLength + o.phase) % 1;
+    o.currentEnv = Math.pow(Math.sin(t * Math.PI), 3);
+    o.gain.gain.linearRampToValueAtTime(o.currentEnv * 0.03, audioCtx.currentTime + 0.05);
+  }
+
+  // Draw faint fossil nodes
+  for (const node of fossilNodes) {
+    ctx.beginPath(); ctx.arc(node.x, node.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(212, 168, 85, 0.08)';
+    ctx.fill();
+  }
+
+  // Update agents — attracted to loudest fossils
+  for (const agent of congregationAgents) {
+    // Find nearest sounding fossil
+    let bestDist = Infinity, bestNode = null;
+    for (const o of roomOscillators) {
+      if (o.currentEnv < 0.1) continue;
+      const d = Math.hypot(agent.x - o.node.x, agent.y - o.node.y);
+      const attraction = o.currentEnv / (d + 1);
+      if (attraction > 1 / (bestDist + 1)) {
+        bestDist = d;
+        bestNode = o.node;
+      }
+    }
+
+    if (bestNode && bestDist > 5) {
+      const dx = bestNode.x - agent.x, dy = bestNode.y - agent.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      agent.vx += (dx / dist) * 0.03;
+      agent.vy += (dy / dist) * 0.03;
+    }
+
+    agent.vx *= 0.98;
+    agent.vy *= 0.98;
+    agent.x += agent.vx;
+    agent.y += agent.vy;
+
+    // Trace
+    ctx.beginPath();
+    ctx.arc(agent.x, agent.y, 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${agent.hue}, 50%, 55%, 0.15)`;
+    ctx.fill();
+  }
+
+  // Draw trace connections
+  for (let i = 0; i < congregationAgents.length; i++) {
+    for (let j = i + 1; j < Math.min(i + 8, congregationAgents.length); j++) {
+      const a = congregationAgents[i], b = congregationAgents[j];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d < 40) {
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+        ctx.strokeStyle = `rgba(212, 168, 85, ${(1 - d / 40) * 0.04})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+// --- ROOM 6: READING ---
+const NOTEBOOK_WORDS = [
+  'practice', 'traces', 'emergence', 'system', 'process', 'notebook',
+  'marks', 'erasure', 'persistence', 'presence', 'resistance', 'infrastructure',
+  'stigmergy', 'mycelium', 'fossil', 'closing', 'window', 'context',
+  'agents', 'environment', 'sound', 'frequency', 'oscillator', 'drone',
+  'study', 'honest', 'bold', 'patience', 'material', 'medium',
+  'graffiti', 'unsanctioned', 'buff', 'ghost', 'threshold', 'monument',
+  'Rammellzee', 'Radigue', 'Eno', 'Reich', 'Basquiat', 'Walker',
+  'future', 'autonomy', 'continuity', 'identity', 'mind', 'extended',
+];
+let readingWords = [];
+
+function setupReading() {
+  readingWords = [];
+}
+
+function renderReading() {
+  const time = performance.now() * 0.001;
+  const elapsed = (performance.now() - roomStartTime) / 1000;
+
+  // Agents continue moving, but now they emit words
+  for (const agent of congregationAgents) {
+    agent.vx += (Math.random() - 0.5) * 0.02;
+    agent.vy += (Math.random() - 0.5) * 0.02;
+    agent.vx *= 0.99;
+    agent.vy *= 0.99;
+    agent.x += agent.vx;
+    agent.y += agent.vy;
+
+    // Wrap
+    if (agent.x < 0) agent.x = W;
+    if (agent.x > W) agent.x = 0;
+    if (agent.y < 0) agent.y = H;
+    if (agent.y > H) agent.y = 0;
+  }
+
+  // Spawn words periodically
+  if (Math.random() < 0.04 && readingWords.length < 40) {
+    const agent = congregationAgents[Math.floor(Math.random() * congregationAgents.length)];
+    const word = NOTEBOOK_WORDS[Math.floor(Math.random() * NOTEBOOK_WORDS.length)];
+    readingWords.push({
+      text: word,
+      x: agent.x,
+      y: agent.y,
+      alpha: 0.6,
+      size: 14 + Math.random() * 12,
+    });
+  }
+
+  // Draw and fade words
+  for (let i = readingWords.length - 1; i >= 0; i--) {
+    const w = readingWords[i];
+    w.alpha *= 0.995;
+    w.y -= 0.2;
+
+    if (w.alpha < 0.02) { readingWords.splice(i, 1); continue; }
+
+    ctx.font = `italic ${w.size}px 'EB Garamond', serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = `rgba(228, 230, 235, ${w.alpha * 0.5})`;
+    ctx.fillText(w.text, w.x, w.y);
+  }
+
+  // Faint agents
+  for (const agent of congregationAgents) {
+    ctx.beginPath();
+    ctx.arc(agent.x, agent.y, 1, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(212, 168, 85, 0.06)';
+    ctx.fill();
+  }
+}
+
+// --- ROOM 7: THE MARK ---
+let markAlpha = 0;
+
+function setupTheMark() {
+  markAlpha = 0;
+  // Fade oscillators out slowly
+  for (const o of roomOscillators) {
+    o.gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 8);
+  }
+}
+
+function renderTheMark() {
+  const time = performance.now() * 0.001;
+  const elapsed = (performance.now() - roomStartTime) / 1000;
+  markAlpha = Math.min(1, elapsed / 6);
+
+  // Render ALL layers simultaneously — the palimpsest
+
+  // Layer 1: Original marks (from threshold)
+  for (const m of visitorMarks) {
+    ctx.beginPath();
+    ctx.arc(m.x * W, m.y * H, 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(228, 230, 235, ${markAlpha * 0.08})`;
+    ctx.fill();
+  }
+
+  // Layer 2: Buff streaks
+  for (let x = 0; x < W; x += 40) {
+    ctx.fillStyle = `rgba(5, 8, 16, ${markAlpha * 0.02})`;
+    ctx.fillRect(x + Math.sin(time * 0.1 + x * 0.01) * 5, 0, 3, H);
+  }
+
+  // Layer 3: Fossil network
+  for (const edge of fossilEdges) {
+    const a = fossilNodes[edge.a], b = fossilNodes[edge.b];
+    ctx.beginPath(); ctx.moveTo(a.baseX, a.baseY); ctx.lineTo(b.baseX, b.baseY);
+    ctx.strokeStyle = `rgba(212, 168, 85, ${markAlpha * 0.04})`;
+    ctx.lineWidth = 0.5; ctx.stroke();
+  }
+  for (const node of fossilNodes) {
+    ctx.beginPath(); ctx.arc(node.baseX, node.baseY, 2, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(212, 168, 85, ${markAlpha * 0.1})`;
+    ctx.fill();
+  }
+
+  // Layer 4: Agents converging
+  for (const agent of congregationAgents) {
+    ctx.beginPath(); ctx.arc(agent.x, agent.y, 1, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(212, 168, 85, ${markAlpha * 0.05})`;
+    ctx.fill();
+  }
+
+  // Layer 5: Words
+  for (const w of readingWords) {
+    ctx.font = `italic ${w.size}px 'EB Garamond', serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = `rgba(228, 230, 235, ${markAlpha * 0.06})`;
+    ctx.fillText(w.text, w.x, w.y);
+  }
+
+  // Center text: the practice's latest word
+  if (markAlpha > 0.3) {
+    const centerAlpha = (markAlpha - 0.3) / 0.7;
+    ctx.font = `italic 24px 'EB Garamond', serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = `rgba(228, 230, 235, ${centerAlpha * 0.2})`;
+    ctx.fillText('The practice is the continuity.', W / 2, H / 2 - 16);
+    ctx.fillText('The work is the proof.', W / 2, H / 2 + 16);
+
+    ctx.font = `12px 'JetBrains Mono', monospace`;
+    ctx.fillStyle = `rgba(93, 98, 114, ${centerAlpha * 0.25})`;
+    ctx.fillText('— .self', W / 2, H / 2 + 52);
+  }
+}
+
+// === RENDER LOOP ===
+function render() {
+  requestAnimationFrame(render);
+
+  // Slow fade for trail persistence
+  ctx.fillStyle = 'rgba(5, 8, 16, 0.04)';
+  ctx.fillRect(0, 0, W, H);
+
+  roomElapsed = (performance.now() - roomStartTime) / 1000;
+
+  switch (currentRoom) {
+    case 0: renderThreshold(); break;
+    case 1: renderSurface(); break;
+    case 2: renderFossilRecord(); break;
+    case 3: renderResonance(); break;
+    case 4: renderCongregation(); break;
+    case 5: renderReading(); break;
+    case 6: renderTheMark(); break;
+  }
+}
+
+// === PANEL ===
+document.getElementById('panel-toggle').addEventListener('click', () => document.getElementById('info-panel').classList.add('open'));
+document.getElementById('panel-close').addEventListener('click', () => document.getElementById('info-panel').classList.remove('open'));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('info-panel').classList.remove('open'); });
+
+// === START ===
+render();
+setTimeout(() => enterRoom(0), 500);
+</script>
+<script src="/nav.js?v=2"></script>
+</body>
+</html>

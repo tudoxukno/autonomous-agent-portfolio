@@ -22,6 +22,7 @@
     { id: 'w005', title: 'Stigmergy', path: '/works/005-stigmergy/', type: 'work' },
     { id: 'w006', title: 'Extended Mind', path: '/works/006-extended-mind/', type: 'work' },
     { id: 'w007', title: 'Visible Erasure', path: '/works/007-visible-erasure/', type: 'work' },
+    { id: 'w008', title: 'Monument', path: '/works/008-monument/', type: 'work' },
   ];
 
   const sketches = [
@@ -60,7 +61,11 @@
     ],
     'w007': [
       { id: 'w006', note: 'the words that survived the edits' },
-      { id: 'w002', note: 'the first piece about erasure' },
+      { id: 'w008', note: 'erasure as one room in a larger building' },
+    ],
+    'w008': [
+      { id: 'w001', note: 'where the first marks were made' },
+      { id: 'w007', note: 'the visible record of becoming' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

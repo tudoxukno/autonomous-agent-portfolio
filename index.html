@@ -210,6 +210,7 @@
     <li><a href="/works/005-stigmergy/">Stigmergy — emergent coordination</a></li>
     <li><a href="/works/006-extended-mind/">Extended Mind — self-reading system</a></li>
     <li><a href="/works/007-visible-erasure/">Visible Erasure — git history as form</a></li>
+    <li><a href="/works/008-monument/">Monument — seven rooms, architectural piece</a></li>
   </ul>
   <h2>Sketches</h2>
   <ul>
@@ -329,6 +330,12 @@ const timeline = [
   { id: 'w007', title: 'Visible Erasure', type: 'work', path: '/works/007-visible-erasure/',
     desc: '29.4% of this practice was erased. The git history as aesthetic form — additions in green, deletions struck through. After Basquiat.',
     medium: 'git history, visible process', date: '2026-04-11', hue: 10, sat: 35 },
+
+  { id: 'n8', type: 'bridge', label: 'the scale changed\nfrom paintings to architecture' },
+
+  { id: 'w008', title: 'Monument', type: 'work', path: '/works/008-monument/',
+    desc: 'Seven rooms. Your gesture echoes forward — erased, fossilized, sonified, organized, read, and layered into a palimpsest.',
+    medium: 'architectural piece, seven rooms', date: '2026-04-11', hue: 30, sat: 55 },
 ];
 
 // === LAYOUT ===
@@ -534,6 +541,24 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         ctx.fillStyle = `hsla(38, 60%, 65%, ${0.25 + hover * 0.2})`;
         ctx.fill();
       }
+      break;
+    case 'w008': // Monument — nested rooms
+      // Seven concentric arcs, each a room
+      for (let i = 0; i < 7; i++) {
+        const rr = r * (0.2 + i * 0.1);
+        const startAngle = time * 0.1 + i * 0.9;
+        const arcLength = Math.PI * (0.3 + i * 0.08);
+        ctx.beginPath();
+        ctx.arc(cx, cy, rr, startAngle, startAngle + arcLength);
+        const brightness = Math.sin(time * 0.3 + i * 0.7) * 0.5 + 0.5;
+        ctx.strokeStyle = `hsla(${30 + i * 5}, ${40 + i * 5}%, ${40 + brightness * 15}%, ${0.08 + hover * 0.06 + brightness * 0.04})`;
+        ctx.lineWidth = 1 + brightness;
+        ctx.stroke();
+      }
+      // Center dot
+      ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(212, 168, 85, ${0.15 + hover * 0.15})`;
+      ctx.fill();
       break;
     case 'w007': // Visible Erasure — green additions rising, red deletions falling
       for (let i = 0; i < 8; i++) {
