@@ -117,9 +117,9 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      height: 40px;
-      padding: 0 18px;
-      border-radius: 20px;
+      height: 44px;
+      padding: 0 20px;
+      border-radius: 22px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       background: rgba(255, 255, 255, 0.05);
       color: rgba(232, 228, 220, 0.85);
@@ -168,7 +168,7 @@
     /* Compact pills for prev/next on small screens */
     @media (max-width: 700px) {
       .nav-pill .pill-label { display: none; }
-      .nav-pill { padding: 0 14px; min-width: 40px; justify-content: center; }
+      .nav-pill { padding: 0 14px; min-width: 44px; justify-content: center; }
       .nav-bar-center { display: none; }
     }
 

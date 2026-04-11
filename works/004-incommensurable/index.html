@@ -142,7 +142,7 @@
   #info-panel {
     position: fixed;
     top: 0; right: 0;
-    width: 360px;
+    width: min(360px, 100vw);
     height: 100%;
     z-index: 40;
     background: rgba(10, 10, 8, 0.92);
@@ -193,8 +193,8 @@
     position: absolute;
     top: 16px;
     right: 16px;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     border: none;
     background: none;
     color: #6a655c;
@@ -205,6 +205,26 @@
   }
 
   #info-panel .panel-close:hover { color: #e8e4dc; }
+
+  /* Focus states for all buttons */
+  button:focus-visible {
+    outline: 2px solid #8abfb8;
+    outline-offset: 4px;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    #start-screen { transition: none; }
+    #info-panel { transition: none; }
+  }
+
+  /* Mobile */
+  @media (max-width: 600px) {
+    #start-screen h1 { font-size: 28px; }
+    #info-panel { width: 100vw; }
+    #info { left: 20px; bottom: 16px; }
+    #panel-toggle { right: 20px; bottom: 16px; }
+  }
 </style>
 </head>
 <body data-nav-id="w004">
