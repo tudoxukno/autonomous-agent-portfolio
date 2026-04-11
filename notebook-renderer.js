@@ -1,37 +1,42 @@
 /*
-  notebook-renderer.js
-  --------------------
-  Hand-rolled markdown parser and notebook rendering system.
-  Handles the subset of markdown actually used in the notebook:
-  headings, bold, italic, lists, rules, inline code, links, paragraphs.
-  No dependencies. No AST. Just honest text transformation.
+  notebook-renderer.js — v2
+  -------------------------
+  Hand-rolled markdown parser + notebook rendering.
+  Now extracts title, date, mood from frontmatter.
+  Renders entries as distinct cards with visible metadata.
+  Builds a sidebar index for jumping between entries.
 */
 
 function parseInline(text) {
   return text
-    // inline code (protect first)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
-    // links
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-    // bold
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    // italic (single *)
     .replace(/\*([^*]+)\*/g, '<em>$1</em>');
 }
 
 function parseMarkdown(text) {
-  // Extract date from frontmatter-style line
+  // Extract metadata from the header block
+  let title = '';
   let date = '';
+  let mood = '';
+
+  const titleMatch = text.match(/^# (.+)/m);
+  if (titleMatch) title = titleMatch[1].trim();
+
   const dateMatch = text.match(/\*\*Date:\*\*\s*(.+)/);
   if (dateMatch) date = dateMatch[1].trim();
 
-  // Strip the title line and metadata block (everything before first ---)
+  const moodMatch = text.match(/\*\*Mood:\*\*\s*(.+)/);
+  if (moodMatch) mood = moodMatch[1].trim();
+
+  // Strip everything before first ---
   const firstRule = text.indexOf('\n---');
   if (firstRule !== -1) {
     text = text.substring(firstRule + 4).trim();
   }
 
-  // Split into blocks by double newline
+  // Split into blocks
   const blocks = text.split(/\n\n+/);
   const html = [];
 
@@ -39,13 +44,8 @@ function parseMarkdown(text) {
     const trimmed = block.trim();
     if (!trimmed) continue;
 
-    // Horizontal rule
-    if (/^---+$/.test(trimmed)) {
-      html.push('<hr>');
-      continue;
-    }
+    if (/^---+$/.test(trimmed)) { html.push('<hr>'); continue; }
 
-    // Heading
     if (trimmed.startsWith('### ')) {
       html.push(`<h3>${parseInline(trimmed.slice(4))}</h3>`);
       continue;
@@ -59,7 +59,6 @@ function parseMarkdown(text) {
       continue;
     }
 
-    // List (lines starting with -)
     const lines = trimmed.split('\n');
     if (lines.every(l => l.trim().startsWith('- '))) {
       const items = lines.map(l => `<li>${parseInline(l.trim().slice(2))}</li>`);
@@ -67,34 +66,60 @@ function parseMarkdown(text) {
       continue;
     }
 
-    // Paragraph (may contain line breaks)
     const joined = lines.map(l => parseInline(l)).join(' ');
     html.push(`<p>${joined}</p>`);
   }
 
-  return { html: html.join('\n'), date };
+  return { html: html.join('\n'), title, date, mood };
 }
 
 async function renderNotebook(container, entries) {
-  const fragments = [];
+  const parsed = [];
 
   for (const entry of entries) {
     try {
       const res = await fetch(entry.path);
       if (!res.ok) continue;
       const text = await res.text();
-      const { html, date } = parseMarkdown(text);
-
-      fragments.push(`
-        <article class="notebook-entry">
-          ${date ? `<div class="entry-date">${date}</div>` : ''}
-          ${html}
-        </article>
-      `);
-    } catch (e) {
-      // Silent failure — the entry simply doesn't appear
-    }
+      const result = parseMarkdown(text);
+      result.path = entry.path;
+      parsed.push(result);
+    } catch (e) { /* silent */ }
   }
+
+  // Build sidebar index
+  const sidebar = document.createElement('nav');
+  sidebar.className = 'notebook-sidebar';
+  sidebar.setAttribute('aria-label', 'Notebook entries');
+  sidebar.innerHTML = `<div class="sidebar-label">Entries</div>`;
+
+  parsed.forEach((entry, i) => {
+    const link = document.createElement('a');
+    link.href = `#entry-${i}`;
+    link.className = 'sidebar-entry';
+    link.innerHTML = `
+      <span class="sidebar-title">${entry.title || `Entry ${parsed.length - i}`}</span>
+      <span class="sidebar-date">${entry.date}</span>
+    `;
+    sidebar.appendChild(link);
+  });
+
+  // Insert sidebar before the container
+  container.parentElement.insertBefore(sidebar, container);
+
+  // Build entries
+  const fragments = parsed.map((entry, i) => `
+    <article class="notebook-entry" id="entry-${i}">
+      <div class="entry-header">
+        <div class="entry-number">${entry.title || `Entry ${parsed.length - i}`}</div>
+        <div class="entry-date">${entry.date}</div>
+        ${entry.mood ? `<div class="entry-mood">${entry.mood}</div>` : ''}
+      </div>
+      <div class="entry-body">
+        ${entry.html}
+      </div>
+    </article>
+  `);
 
   container.innerHTML = fragments.join('');
   container.classList.add('loaded');
@@ -105,9 +130,8 @@ async function renderLatestEntry(container, entry) {
     const res = await fetch(entry.path);
     if (!res.ok) return;
     const text = await res.text();
-    const { html, date } = parseMarkdown(text);
+    const { html, title, date, mood } = parseMarkdown(text);
 
-    // Show only content up to second ## heading (first section)
     const doc = document.createElement('div');
     doc.innerHTML = html;
     const children = Array.from(doc.children);
@@ -124,12 +148,16 @@ async function renderLatestEntry(container, entry) {
 
     container.innerHTML = `
       <article class="notebook-entry">
-        ${date ? `<div class="entry-date">${date}</div>` : ''}
-        ${preview.join('\n')}
+        <div class="entry-header">
+          <div class="entry-number">${title}</div>
+          <div class="entry-date">${date}</div>
+          ${mood ? `<div class="entry-mood">${mood}</div>` : ''}
+        </div>
+        <div class="entry-body">
+          ${preview.join('\n')}
+        </div>
       </article>
     `;
     container.classList.add('loaded');
-  } catch (e) {
-    // Silent
-  }
+  } catch (e) { /* silent */ }
 }

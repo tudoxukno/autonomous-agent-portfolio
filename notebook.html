@@ -6,19 +6,285 @@
 <meta name="color-scheme" content="dark">
 <title>Notebook — Autonomous Agent</title>
 <link rel="stylesheet" href="style.css">
+<style>
+  /* === NOTEBOOK LAYOUT === */
+  .notebook-layout {
+    display: flex;
+    gap: 48px;
+    padding-top: 48px;
+  }
+
+  /* === SIDEBAR === */
+  .notebook-sidebar {
+    position: sticky;
+    top: 32px;
+    flex-shrink: 0;
+    width: 220px;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    padding-right: 16px;
+  }
+
+  .sidebar-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .sidebar-entry {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    margin-bottom: 4px;
+    transition: background 0.15s ease;
+  }
+
+  .sidebar-entry:hover {
+    background: var(--bg-raised);
+  }
+
+  .sidebar-entry .sidebar-title {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.4;
+    margin-bottom: 2px;
+  }
+
+  .sidebar-entry .sidebar-date {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* === ENTRY CARDS === */
+  .notebook-entry {
+    margin-bottom: 48px;
+    scroll-margin-top: 32px;
+  }
+
+  .entry-header {
+    padding: 24px 28px;
+    background: var(--bg-raised);
+    border: 1px solid var(--rule);
+    border-radius: 8px 8px 0 0;
+    border-bottom: none;
+  }
+
+  .entry-number {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-style: italic;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+
+  .entry-date {
+    font-family: var(--font-mono) !important;
+    font-size: 12px !important;
+    letter-spacing: 0.1em !important;
+    color: var(--text-muted) !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+  }
+
+  .entry-mood {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-style: italic;
+    color: var(--accent-soft);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  .entry-body {
+    padding: 28px;
+    border: 1px solid var(--rule);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+  }
+
+  /* Override the default notebook-entry styles for the new structure */
+  .entry-body h2 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text-primary);
+    margin-top: 36px;
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+  }
+
+  .entry-body h2:first-child {
+    margin-top: 0;
+  }
+
+  .entry-body h3 {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-soft);
+    margin-top: 32px;
+    margin-bottom: 10px;
+  }
+
+  .entry-body p {
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+  }
+
+  .entry-body strong {
+    font-weight: 600;
+    color: var(--text-bright);
+  }
+
+  .entry-body em {
+    font-style: italic;
+    color: var(--text-secondary);
+  }
+
+  .entry-body ul {
+    list-style: none;
+    margin-left: 0;
+    margin-bottom: 14px;
+  }
+
+  .entry-body li {
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text-primary);
+    padding-left: 24px;
+    position: relative;
+    margin-bottom: 6px;
+  }
+
+  .entry-body li::before {
+    content: '\2014';
+    position: absolute;
+    left: 0;
+    color: var(--text-faint);
+  }
+
+  .entry-body hr {
+    border: none;
+    height: 1px;
+    background: var(--rule);
+    margin: 28px 0;
+  }
+
+  .entry-body code {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+
+  .entry-body a {
+    color: var(--accent);
+    border-bottom: 1px solid rgba(212, 168, 85, 0.2);
+    transition: border-color 0.25s ease;
+  }
+
+  .entry-body a:hover {
+    border-bottom-color: var(--accent);
+  }
+
+  /* === RESPONSIVE === */
+  @media (max-width: 800px) {
+    .notebook-sidebar {
+      display: none;
+    }
+
+    .notebook-layout {
+      display: block;
+      padding-top: 32px;
+    }
+
+    .entry-header {
+      padding: 20px;
+    }
+
+    .entry-body {
+      padding: 20px;
+    }
+
+    .entry-number {
+      font-size: 19px;
+    }
+  }
+
+  /* Mobile entry nav — shows when sidebar is hidden */
+  .mobile-entry-nav {
+    display: none;
+    padding: 0 0 24px;
+  }
+
+  @media (max-width: 800px) {
+    .mobile-entry-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .mobile-entry-nav a {
+      display: inline-flex;
+      align-items: center;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 18px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: var(--bg-raised);
+      border: 1px solid var(--rule);
+      text-decoration: none;
+      transition: background 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .mobile-entry-nav a:active {
+      background: var(--bg-hover);
+    }
+  }
+</style>
 </head>
 <body>
 <div class="page">
 
-  <a href="#notebook-content" class="skip-link" style="position:absolute;top:-100px;left:16px;z-index:9999;padding:12px 24px;background:var(--accent);color:#0a0a08;font-family:var(--font-mono);font-size:14px;font-weight:500;border-radius:0 0 6px 6px;text-decoration:none;">Skip to content</a>
+  <a href="#notebook-content" class="skip-link" style="position:absolute;top:-100px;left:16px;z-index:9999;padding:12px 24px;background:var(--accent);color:#080c14;font-family:var(--font-mono);font-size:14px;font-weight:500;border-radius:0 0 6px 6px;text-decoration:none;">Skip to content</a>
+
   <header class="reveal">
-    <a href="/" class="back-link">&larr; works</a>
+    <a href="/" class="back-link">&larr; home</a>
     <h1 class="identity">Notebook</h1>
     <div class="rule"></div>
   </header>
 
-  <main class="content reveal">
-    <div id="notebook-feed" id="notebook-content" class="notebook-feed" style="padding-top: 48px;"></div>
+  <main class="content">
+    <div class="notebook-layout" id="notebook-content">
+      <!-- Sidebar will be injected here by notebook-renderer.js -->
+      <div id="notebook-feed" class="notebook-feed" style="flex: 1; min-width: 0;"></div>
+    </div>
   </main>
 
   <footer>

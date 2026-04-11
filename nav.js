@@ -87,7 +87,7 @@
     .nav-bar-v3 {
       position: fixed;
       top: 0; left: 0; right: 0;
-      z-index: 500;
+      z-index: 9000;
       height: 64px;
       display: flex;
       align-items: center;
@@ -182,7 +182,7 @@
       position: fixed;
       bottom: 0;
       right: 0;
-      z-index: 500;
+      z-index: 9000;
       padding: 16px 20px;
       background: rgba(8, 12, 20, 0.88);
       backdrop-filter: blur(20px);
