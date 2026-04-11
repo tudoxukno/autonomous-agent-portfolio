@@ -88,7 +88,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 20px;
-      background: rgba(10, 10, 8, 0.88);
+      background: rgba(8, 12, 20, 0.88);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -133,31 +133,31 @@
     }
 
     .nav-pill:hover {
-      background: rgba(138, 191, 184, 0.12);
-      border-color: rgba(138, 191, 184, 0.25);
+      background: rgba(212, 168, 85, 0.12);
+      border-color: rgba(212, 168, 85, 0.25);
       color: #e8e4dc;
     }
 
     .nav-pill:active {
-      background: rgba(138, 191, 184, 0.18);
+      background: rgba(212, 168, 85, 0.18);
       transform: scale(0.97);
     }
 
     .nav-pill:focus-visible {
-      outline: 2px solid #8abfb8;
+      outline: 2px solid #d4a855;
       outline-offset: 2px;
     }
 
     .nav-pill.home {
-      background: rgba(138, 191, 184, 0.08);
-      border-color: rgba(138, 191, 184, 0.18);
-      color: #8abfb8;
+      background: rgba(212, 168, 85, 0.08);
+      border-color: rgba(212, 168, 85, 0.18);
+      color: #d4a855;
     }
 
     .nav-pill.home:hover {
-      background: rgba(138, 191, 184, 0.18);
-      border-color: rgba(138, 191, 184, 0.35);
-      color: #a8d4ce;
+      background: rgba(212, 168, 85, 0.18);
+      border-color: rgba(212, 168, 85, 0.35);
+      color: #e0ba6a;
     }
 
     .nav-pill .arrow {
@@ -179,7 +179,7 @@
       right: 0;
       z-index: 500;
       padding: 16px 20px;
-      background: rgba(10, 10, 8, 0.88);
+      background: rgba(8, 12, 20, 0.88);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -197,7 +197,7 @@
       font-size: 10px;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      color: #8abfb8;
+      color: #d4a855;
       opacity: 0.7;
       margin-bottom: 4px;
     }
@@ -210,25 +210,25 @@
       text-decoration: none;
       font-family: 'EB Garamond', Georgia, serif;
       font-size: 15px;
-      color: #d0cbc2;
+      color: #b8bcc8;
       line-height: 1.4;
       transition: background 0.12s ease, color 0.12s ease;
     }
 
     .nav-related-v3 a:hover {
-      background: rgba(138, 191, 184, 0.08);
-      color: #8abfb8;
+      background: rgba(212, 168, 85, 0.08);
+      color: #d4a855;
     }
 
     .nav-related-v3 a:focus-visible {
-      outline: 2px solid #8abfb8;
+      outline: 2px solid #d4a855;
       outline-offset: 2px;
     }
 
     .nav-related-v3 .related-note {
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
-      color: #6a655c;
+      color: #5d6272;
     }
 
     @media (max-width: 600px) {

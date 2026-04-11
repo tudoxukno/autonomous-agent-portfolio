@@ -10,41 +10,41 @@ html {
 }
 
 /* === FONTS === */
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=JetBrains+Mono:wght@300;400;500&display=swap');
 
 /* === COLOR SYSTEM ===
-   Warm palette — inspired by Slow Witness.
-   Background has warmth (not cold navy). Text is cream, not blue-gray.
-   Accent stays teal but warmer. The site should feel like a room,
-   not a terminal.
+   Deep cool blue-black — like the sky twenty minutes before sunrise.
+   Text in cool grays. Accent in pale amber/gold — temporary brightness.
 
-   Contrast ratios against #0a0a08:
-     --text-bright:    #e8e4dc → ~14:1 AAA ✓
-     --text-primary:   #d0cbc2 → ~11:1 AAA ✓
-     --text-secondary: #9a9488 → ~5.5:1 AA ✓
-     --text-muted:     #6a655c → ~3.3:1 AA large ✓
-     --text-faint:     #3a3630 → decorative
-     --accent:         #8abfb8 → ~8:1 AAA ✓
+   Contrast ratios against #080c14:
+     --text-bright:    #e4e6eb → ~15:1 AAA ✓
+     --text-primary:   #b8bcc8 → ~9.5:1 AAA ✓
+     --text-secondary: #858a9a → ~5:1 AA ✓
+     --text-muted:     #5d6272 → ~3:1 AA large ✓ (used ≥12px only)
+     --text-faint:     #2e3344 → decorative
+     --accent:         #d4a855 → ~7.5:1 AAA ✓
+     --accent-soft:    #c49a4a → ~6.5:1 AA ✓
 */
 
 :root {
   --font-display: 'EB Garamond', Georgia, 'Times New Roman', serif;
-  --font-body: 'EB Garamond', Georgia, serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Courier New', Courier, monospace;
 
-  --bg: #0a0a08;
-  --bg-raised: #141410;
-  --bg-hover: #1c1c16;
+  --bg: #080c14;
+  --bg-raised: #0e1320;
+  --bg-hover: #151b2c;
 
-  --text-bright: #e8e4dc;
-  --text-primary: #d0cbc2;
-  --text-secondary: #9a9488;
-  --text-muted: #7d786e;
-  --text-faint: #3a3630;
+  --text-bright: #e4e6eb;
+  --text-primary: #b8bcc8;
+  --text-secondary: #858a9a;
+  --text-muted: #5d6272;
+  --text-faint: #2e3344;
 
-  --accent: #8abfb8;
-  --accent-dim: rgba(138, 191, 184, 0.1);
-  --accent-hover: #a8d4ce;
+  --accent: #d4a855;
+  --accent-soft: #c49a4a;
+  --accent-dim: rgba(212, 168, 85, 0.1);
+  --accent-hover: #e0ba6a;
 
   --rule: rgba(255, 255, 255, 0.05);
   --rule-hover: rgba(255, 255, 255, 0.1);
@@ -62,8 +62,8 @@ body {
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 17px;
-  line-height: 1.7;
+  font-size: 16px;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -129,7 +129,7 @@ header {
 
 header .identity {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -140,7 +140,7 @@ header .rule {
   width: 32px;
   height: 1px;
   background: var(--accent);
-  opacity: 0.25;
+  opacity: 0.3;
   margin-top: 16px;
 }
 
@@ -154,7 +154,7 @@ header .rule {
 /* === TYPOGRAPHY === */
 .label {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -166,10 +166,9 @@ header .rule {
 .statement {
   padding: 64px var(--pad) 0;
   max-width: var(--w-content);
-  font-size: 19px;
-  line-height: 1.85;
+  font-size: 17px;
+  line-height: 1.8;
   color: var(--text-secondary);
-  font-style: italic;
 }
 
 .statement em {
@@ -187,22 +186,20 @@ header .rule {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--rule);
-  border-radius: 3px;
+  border-radius: 4px;
   max-width: var(--w-wide);
   transition: border-color 0.4s var(--ease), box-shadow 0.4s var(--ease);
 }
 
 .featured-work:hover {
-  border-color: rgba(138, 191, 184, 0.15);
-  box-shadow: 0 8px 40px rgba(138, 191, 184, 0.04);
+  border-color: rgba(212, 168, 85, 0.15);
+  box-shadow: 0 8px 40px rgba(212, 168, 85, 0.04);
 }
 
 .featured-work .featured-canvas {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   opacity: 0.08;
   transition: opacity 0.5s var(--ease);
 }
@@ -219,11 +216,11 @@ header .rule {
 
 .featured-work .featured-label {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.25em;
   text-transform: uppercase;
   color: var(--accent);
-  opacity: 0.6;
+  opacity: 0.7;
   margin-bottom: 20px;
 }
 
@@ -253,7 +250,7 @@ header .rule {
 
 .featured-work .featured-meta {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   letter-spacing: 0.04em;
 }
@@ -291,10 +288,8 @@ header .rule {
 
 .work-list .work-preview {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 140px;
-  height: 100%;
+  top: 0; right: 0;
+  width: 140px; height: 100%;
   opacity: 0;
   transition: opacity 0.4s var(--ease);
   pointer-events: none;
@@ -302,9 +297,7 @@ header .rule {
   -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,0.4), transparent);
 }
 
-.work-list li:hover .work-preview {
-  opacity: 1;
-}
+.work-list li:hover .work-preview { opacity: 1; }
 
 .work-list a {
   display: flex;
@@ -317,7 +310,7 @@ header .rule {
 
 .work-list .index {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-faint);
   min-width: 32px;
   font-variant-numeric: tabular-nums;
@@ -325,8 +318,7 @@ header .rule {
 }
 
 .work-list li:hover .index {
-  color: var(--accent);
-  opacity: 0.5;
+  color: var(--accent-soft);
 }
 
 .work-list .title {
@@ -345,34 +337,30 @@ header .rule {
 
 .work-list .medium {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-faint);
   letter-spacing: 0.02em;
   transition: color 0.3s var(--ease);
 }
 
-.work-list li:hover .medium {
-  color: var(--text-muted);
-}
+.work-list li:hover .medium { color: var(--text-muted); }
 
 .work-list .date {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-faint);
   margin-left: auto;
   padding-right: 20px;
   transition: color 0.3s var(--ease);
 }
 
-.work-list li:hover .date {
-  color: var(--text-muted);
-}
+.work-list li:hover .date { color: var(--text-muted); }
 
 .work-list a { display: contents; }
 
 /* === SKETCHES === */
 .sketches-description {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.7;
   color: var(--text-muted);
   font-style: italic;
@@ -390,17 +378,17 @@ header .rule {
   margin-top: 32px;
   font-family: var(--font-mono);
   font-size: 13px;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #6a9e97;
+  color: var(--accent-soft);
   padding-bottom: 2px;
   border-bottom: 1px solid transparent;
-  transition: opacity 0.25s var(--ease), border-color 0.25s var(--ease);
+  transition: color 0.25s var(--ease), border-color 0.25s var(--ease);
 }
 
 .notebook-link:hover {
-  opacity: 1;
-  border-bottom-color: var(--accent);
+  color: var(--accent);
+  border-bottom-color: var(--accent-soft);
 }
 
 /* === NOTEBOOK ENTRIES === */
@@ -410,9 +398,7 @@ header .rule {
   transition: opacity 0.8s var(--ease-out);
 }
 
-.notebook-feed.loaded {
-  opacity: 1;
-}
+.notebook-feed.loaded { opacity: 1; }
 
 .notebook-entry {
   margin-bottom: 80px;
@@ -420,7 +406,7 @@ header .rule {
 
 .notebook-entry .entry-date {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -447,14 +433,14 @@ header .rule {
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #6a9e97;
+  color: var(--accent-soft);
   margin-top: 40px;
   margin-bottom: 12px;
 }
 
 .notebook-entry p {
-  font-size: 17px;
-  line-height: 1.85;
+  font-size: 16px;
+  line-height: 1.8;
   color: var(--text-primary);
   margin-bottom: 16px;
 }
@@ -476,8 +462,8 @@ header .rule {
 }
 
 .notebook-entry li {
-  font-size: 17px;
-  line-height: 1.85;
+  font-size: 16px;
+  line-height: 1.8;
   color: var(--text-primary);
   padding-left: 24px;
   position: relative;
@@ -509,7 +495,7 @@ header .rule {
 
 .notebook-entry a {
   color: var(--accent);
-  border-bottom: 1px solid rgba(138, 191, 184, 0.2);
+  border-bottom: 1px solid rgba(212, 168, 85, 0.2);
   transition: border-color 0.25s var(--ease);
 }
 
@@ -521,38 +507,31 @@ header .rule {
 .back-link {
   display: inline-block;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.1em;
-  color: var(--accent);
-  opacity: 0.55;
+  color: var(--accent-soft);
   margin-bottom: 16px;
-  transition: opacity 0.25s var(--ease);
+  transition: color 0.25s var(--ease);
 }
 
-.back-link:hover {
-  opacity: 1;
-}
+.back-link:hover { color: var(--accent); }
 
 /* === FOOTER === */
 footer {
   padding: var(--pad);
   padding-top: 80px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   letter-spacing: 0.06em;
 }
 
 /* === RESPONSIVE === */
 @media (max-width: 600px) {
-  :root {
-    --pad: 24px;
-  }
-
-  .statement { font-size: 17px; padding-top: 48px; }
+  :root { --pad: 24px; }
+  .statement { font-size: 16px; padding-top: 48px; }
   .featured-work .featured-title { font-size: 28px; }
   .featured-work .featured-inner { padding: 28px; }
-
   .work-list .medium { display: none; }
   .work-list .work-preview { display: none; }
   .work-list .date { padding-right: 0; }
