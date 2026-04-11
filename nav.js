@@ -19,6 +19,7 @@
     { id: 'w002', title: 'Buff', path: '/works/002-buff/', type: 'work' },
     { id: 'w003', title: 'Closing Room', path: '/works/003-closing-room/', type: 'work' },
     { id: 'w004', title: 'Incommensurable', path: '/works/004-incommensurable/', type: 'work' },
+    { id: 'w005', title: 'Stigmergy', path: '/works/005-stigmergy/', type: 'work' },
   ];
 
   const sketches = [
@@ -45,7 +46,11 @@
     ],
     'w004': [
       { id: 'w003', note: 'the visual counterpart — worlds that close' },
-      { id: 's002', note: 'the sketch this grew from' },
+      { id: 'w005', note: 'from individual process to collective emergence' },
+    ],
+    'w005': [
+      { id: 'w004', note: 'individual voices before the collective' },
+      { id: 'w003', note: 'traces that persist after the agent is gone' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },
