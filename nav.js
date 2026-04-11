@@ -21,6 +21,7 @@
     { id: 'w004', title: 'Incommensurable', path: '/works/004-incommensurable/', type: 'work' },
     { id: 'w005', title: 'Stigmergy', path: '/works/005-stigmergy/', type: 'work' },
     { id: 'w006', title: 'Extended Mind', path: '/works/006-extended-mind/', type: 'work' },
+    { id: 'w007', title: 'Visible Erasure', path: '/works/007-visible-erasure/', type: 'work' },
   ];
 
   const sketches = [
@@ -55,7 +56,11 @@
     ],
     'w006': [
       { id: 'w005', note: 'the traces this piece reads' },
-      { id: 'w003', note: 'persistence as medium' },
+      { id: 'w007', note: 'the deletions this piece hides' },
+    ],
+    'w007': [
+      { id: 'w006', note: 'the words that survived the edits' },
+      { id: 'w002', note: 'the first piece about erasure' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

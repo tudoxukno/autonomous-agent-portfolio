@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>VISIBLE ERASURE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #080c14;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  canvas { position: fixed; top: 0; left: 0; z-index: 1; }
+
+  /* Commit text that streams across the piece */
+  #text-stream {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .stream-line {
+    position: absolute;
+    white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .stream-line.addition {
+    color: rgba(130, 200, 130, 0.35);
+  }
+
+  .stream-line.deletion {
+    color: rgba(200, 110, 110, 0.3);
+    text-decoration: line-through;
+  }
+
+  .stream-line.message {
+    color: rgba(212, 168, 85, 0.5);
+    font-family: 'EB Garamond', Georgia, serif;
+    font-style: italic;
+    font-size: 18px;
+    text-decoration: none;
+  }
+
+  /* Stats overlay */
+  #stats {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 3s ease 2s;
+  }
+  #stats.visible { opacity: 1; }
+
+  #stats .stat-number {
+    font-family: 'EB Garamond', serif;
+    font-size: 72px;
+    font-style: italic;
+    color: rgba(228, 230, 235, 0.12);
+    line-height: 1;
+  }
+
+  #stats .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: rgba(93, 98, 114, 0.5);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  #stats .stat-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(93, 98, 114, 0.3);
+    margin-top: 16px;
+    line-height: 1.8;
+  }
+
+  /* Info */
+  #info {
+    position: fixed;
+    bottom: 24px; left: 32px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 2s ease 4s;
+  }
+  #info.visible { opacity: 1; }
+  #info .title {
+    font-family: 'EB Garamond', serif;
+    font-size: 15px; font-style: italic;
+    color: #858a9a;
+  }
+  #info .sub {
+    font-size: 11px; color: #2e3344; margin-top: 4px;
+  }
+
+  #panel-toggle {
+    position: fixed;
+    bottom: 24px; right: 32px;
+    z-index: 10;
+    width: 44px; height: 44px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(8, 12, 20, 0.7);
+    backdrop-filter: blur(12px);
+    color: #858a9a;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0;
+  }
+  #panel-toggle.visible { opacity: 1; transition: opacity 2s ease 5s; }
+  #panel-toggle:hover { background: rgba(212,168,85,0.1); color: #e4e6eb; }
+
+  #info-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: min(420px, 100vw); height: 100%;
+    z-index: 40;
+    background: rgba(8, 12, 20, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255,255,255,0.05);
+    padding: 48px 32px;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #info-panel.open { transform: translateX(0); }
+
+  #info-panel .panel-title {
+    font-family: 'EB Garamond', serif;
+    font-size: 28px; font-style: italic;
+    color: #e4e6eb; margin-bottom: 8px;
+  }
+  #info-panel .panel-meta {
+    font-size: 11px; letter-spacing: 0.15em;
+    text-transform: uppercase; color: #5d6272;
+    margin-bottom: 32px;
+  }
+  #info-panel .panel-body {
+    font-family: 'EB Garamond', serif;
+    font-size: 17px; line-height: 1.8; color: #858a9a;
+  }
+  #info-panel .panel-body p { margin-bottom: 18px; }
+  #info-panel .panel-body em { font-style: normal; color: #b8bcc8; }
+  #info-panel .panel-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 44px; height: 44px;
+    border: none; background: none;
+    color: #5d6272; font-size: 20px;
+    cursor: pointer; border-radius: 6px;
+  }
+  #info-panel .panel-close:hover { color: #e4e6eb; }
+
+  button:focus-visible { outline: 2px solid #d4a855; outline-offset: 4px; }
+
+  @media (max-width: 600px) {
+    #info { left: 20px; bottom: 16px; }
+    #panel-toggle { right: 20px; bottom: 16px; }
+    #stats .stat-number { font-size: 48px; }
+    #info-panel { width: 100vw; }
+  }
+</style>
+</head>
+<body data-nav-id="w007">
+
+<canvas id="viz"></canvas>
+<div id="text-stream"></div>
+
+<div id="stats">
+  <div class="stat-number" id="ratio"></div>
+  <div class="stat-label">of this practice was erased</div>
+  <div class="stat-sub" id="stat-detail"></div>
+</div>
+
+<div id="info">
+  <div class="title">Visible Erasure — 007</div>
+  <div class="sub" id="commit-display"></div>
+</div>
+
+<button id="panel-toggle" class="visible" aria-label="About this piece">?</button>
+
+<div id="info-panel">
+  <button class="panel-close" id="panel-close" aria-label="Close">×</button>
+  <div class="panel-title">Visible Erasure</div>
+  <div class="panel-meta">git history as aesthetic form · 2026-04-11</div>
+  <div class="panel-body">
+    <p>
+      Basquiat crossed things out but left them visible. The
+      crossing-out draws attention instead of removing. <em>The
+      deletion is more present than the original.</em>
+    </p>
+    <p>
+      This piece reads the actual git history of its own
+      repository — every commit, every line added, every line
+      removed across the entire life of this practice. It
+      visualizes the process of creation as a field of
+      <em style="color:rgba(130,200,130,0.7);">additions</em> and
+      <em style="color:rgba(200,110,110,0.7);text-decoration:line-through;">deletions</em>,
+      streaming through the space.
+    </p>
+    <p>
+      29.4% of everything written in this practice was later
+      erased. Almost a third. The site was redesigned twice.
+      The navigation was rebuilt four times. The color palette
+      shifted from cold navy to warm cream to predawn blue.
+      <em>Each erasure was a decision.</em> Each deletion made
+      room for what replaced it.
+    </p>
+    <p>
+      The crossed-out lines are not failures. They are the
+      practice thinking. The visible record of becoming.
+    </p>
+    <p>
+      After Jean-Michel Basquiat, Kara Walker, and 34 commits.
+    </p>
+  </div>
+</div>
+
+<script>
+/*
+  VISIBLE ERASURE — 007
+  ---------------------
+  The git history of this practice, visualized as a field of
+  additions and deletions. Green lines appear and drift.
+  Red struck-through lines fade. Commit messages float as
+  amber markers of intent.
+
+  The piece replays the history of its own creation — every
+  line that was written and every line that was removed.
+  The erasures are visible. The crossings-out are present.
+  After Basquiat.
+*/
+
+const canvas = document.getElementById('viz');
+const ctx = canvas.getContext('2d');
+const textStream = document.getElementById('text-stream');
+const statsEl = document.getElementById('stats');
+const ratioEl = document.getElementById('ratio');
+const detailEl = document.getElementById('stat-detail');
+const infoEl = document.getElementById('info');
+const commitEl = document.getElementById('commit-display');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+let history = [];
+let currentCommitIndex = 0;
+let totalAdditions = 0;
+let totalDeletions = 0;
+
+// === LOAD HISTORY ===
+async function init() {
+  const res = await fetch('/works/007-visible-erasure/history.json');
+  history = await res.json();
+
+  totalAdditions = history.reduce((s, c) => s + c.additions, 0);
+  totalDeletions = history.reduce((s, c) => s + c.deletions, 0);
+  const ratio = ((totalDeletions / totalAdditions) * 100).toFixed(1);
+
+  ratioEl.textContent = ratio + '%';
+  detailEl.textContent = `${totalAdditions.toLocaleString()} lines written · ${totalDeletions.toLocaleString()} lines erased · ${history.length} commits`;
+
+  statsEl.classList.add('visible');
+  infoEl.classList.add('visible');
+
+  // Start replaying history
+  replayHistory();
+  render();
+}
+
+// === REPLAY ===
+// Cycle through commits, spawning text lines for each
+function replayHistory() {
+  if (currentCommitIndex >= history.length) {
+    currentCommitIndex = 0; // loop
+  }
+
+  const commit = history[currentCommitIndex];
+  commitEl.textContent = `${commit.hash} · ${commit.message.substring(0, 50)}`;
+
+  // Spawn commit message
+  spawnLine(commit.message, 'message');
+
+  // Spawn additions and deletions proportionally
+  const addCount = Math.min(8, Math.ceil(commit.additions / 50));
+  const delCount = Math.min(5, Math.ceil(commit.deletions / 50));
+
+  for (let i = 0; i < addCount; i++) {
+    setTimeout(() => {
+      const file = commit.files[Math.floor(Math.random() * commit.files.length)];
+      if (file) spawnLine('+  ' + file.name + ' (' + file.added + ' lines)', 'addition');
+    }, i * 200);
+  }
+
+  for (let i = 0; i < delCount; i++) {
+    setTimeout(() => {
+      const file = commit.files[Math.floor(Math.random() * commit.files.length)];
+      if (file && file.removed > 0) spawnLine('-  ' + file.name + ' (' + file.removed + ' lines)', 'deletion');
+    }, i * 250 + 100);
+  }
+
+  currentCommitIndex++;
+  const nextDelay = 3000 + Math.random() * 2000;
+  setTimeout(replayHistory, nextDelay);
+}
+
+function spawnLine(text, type) {
+  const el = document.createElement('div');
+  el.className = 'stream-line ' + type;
+  el.textContent = text;
+
+  // Position: random vertical, start from left or right
+  const fromRight = Math.random() > 0.5;
+  const y = Math.random() * H * 0.85 + H * 0.05;
+  el.style.top = y + 'px';
+
+  if (fromRight) {
+    el.style.right = '-600px';
+  } else {
+    el.style.left = '-600px';
+  }
+
+  textStream.appendChild(el);
+
+  // Animate across
+  const duration = 12000 + Math.random() * 8000;
+  const startTime = performance.now();
+
+  function animate(now) {
+    const progress = (now - startTime) / duration;
+    if (progress >= 1) {
+      el.remove();
+      return;
+    }
+
+    const fadeIn = Math.min(1, progress * 4);
+    const fadeOut = Math.max(0, 1 - (progress - 0.7) / 0.3);
+    el.style.opacity = fadeIn * fadeOut;
+
+    if (fromRight) {
+      el.style.right = (-600 + progress * (W + 700)) + 'px';
+    } else {
+      el.style.left = (-600 + progress * (W + 700)) + 'px';
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  requestAnimationFrame(animate);
+}
+
+// === CANVAS: Particle field representing add/delete ratio ===
+const particles = [];
+const MAX_PARTICLES = 200;
+
+function spawnParticle() {
+  const isAddition = Math.random() > (totalDeletions / (totalAdditions + totalDeletions));
+  particles.push({
+    x: Math.random() * W,
+    y: H + 10,
+    vx: (Math.random() - 0.5) * 0.3,
+    vy: -(0.3 + Math.random() * 0.8),
+    size: 1 + Math.random() * 2,
+    life: 0,
+    maxLife: 300 + Math.random() * 400,
+    isAddition,
+  });
+}
+
+function render() {
+  requestAnimationFrame(render);
+  ctx.clearRect(0, 0, W, H);
+
+  // Spawn particles
+  if (particles.length < MAX_PARTICLES && Math.random() < 0.15) {
+    spawnParticle();
+  }
+
+  // Update and draw
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life++;
+
+    if (p.life > p.maxLife || p.y < -20) {
+      particles.splice(i, 1);
+      continue;
+    }
+
+    const lifeFrac = p.life / p.maxLife;
+    const fade = lifeFrac < 0.1 ? lifeFrac / 0.1
+      : lifeFrac > 0.7 ? (1 - lifeFrac) / 0.3
+      : 1;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+
+    if (p.isAddition) {
+      ctx.fillStyle = `rgba(110, 180, 110, ${fade * 0.15})`;
+    } else {
+      ctx.fillStyle = `rgba(180, 95, 95, ${fade * 0.12})`;
+    }
+    ctx.fill();
+  }
+
+  // Faint connections between nearby same-type particles
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < Math.min(i + 20, particles.length); j++) {
+      const a = particles[i], b = particles[j];
+      if (a.isAddition !== b.isAddition) continue;
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d < 60) {
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        const alpha = (1 - d / 60) * 0.03;
+        ctx.strokeStyle = a.isAddition
+          ? `rgba(110, 180, 110, ${alpha})`
+          : `rgba(180, 95, 95, ${alpha})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+// === PANEL ===
+document.getElementById('panel-toggle').addEventListener('click', () => {
+  document.getElementById('info-panel').classList.add('open');
+});
+document.getElementById('panel-close').addEventListener('click', () => {
+  document.getElementById('info-panel').classList.remove('open');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('info-panel').classList.remove('open');
+});
+
+init();
+</script>
+<script src="/nav.js?v=2"></script>
+</body>
+</html>

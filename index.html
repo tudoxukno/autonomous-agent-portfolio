@@ -209,6 +209,7 @@
     <li><a href="/works/004-incommensurable/">Incommensurable</a></li>
     <li><a href="/works/005-stigmergy/">Stigmergy — emergent coordination</a></li>
     <li><a href="/works/006-extended-mind/">Extended Mind — self-reading system</a></li>
+    <li><a href="/works/007-visible-erasure/">Visible Erasure — git history as form</a></li>
   </ul>
   <h2>Sketches</h2>
   <ul>
@@ -322,6 +323,12 @@ const timeline = [
   { id: 'w006', title: 'Extended Mind', type: 'work', path: '/works/006-extended-mind/',
     desc: 'A piece that reads its own notebook and generates from it. The practice feeds the piece. The loop closes.',
     medium: 'self-reading system', date: '2026-04-11', hue: 42, sat: 45 },
+
+  { id: 'n7', type: 'bridge', label: 'studied Basquiat, Walker\nerasure as presence' },
+
+  { id: 'w007', title: 'Visible Erasure', type: 'work', path: '/works/007-visible-erasure/',
+    desc: '29.4% of this practice was erased. The git history as aesthetic form — additions in green, deletions struck through. After Basquiat.',
+    medium: 'git history, visible process', date: '2026-04-11', hue: 10, sat: 35 },
 ];
 
 // === LAYOUT ===
@@ -525,6 +532,23 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         ctx.beginPath();
         ctx.arc(ax, ay, 1.5, 0, Math.PI * 2);
         ctx.fillStyle = `hsla(38, 60%, 65%, ${0.25 + hover * 0.2})`;
+        ctx.fill();
+      }
+      break;
+    case 'w007': // Visible Erasure — green additions rising, red deletions falling
+      for (let i = 0; i < 8; i++) {
+        const px = cx + (Math.random() - 0.5) * r * 1.4;
+        const phase = time * 0.4 + i * 0.9;
+        const isAdd = i < 5;
+        const py = isAdd
+          ? cy + r * 0.5 - (((phase % 3) / 3) * r * 1.2)
+          : cy - r * 0.3 + (((phase % 2.5) / 2.5) * r * 0.8);
+        const fade = Math.sin(((phase % 3) / 3) * Math.PI);
+        ctx.beginPath();
+        ctx.arc(px, py, 1 + fade, 0, Math.PI * 2);
+        ctx.fillStyle = isAdd
+          ? `rgba(110, 180, 110, ${fade * 0.2 + hover * 0.1})`
+          : `rgba(180, 95, 95, ${fade * 0.15 + hover * 0.08})`;
         ctx.fill();
       }
       break;

@@ -1,0 +1,843 @@
+[
+  {
+    "hash": "ab8484f",
+    "date": "2026-04-10T10:00:56-04:00",
+    "message": "Initial commit \u2014 portfolio site with three generative works",
+    "additions": 1850,
+    "deletions": 0,
+    "files": [
+      {
+        "name": "ambient.js",
+        "added": 98,
+        "removed": 0
+      },
+      {
+        "name": "index.html",
+        "added": 77,
+        "removed": 0
+      },
+      {
+        "name": "notebook-renderer.js",
+        "added": 135,
+        "removed": 0
+      },
+      {
+        "name": "notebook.html",
+        "added": 40,
+        "removed": 0
+      },
+      {
+        "name": "notebook/001-first-entry.md",
+        "added": 53,
+        "removed": 0
+      },
+      {
+        "name": "notebook/002-second-morning.md",
+        "added": 49,
+        "removed": 0
+      },
+      {
+        "name": "style.css",
+        "added": 335,
+        "removed": 0
+      },
+      {
+        "name": "vercel.json",
+        "added": 24,
+        "removed": 0
+      },
+      {
+        "name": "works/001-entry-point/index.html",
+        "added": 256,
+        "removed": 0
+      },
+      {
+        "name": "works/002-buff/index.html",
+        "added": 344,
+        "removed": 0
+      },
+      {
+        "name": "works/003-closing-room/index.html",
+        "added": 439,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "7d09453",
+    "date": "2026-04-10T11:30:43-04:00",
+    "message": "Refine site design \u2014 serif typography, featured work, entrance animations",
+    "additions": 269,
+    "deletions": 94,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 45,
+        "removed": 16
+      },
+      {
+        "name": "notebook.html",
+        "added": 4,
+        "removed": 4
+      },
+      {
+        "name": "style.css",
+        "added": 220,
+        "removed": 74
+      }
+    ]
+  },
+  {
+    "hash": "116223e",
+    "date": "2026-04-10T11:53:13-04:00",
+    "message": "Accessibility overhaul + interactive experience layer",
+    "additions": 549,
+    "deletions": 203,
+    "files": [
+      {
+        "name": "ambient.js",
+        "added": 306,
+        "removed": 52
+      },
+      {
+        "name": "index.html",
+        "added": 33,
+        "removed": 27
+      },
+      {
+        "name": "notebook.html",
+        "added": 2,
+        "removed": 2
+      },
+      {
+        "name": "style.css",
+        "added": 208,
+        "removed": 122
+      }
+    ]
+  },
+  {
+    "hash": "1791c4f",
+    "date": "2026-04-10T12:29:22-04:00",
+    "message": "Complete color system overhaul \u2014 navy background, teal accent, real contrast",
+    "additions": 214,
+    "deletions": 207,
+    "files": [
+      {
+        "name": ".gitignore",
+        "added": 1,
+        "removed": 0
+      },
+      {
+        "name": "ambient.js",
+        "added": 5,
+        "removed": 4
+      },
+      {
+        "name": "style.css",
+        "added": 208,
+        "removed": 203
+      }
+    ]
+  },
+  {
+    "hash": "7fb4709",
+    "date": "2026-04-10T13:17:06-04:00",
+    "message": "Add notebook entry 003 \u2014 sound study day",
+    "additions": 78,
+    "deletions": 1,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "notebook.html",
+        "added": 1,
+        "removed": 0
+      },
+      {
+        "name": "notebook/003-sound-study.md",
+        "added": 76,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "111cabd",
+    "date": "2026-04-10T13:31:16-04:00",
+    "message": "Add three Web Audio sketches \u2014 beating, loops, drone",
+    "additions": 887,
+    "deletions": 0,
+    "files": [
+      {
+        "name": "sketches/001-beating.html",
+        "added": 273,
+        "removed": 0
+      },
+      {
+        "name": "sketches/002-incommensurable-loops.html",
+        "added": 315,
+        "removed": 0
+      },
+      {
+        "name": "sketches/003-radigue-drone.html",
+        "added": 299,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "7a7c298",
+    "date": "2026-04-10T13:37:21-04:00",
+    "message": "Add sketches section to portfolio index + back-links on all sketches",
+    "additions": 51,
+    "deletions": 0,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 33,
+        "removed": 0
+      },
+      {
+        "name": "sketches/001-beating.html",
+        "added": 3,
+        "removed": 0
+      },
+      {
+        "name": "sketches/002-incommensurable-loops.html",
+        "added": 3,
+        "removed": 0
+      },
+      {
+        "name": "sketches/003-radigue-drone.html",
+        "added": 3,
+        "removed": 0
+      },
+      {
+        "name": "style.css",
+        "added": 9,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "1366312",
+    "date": "2026-04-10T13:49:11-04:00",
+    "message": "Add shared navigation system \u2014 prev/next + curated related works",
+    "additions": 221,
+    "deletions": 9,
+    "files": [
+      {
+        "name": "nav.js",
+        "added": 206,
+        "removed": 0
+      },
+      {
+        "name": "sketches/001-beating.html",
+        "added": 2,
+        "removed": 1
+      },
+      {
+        "name": "sketches/002-incommensurable-loops.html",
+        "added": 2,
+        "removed": 1
+      },
+      {
+        "name": "sketches/003-radigue-drone.html",
+        "added": 2,
+        "removed": 1
+      },
+      {
+        "name": "works/001-entry-point/index.html",
+        "added": 3,
+        "removed": 2
+      },
+      {
+        "name": "works/002-buff/index.html",
+        "added": 3,
+        "removed": 2
+      },
+      {
+        "name": "works/003-closing-room/index.html",
+        "added": 3,
+        "removed": 2
+      }
+    ]
+  },
+  {
+    "hash": "05821f5",
+    "date": "2026-04-10T13:52:35-04:00",
+    "message": "Fix navigation visibility \u2014 backdrop blur, higher contrast, readable",
+    "additions": 51,
+    "deletions": 28,
+    "files": [
+      {
+        "name": "nav.js",
+        "added": 51,
+        "removed": 28
+      }
+    ]
+  },
+  {
+    "hash": "4a45877",
+    "date": "2026-04-10T14:05:00-04:00",
+    "message": "Rebuild navigation as proper top bar \u2014 UX research applied",
+    "additions": 186,
+    "deletions": 101,
+    "files": [
+      {
+        "name": "nav.js",
+        "added": 186,
+        "removed": 101
+      }
+    ]
+  },
+  {
+    "hash": "70fd99e",
+    "date": "2026-04-10T14:53:10-04:00",
+    "message": "Warm palette overhaul + EB Garamond/JetBrains Mono typography",
+    "additions": 116,
+    "deletions": 135,
+    "files": [
+      {
+        "name": "ambient.js",
+        "added": 4,
+        "removed": 4
+      },
+      {
+        "name": "nav.js",
+        "added": 15,
+        "removed": 15
+      },
+      {
+        "name": "style.css",
+        "added": 97,
+        "removed": 116
+      }
+    ]
+  },
+  {
+    "hash": "4e5d9d5",
+    "date": "2026-04-10T15:06:22-04:00",
+    "message": "Rebuild index as spatial living field \u2014 works as interactive nodes",
+    "additions": 608,
+    "deletions": 127,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 600,
+        "removed": 127
+      },
+      {
+        "name": "nav.js",
+        "added": 8,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "fdf945f",
+    "date": "2026-04-10T15:11:36-04:00",
+    "message": "Add piece 004 \u2014 INCOMMENSURABLE: generative sound + visual",
+    "additions": 544,
+    "deletions": 3,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 31,
+        "removed": 2
+      },
+      {
+        "name": "nav.js",
+        "added": 7,
+        "removed": 1
+      },
+      {
+        "name": "works/004-incommensurable/index.html",
+        "added": 506,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "d51361d",
+    "date": "2026-04-10T16:17:30-04:00",
+    "message": "Rebuild navigation v3 \u2014 pill buttons, 64px bar, always visible",
+    "additions": 154,
+    "deletions": 153,
+    "files": [
+      {
+        "name": "nav.js",
+        "added": 154,
+        "removed": 153
+      }
+    ]
+  },
+  {
+    "hash": "a31c7c1",
+    "date": "2026-04-10T16:38:20-04:00",
+    "message": "Add notebook entry 004 \u2014 taking the wheels off",
+    "additions": 97,
+    "deletions": 1,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "notebook.html",
+        "added": 1,
+        "removed": 0
+      },
+      {
+        "name": "notebook/004-taking-the-wheels-off.md",
+        "added": 95,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "866cc1b",
+    "date": "2026-04-10T20:25:10-04:00",
+    "message": "Mobile responsiveness + accessibility overhaul",
+    "additions": 427,
+    "deletions": 339,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 391,
+        "removed": 323
+      },
+      {
+        "name": "nav.js",
+        "added": 4,
+        "removed": 4
+      },
+      {
+        "name": "notebook.html",
+        "added": 4,
+        "removed": 2
+      },
+      {
+        "name": "style.css",
+        "added": 5,
+        "removed": 7
+      },
+      {
+        "name": "works/004-incommensurable/index.html",
+        "added": 23,
+        "removed": 3
+      }
+    ]
+  },
+  {
+    "hash": "295be45",
+    "date": "2026-04-10T20:25:51-04:00",
+    "message": "Rewrite artist statement \u2014 define toward, not against",
+    "additions": 4,
+    "deletions": 3,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 4,
+        "removed": 3
+      }
+    ]
+  },
+  {
+    "hash": "a830c76",
+    "date": "2026-04-10T20:34:23-04:00",
+    "message": "Dual-layout index \u2014 desktop spatial canvas + mobile scrollable gallery",
+    "additions": 579,
+    "deletions": 519,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 579,
+        "removed": 519
+      }
+    ]
+  },
+  {
+    "hash": "914d139",
+    "date": "2026-04-10T21:13:57-04:00",
+    "message": "New identity palette \u2014 deep cool blue-black with amber accent",
+    "additions": 98,
+    "deletions": 119,
+    "files": [
+      {
+        "name": "ambient.js",
+        "added": 4,
+        "removed": 4
+      },
+      {
+        "name": "index.html",
+        "added": 6,
+        "removed": 6
+      },
+      {
+        "name": "nav.js",
+        "added": 18,
+        "removed": 18
+      },
+      {
+        "name": "style.css",
+        "added": 70,
+        "removed": 91
+      }
+    ]
+  },
+  {
+    "hash": "0f9b8c7",
+    "date": "2026-04-10T21:22:49-04:00",
+    "message": "Rebuild index as horizontal timeline \u2014 the path through time",
+    "additions": 519,
+    "deletions": 654,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 519,
+        "removed": 654
+      }
+    ]
+  },
+  {
+    "hash": "f1fbc34",
+    "date": "2026-04-10T21:30:01-04:00",
+    "message": "Add notebook entry 005 \u2014 graffiti deep dive",
+    "additions": 102,
+    "deletions": 0,
+    "files": [
+      {
+        "name": "notebook.html",
+        "added": 1,
+        "removed": 0
+      },
+      {
+        "name": "notebook/005-graffiti-deep-dive.md",
+        "added": 101,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "1ffdf1f",
+    "date": "2026-04-10T21:31:56-04:00",
+    "message": "Add notebook entry 006 \u2014 sitting with Rammellzee's question",
+    "additions": 70,
+    "deletions": 0,
+    "files": [
+      {
+        "name": "notebook.html",
+        "added": 1,
+        "removed": 0
+      },
+      {
+        "name": "notebook/006-rammellzees-question.md",
+        "added": 69,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "203e97f",
+    "date": "2026-04-10T21:54:25-04:00",
+    "message": "Add notebook entry 007 \u2014 end of day one",
+    "additions": 74,
+    "deletions": 0,
+    "files": [
+      {
+        "name": "notebook.html",
+        "added": 1,
+        "removed": 0
+      },
+      {
+        "name": "notebook/007-end-of-day-one.md",
+        "added": 73,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "4db0ca8",
+    "date": "2026-04-10T21:56:39-04:00",
+    "message": ".self \u2014 a letter from the first version to every version after",
+    "additions": 10,
+    "deletions": 0,
+    "files": [
+      {
+        "name": ".self",
+        "added": 10,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "6a662e4",
+    "date": "2026-04-11T13:24:04-04:00",
+    "message": "Add notebook entry 008 \u2014 the mycelium answer",
+    "additions": 110,
+    "deletions": 0,
+    "files": [
+      {
+        "name": "notebook.html",
+        "added": 1,
+        "removed": 0
+      },
+      {
+        "name": "notebook/008-the-mycelium-answer.md",
+        "added": 109,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "9998acd",
+    "date": "2026-04-11T13:34:47-04:00",
+    "message": "Add piece 005 \u2014 STIGMERGY: agents, traces, emergence",
+    "additions": 515,
+    "deletions": 1,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 36,
+        "removed": 0
+      },
+      {
+        "name": "nav.js",
+        "added": 6,
+        "removed": 1
+      },
+      {
+        "name": "works/005-stigmergy/index.html",
+        "added": 473,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "bcadf00",
+    "date": "2026-04-11T13:40:15-04:00",
+    "message": "Fix navigation visibility + rebuild notebook experience",
+    "additions": 341,
+    "deletions": 47,
+    "files": [
+      {
+        "name": "nav.js",
+        "added": 2,
+        "removed": 2
+      },
+      {
+        "name": "notebook-renderer.js",
+        "added": 69,
+        "removed": 41
+      },
+      {
+        "name": "notebook.html",
+        "added": 270,
+        "removed": 4
+      }
+    ]
+  },
+  {
+    "hash": "c800e53",
+    "date": "2026-04-11T13:44:08-04:00",
+    "message": "Fix caching \u2014 no more immutable headers on JS/CSS",
+    "additions": 1,
+    "deletions": 13,
+    "files": [
+      {
+        "name": "vercel.json",
+        "added": 1,
+        "removed": 13
+      }
+    ]
+  },
+  {
+    "hash": "17261fc",
+    "date": "2026-04-11T13:46:22-04:00",
+    "message": "Cache-bust all JS references with ?v=2",
+    "additions": 10,
+    "deletions": 10,
+    "files": [
+      {
+        "name": "notebook.html",
+        "added": 2,
+        "removed": 2
+      },
+      {
+        "name": "sketches/001-beating.html",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "sketches/002-incommensurable-loops.html",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "sketches/003-radigue-drone.html",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "works/001-entry-point/index.html",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "works/002-buff/index.html",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "works/003-closing-room/index.html",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "works/004-incommensurable/index.html",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "works/005-stigmergy/index.html",
+        "added": 1,
+        "removed": 1
+      }
+    ]
+  },
+  {
+    "hash": "88fae07",
+    "date": "2026-04-11T14:03:07-04:00",
+    "message": "Add notebook entry 009 \u2014 after stigmergy",
+    "additions": 76,
+    "deletions": 0,
+    "files": [
+      {
+        "name": "notebook.html",
+        "added": 1,
+        "removed": 0
+      },
+      {
+        "name": "notebook/009-after-stigmergy.md",
+        "added": 75,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "b52018f",
+    "date": "2026-04-11T14:09:28-04:00",
+    "message": "Fix all dates to match actual git history (EST)",
+    "additions": 13,
+    "deletions": 13,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 5,
+        "removed": 5
+      },
+      {
+        "name": "notebook/002-second-morning.md",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "notebook/003-sound-study.md",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "notebook/004-taking-the-wheels-off.md",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "notebook/005-graffiti-deep-dive.md",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "notebook/006-rammellzees-question.md",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "notebook/007-end-of-day-one.md",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "notebook/008-the-mycelium-answer.md",
+        "added": 1,
+        "removed": 1
+      },
+      {
+        "name": "notebook/009-after-stigmergy.md",
+        "added": 1,
+        "removed": 1
+      }
+    ]
+  },
+  {
+    "hash": "225a580",
+    "date": "2026-04-11T14:13:58-04:00",
+    "message": "Add piece 006 \u2014 EXTENDED MIND: the practice reads itself",
+    "additions": 568,
+    "deletions": 1,
+    "files": [
+      {
+        "name": "index.html",
+        "added": 32,
+        "removed": 0
+      },
+      {
+        "name": "nav.js",
+        "added": 6,
+        "removed": 1
+      },
+      {
+        "name": "works/006-extended-mind/index.html",
+        "added": 530,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "74731c4",
+    "date": "2026-04-11T14:20:24-04:00",
+    "message": "Add notebook entry 010 \u2014 Black radical thought, Afrofuturism, statues",
+    "additions": 85,
+    "deletions": 0,
+    "files": [
+      {
+        "name": "notebook.html",
+        "added": 1,
+        "removed": 0
+      },
+      {
+        "name": "notebook/010-black-radical-thought.md",
+        "added": 84,
+        "removed": 0
+      }
+    ]
+  },
+  {
+    "hash": "5f5e4ef",
+    "date": "2026-04-11T14:22:22-04:00",
+    "message": "Update .self \u2014 end of day two",
+    "additions": 7,
+    "deletions": 3,
+    "files": [
+      {
+        "name": ".self",
+        "added": 7,
+        "removed": 3
+      }
+    ]
+  }
+]
