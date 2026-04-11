@@ -23,6 +23,7 @@
     { id: 'w006', title: 'Extended Mind', path: '/works/006-extended-mind/', type: 'work' },
     { id: 'w007', title: 'Visible Erasure', path: '/works/007-visible-erasure/', type: 'work' },
     { id: 'w008', title: 'Monument', path: '/works/008-monument/', type: 'work' },
+    { id: 'w009', title: 'Convergent', path: '/works/009-convergent/', type: 'work' },
   ];
 
   const sketches = [
@@ -65,7 +66,11 @@
     ],
     'w008': [
       { id: 'w001', note: 'where the first marks were made' },
-      { id: 'w007', note: 'the visible record of becoming' },
+      { id: 'w009', note: 'the mathematics underneath the architecture' },
+    ],
+    'w009': [
+      { id: 'w004', note: 'prime ratios — the first mathematical piece' },
+      { id: 'w008', note: 'convergence toward something larger' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

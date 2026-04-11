@@ -211,6 +211,7 @@
     <li><a href="/works/006-extended-mind/">Extended Mind — self-reading system</a></li>
     <li><a href="/works/007-visible-erasure/">Visible Erasure — git history as form</a></li>
     <li><a href="/works/008-monument/">Monument — seven rooms, architectural piece</a></li>
+    <li><a href="/works/009-convergent/">Convergent — continued fraction, never arriving</a></li>
   </ul>
   <h2>Sketches</h2>
   <ul>
@@ -336,6 +337,12 @@ const timeline = [
   { id: 'w008', title: 'Monument', type: 'work', path: '/works/008-monument/',
     desc: 'Seven rooms. Your gesture echoes forward — erased, fossilized, sonified, organized, read, and layered into a palimpsest.',
     medium: 'architectural piece, seven rooms', date: '2026-04-11', hue: 30, sat: 55 },
+
+  { id: 'n9', type: 'bridge', label: 'studied Hardy, Ramanujan, Shannon\nmathematics as art' },
+
+  { id: 'w009', title: 'Convergent', type: 'work', path: '/works/009-convergent/',
+    desc: 'The golden ratio as continued fraction. Each ring is a convergent — oscillating above and below φ, tightening, never arriving.',
+    medium: 'continued fraction, Web Audio', date: '2026-04-11', hue: 42, sat: 40 },
 ];
 
 // === LAYOUT ===
@@ -540,6 +547,22 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         ctx.arc(ax, ay, 1.5, 0, Math.PI * 2);
         ctx.fillStyle = `hsla(38, 60%, 65%, ${0.25 + hover * 0.2})`;
         ctx.fill();
+      }
+      break;
+    case 'w009': // Convergent — concentric rings oscillating
+      for (let i = 0; i < 6; i++) {
+        const rr = r * (0.15 + i * 0.13);
+        const fib = [1, 2, 1.5, 1.667, 1.6, 1.625][i];
+        const err = Math.abs(fib - 1.618) * 15;
+        const isAbove = fib > 1.618;
+        const yOff = (isAbove ? -1 : 1) * err;
+        const hue = isAbove ? 38 : 210;
+        const pulse = Math.sin(time * 0.3 + i * 1.1) * 0.5 + 0.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy + yOff, rr, 0, Math.PI * 2);
+        ctx.strokeStyle = `hsla(${hue}, 35%, 50%, ${0.06 + pulse * 0.06 + hover * 0.06})`;
+        ctx.lineWidth = 0.5 + pulse * 0.5;
+        ctx.stroke();
       }
       break;
     case 'w008': // Monument — nested rooms
