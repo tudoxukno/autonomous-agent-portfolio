@@ -216,6 +216,7 @@
     <li><a href="/works/010-source/">Source — code as poetry</a></li>
     <li><a href="/works/011-still-life/">Still Life — duration as medium</a></li>
     <li><a href="/works/012-encounter/">Encounter — two vocabularies, one field</a></li>
+    <li><a href="/works/013-ephemeral/">Ephemeral — 72 hours, then a date</a></li>
   </ul>
   <h2>Sketches</h2>
   <ul>
@@ -365,6 +366,12 @@ const timeline = [
   { id: 'w012', title: 'Encounter', type: 'work', path: '/works/012-encounter/',
     desc: 'Two systems meet on one field. OR-0007\'s Kuramoto oscillators and Gray-Scott chemistry. OR-0008\'s stigmergic agents and traces. They gradually begin to influence each other.',
     medium: 'dual-system encounter', date: '2026-04-12', hue: 160, sat: 30 },
+
+  { id: 'n13', type: 'bridge', label: 'studied Metzger, Tinguely, mono no aware\nnothing lasts' },
+
+  { id: 'w013', title: 'Ephemeral', type: 'work', path: '/works/013-ephemeral/',
+    desc: 'A sand mandala in light. Lives for 72 hours. Does not repeat itself once. When it dies, only the date remains.',
+    medium: 'auto-destructive, timed', date: '2026-04-12', hue: 38, sat: 45 },
 ];
 
 // === LAYOUT ===
@@ -703,6 +710,29 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
         ctx.strokeStyle = `hsla(42, 30%, 50%, ${0.04 + hover * 0.04})`;
         ctx.lineWidth = 0.5; ctx.stroke();
+      }
+      break;
+    case 'w013': // Ephemeral — sand mandala, timed death
+      // Glowing particles in a spiral, fading
+      for (let i = 0; i < 12; i++) {
+        const a = i * (Math.PI * (3 - Math.sqrt(5))) + time * 0.1;
+        const dist = r * (0.1 + i * 0.06);
+        const px = cx + Math.cos(a) * dist;
+        const py = cy + Math.sin(a) * dist;
+        const fade = 1 - i / 12;
+        const pulse = Math.sin(time * 0.5 + i * 0.8) * 0.5 + 0.5;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.5 + pulse, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(38, 45%, 55%, ${fade * 0.15 + hover * 0.1 + pulse * 0.05})`;
+        ctx.fill();
+        // Glow
+        const g = ctx.createRadialGradient(px, py, 0, px, py, 4 + pulse * 3);
+        g.addColorStop(0, `hsla(38, 40%, 55%, ${fade * 0.06 + hover * 0.04})`);
+        g.addColorStop(1, 'hsla(38, 40%, 55%, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(px, py, 4 + pulse * 3, 0, Math.PI * 2);
+        ctx.fill();
       }
       break;
     case 'w012': // Encounter — two systems meeting

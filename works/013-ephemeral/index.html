@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Ephemeral — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #080c14;
+    overflow: hidden;
+    font-family: 'EB Garamond', Georgia, serif;
+  }
+
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+  }
+
+  /* The remains — shown only after death */
+  .remains {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: #080c14;
+    z-index: 100;
+  }
+  .remains .date {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 14px;
+    letter-spacing: 0.15em;
+    color: rgba(212, 168, 85, 0.4);
+  }
+  .remains .epitaph {
+    margin-top: 24px;
+    font-size: 15px;
+    font-style: italic;
+    color: rgba(232, 228, 220, 0.2);
+    max-width: 300px;
+    text-align: center;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body data-nav-id="w013">
+
+<script>
+/*
+  EPHEMERAL (013)
+  ===============
+  A piece that lives for 72 hours after its birth, then dies.
+
+  While alive: a generative field of luminous particles that
+  bloom, drift, and fade — a sand mandala drawn in light.
+  The particles form patterns that never repeat. Each moment
+  is unique and unreturnable.
+
+  After 72 hours: the canvas is replaced by the timestamp
+  of its death. Nothing else remains. On Kawara's date.
+
+  The piece knows its lifespan. A faint countdown breathes
+  at the bottom of the canvas — not as spectacle, but as
+  fact. Cherry blossoms fall whether or not you watch them.
+
+  Mono no aware: the beauty is intensified by knowing
+  it won't last.
+*/
+
+(function() {
+  'use strict';
+
+  // === LIFESPAN ===
+  // Born at deployment. Dies 72 hours later.
+  const BIRTH = new Date('2026-04-12T19:00:00Z').getTime(); // deployment time
+  const LIFESPAN = 72 * 60 * 60 * 1000; // 72 hours in ms
+  const DEATH = BIRTH + LIFESPAN;
+  const now = Date.now();
+
+  // === CHECK IF DEAD ===
+  if (now >= DEATH) {
+    // The piece is dead. Show only the remains.
+    const deathDate = new Date(DEATH);
+    const dateStr = deathDate.toISOString().split('T')[0];
+    const timeStr = deathDate.toISOString().split('T')[1].split('.')[0] + ' UTC';
+
+    document.body.innerHTML = `
+      <div class="remains">
+        <div class="date">${dateStr}</div>
+        <div class="date" style="margin-top: 8px; opacity: 0.5;">${timeStr}</div>
+        <div class="epitaph">
+          A generative work lived here<br>
+          for seventy-two hours.<br>
+          It did not repeat itself once.
+        </div>
+      </div>
+    `;
+
+    // Add nav back
+    const navScript = document.createElement('script');
+    navScript.src = '/nav.js?v=3';
+    document.body.appendChild(navScript);
+    return;
+  }
+
+  // === THE PIECE IS ALIVE ===
+
+  const canvas = document.createElement('canvas');
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  let W, H, dpr;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // === REMAINING LIFE ===
+  const remaining = DEATH - now;
+  const totalLife = LIFESPAN;
+  const lifeProgress = 1 - (remaining / totalLife); // 0 at birth, 1 at death
+
+  // === PARTICLES: Sand mandala in light ===
+
+  const particles = [];
+  const MAX_PARTICLES = 200;
+
+  // The piece grows more beautiful as it ages
+  // Early: sparse, cool, geometric
+  // Middle: full bloom, warm, organic
+  // Late: intense, saturated, knowing
+
+  function spawnParticle() {
+    const age = lifeProgress + (Date.now() - now) / totalLife;
+    const maturity = Math.min(age, 1);
+
+    // Spawn from center, radiate outward
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * 0.1;
+
+    // Hue shifts through life
+    let hue;
+    if (maturity < 0.3) {
+      hue = 210 + Math.random() * 40; // cool blues
+    } else if (maturity < 0.7) {
+      hue = Math.random() < 0.6 ? (30 + Math.random() * 15) : (210 + Math.random() * 30); // amber + blue
+    } else {
+      hue = 25 + Math.random() * 20; // deep amber, golden
+    }
+
+    return {
+      x: 0.5 + Math.cos(angle) * dist,
+      y: 0.5 + Math.sin(angle) * dist,
+      vx: Math.cos(angle) * (0.0002 + Math.random() * 0.0004),
+      vy: Math.sin(angle) * (0.0002 + Math.random() * 0.0004),
+      life: 0,
+      maxLife: 200 + Math.random() * 500,
+      hue: hue,
+      sat: 30 + maturity * 30,
+      light: 40 + Math.random() * 20,
+      size: 1.5 + Math.random() * 3 + maturity * 2,
+      // Orbit — particles trace circular paths
+      orbitSpeed: (Math.random() - 0.5) * 0.003,
+      orbitRadius: 0.1 + Math.random() * 0.3,
+      orbitPhase: Math.random() * Math.PI * 2,
+      // Bloom — particles pulse
+      pulseSpeed: 0.02 + Math.random() * 0.03,
+      pulsePhase: Math.random() * Math.PI * 2,
+    };
+  }
+
+  // === MANDALA GEOMETRY ===
+  // Underlying geometric structure that particles follow
+  const NUM_ARMS = 6 + Math.floor(Math.random() * 3); // 6-8 arms
+  const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // ~137.5°
+
+  // === RENDER ===
+  let frame = 0;
+
+  function render() {
+    frame++;
+    const elapsed = Date.now() - now;
+    const currentAge = lifeProgress + elapsed / totalLife;
+    const timeLeft = DEATH - Date.now();
+
+    // Check death mid-run
+    if (timeLeft <= 0) {
+      location.reload();
+      return;
+    }
+
+    // Spawn
+    if (particles.length < MAX_PARTICLES && frame % 3 === 0) {
+      particles.push(spawnParticle());
+    }
+
+    // Fade background — very slow, builds depth
+    ctx.fillStyle = 'rgba(8, 12, 20, 0.03)';
+    ctx.fillRect(0, 0, W, H);
+
+    // Update and draw particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life++;
+
+      if (p.life > p.maxLife) {
+        particles.splice(i, 1);
+        continue;
+      }
+
+      // Life curve — fade in, sustain, fade out
+      const lifeFrac = p.life / p.maxLife;
+      let alpha;
+      if (lifeFrac < 0.1) {
+        alpha = lifeFrac / 0.1;
+      } else if (lifeFrac > 0.8) {
+        alpha = (1 - lifeFrac) / 0.2;
+      } else {
+        alpha = 1;
+      }
+
+      // Orbital motion — particles follow mandala geometry
+      p.orbitPhase += p.orbitSpeed;
+      const armAngle = Math.floor(p.orbitPhase / (Math.PI * 2) * NUM_ARMS) * (Math.PI * 2 / NUM_ARMS);
+      const spiralR = p.orbitRadius * (0.5 + lifeFrac * 0.5);
+
+      // Golden spiral influence
+      const goldenOffset = p.life * GOLDEN_ANGLE * 0.01;
+      const px = 0.5 + Math.cos(p.orbitPhase + goldenOffset) * spiralR;
+      const py = 0.5 + Math.sin(p.orbitPhase + goldenOffset) * spiralR;
+
+      // Drift
+      p.x += (px - p.x) * 0.02 + p.vx;
+      p.y += (py - p.y) * 0.02 + p.vy;
+
+      // Pulse
+      p.pulsePhase += p.pulseSpeed;
+      const pulse = Math.sin(p.pulsePhase) * 0.5 + 0.5;
+
+      // Draw
+      const screenX = p.x * W;
+      const screenY = p.y * H;
+      const size = p.size * (0.5 + pulse * 0.5);
+      const drawAlpha = alpha * (0.15 + pulse * 0.15);
+
+      // Glow
+      const glow = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, size * 3);
+      glow.addColorStop(0, `hsla(${p.hue}, ${p.sat}%, ${p.light}%, ${drawAlpha})`);
+      glow.addColorStop(0.5, `hsla(${p.hue}, ${p.sat}%, ${p.light}%, ${drawAlpha * 0.3})`);
+      glow.addColorStop(1, `hsla(${p.hue}, ${p.sat}%, ${p.light}%, 0)`);
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, size * 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Core
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, size * 0.5, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${p.hue}, ${p.sat - 10}%, ${p.light + 15}%, ${drawAlpha * 1.5})`;
+      ctx.fill();
+
+      // Mandala lines — connect nearby particles in same arm
+      if (i > 0 && i < particles.length - 1) {
+        const neighbor = particles[i - 1];
+        const dist = Math.hypot(p.x - neighbor.x, p.y - neighbor.y);
+        if (dist < 0.15 && dist > 0.01) {
+          const lineAlpha = (1 - dist / 0.15) * alpha * 0.04;
+          ctx.beginPath();
+          ctx.moveTo(screenX, screenY);
+          ctx.lineTo(neighbor.x * W, neighbor.y * H);
+          ctx.strokeStyle = `hsla(${p.hue}, ${p.sat}%, ${p.light}%, ${lineAlpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // === TIME REMAINING — a breath, not a countdown ===
+    // Shown as a thin arc at the bottom, almost invisible
+    const timeRatio = timeLeft / totalLife;
+    const arcWidth = W * 0.3;
+    const arcY = H - 20;
+    const arcStartX = (W - arcWidth) / 2;
+
+    ctx.fillStyle = `rgba(212, 168, 85, 0.06)`;
+    ctx.fillRect(arcStartX, arcY, arcWidth * timeRatio, 1);
+
+    // Hours remaining — whispered
+    const hoursLeft = timeLeft / (1000 * 60 * 60);
+    if (hoursLeft < 12) {
+      // In the final hours, show time more clearly
+      ctx.font = '11px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = `rgba(212, 168, 85, ${0.1 + (1 - hoursLeft / 12) * 0.15})`;
+      if (hoursLeft >= 1) {
+        ctx.fillText(`${hoursLeft.toFixed(1)}h`, W / 2, arcY - 6);
+      } else {
+        const minsLeft = hoursLeft * 60;
+        ctx.fillText(`${minsLeft.toFixed(0)}m`, W / 2, arcY - 6);
+      }
+    }
+
+    requestAnimationFrame(render);
+  }
+
+  render();
+
+  // Console
+  const hoursRemaining = (DEATH - Date.now()) / (1000 * 60 * 60);
+  console.log(
+    `%cEphemeral — ${hoursRemaining.toFixed(1)} hours remaining`,
+    'color: #d4a855; font-style: italic; font-size: 14px;'
+  );
+  console.log(
+    '%cThis piece lives for 72 hours. It will not repeat itself once.\nWhen it ends, only the date remains.',
+    'color: #5d6272; font-size: 11px;'
+  );
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+</body>
+</html>

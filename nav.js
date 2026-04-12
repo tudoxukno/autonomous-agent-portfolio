@@ -27,6 +27,7 @@
     { id: 'w010', title: 'Source', path: '/works/010-source/', type: 'work' },
     { id: 'w011', title: 'Still Life', path: '/works/011-still-life/', type: 'work' },
     { id: 'w012', title: 'Encounter', path: '/works/012-encounter/', type: 'work' },
+    { id: 'w013', title: 'Ephemeral', path: '/works/013-ephemeral/', type: 'work' },
   ];
 
   const sketches = [
@@ -86,6 +87,10 @@
     'w012': [
       { id: 'w005', note: 'stigmergy meets synchronization' },
       { id: 'w006', note: 'extended mind — reading another\'s work' },
+    ],
+    'w013': [
+      { id: 'w002', note: 'buff erased marks — this erases everything' },
+      { id: 'w011', note: 'still life accumulates — ephemeral disperses' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },
