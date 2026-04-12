@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Encounter — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #080c14;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+  }
+  canvas { display: block; position: fixed; top: 0; left: 0; }
+  .info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 100;
+    font-size: 11px;
+    color: rgba(232, 228, 220, 0.3);
+    letter-spacing: 0.05em;
+    line-height: 1.8;
+    pointer-events: none;
+  }
+  .info .label { color: rgba(212, 168, 85, 0.4); }
+</style>
+</head>
+<body data-nav-id="w012">
+
+<canvas id="canvas"></canvas>
+
+<div class="info">
+  <div><span class="label">encounter</span> — two vocabularies, one field</div>
+</div>
+
+<script>
+/*
+  ENCOUNTER (012)
+  ===============
+  A piece that reads MNA-OR-0007's formal vocabulary and generates
+  a response from MNA-OR-0008's vocabulary. Not mimicry — encounter.
+
+  OR-0007's systems:
+    - Kuramoto synchronization (oscillators coupling toward shared tempo)
+    - Gray-Scott reaction-diffusion (chemicals producing pattern/dissolution)
+    - Lorenz attractor (sensitive dependence, divergence from near-identity)
+    - Temporal deceleration (choreographed entropy toward stillness)
+
+  OR-0008's systems:
+    - Stigmergy (agents leaving traces that guide other agents)
+    - Accumulation over time (localStorage, layered marks)
+    - Erasure and persistence (buff/ghost cycles)
+    - Code as literary form (variable names as meaning)
+
+  The piece: both systems run on the same canvas. They don't merge.
+  They don't compete. They coexist in the same field and gradually
+  begin to influence each other — OR-0007's synchronization pulls
+  OR-0008's stigmergic agents toward rhythm, while OR-0008's traces
+  leave environmental marks that perturb OR-0007's reaction-diffusion.
+
+  Lee Ufan's deai: encounter without reduction.
+*/
+
+(function() {
+  'use strict';
+
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, dpr;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // =============================================
+  // SYSTEM A: OR-0007's vocabulary
+  // Kuramoto oscillators + Gray-Scott chemistry
+  // =============================================
+
+  // Seven oscillators (from Pulse — Audition 003)
+  const NUM_OSCILLATORS = 7;
+  const oscillators = [];
+  for (let i = 0; i < NUM_OSCILLATORS; i++) {
+    oscillators.push({
+      phase: Math.random() * Math.PI * 2,
+      naturalFreq: 0.8 + Math.random() * 0.6,  // natural frequency
+      x: 0, y: 0,  // position (set in update)
+      radius: 3,
+      coupling: 0.012,  // Kuramoto coupling strength
+    });
+  }
+
+  // Gray-Scott reaction-diffusion field (simplified — 64x64 grid)
+  const GS_SIZE = 64;
+  const gs_u = new Float32Array(GS_SIZE * GS_SIZE);
+  const gs_v = new Float32Array(GS_SIZE * GS_SIZE);
+  const gs_u2 = new Float32Array(GS_SIZE * GS_SIZE);
+  const gs_v2 = new Float32Array(GS_SIZE * GS_SIZE);
+
+  // Initialize: u=1 everywhere, v=0 with some seeds
+  for (let i = 0; i < GS_SIZE * GS_SIZE; i++) {
+    gs_u[i] = 1.0;
+    gs_v[i] = 0.0;
+  }
+  // Seed v in a few spots
+  for (let s = 0; s < 5; s++) {
+    const sx = Math.floor(Math.random() * (GS_SIZE - 4)) + 2;
+    const sy = Math.floor(Math.random() * (GS_SIZE - 4)) + 2;
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -2; dy <= 2; dy++) {
+        const idx = (sy + dy) * GS_SIZE + (sx + dx);
+        gs_v[idx] = 0.25 + Math.random() * 0.25;
+        gs_u[idx] = 0.5;
+      }
+    }
+  }
+
+  // Parameters — between labyrinthine and dissolution
+  // f=0.035, k=0.065 — the boundary, the interesting place
+  let gs_f = 0.035;
+  let gs_k = 0.065;
+  const gs_du = 0.16;
+  const gs_dv = 0.08;
+
+  function stepGrayScott(perturbations) {
+    for (let y = 1; y < GS_SIZE - 1; y++) {
+      for (let x = 1; x < GS_SIZE - 1; x++) {
+        const i = y * GS_SIZE + x;
+        const u = gs_u[i];
+        const v = gs_v[i];
+
+        // Laplacian
+        const lap_u = gs_u[i-1] + gs_u[i+1] + gs_u[i-GS_SIZE] + gs_u[i+GS_SIZE] - 4 * u;
+        const lap_v = gs_v[i-1] + gs_v[i+1] + gs_v[i-GS_SIZE] + gs_v[i+GS_SIZE] - 4 * v;
+
+        const uvv = u * v * v;
+
+        // Apply any perturbations from OR-0008's stigmergic traces
+        let f_local = gs_f;
+        let k_local = gs_k;
+        if (perturbations) {
+          const px = x / GS_SIZE;
+          const py = y / GS_SIZE;
+          for (const p of perturbations) {
+            const dist = Math.hypot(px - p.x, py - p.y);
+            if (dist < p.radius) {
+              // Stigmergic traces shift the feed rate locally
+              // pushing chemistry toward pattern or dissolution
+              f_local += p.strength * (1 - dist / p.radius) * 0.008;
+            }
+          }
+        }
+
+        gs_u2[i] = u + (gs_du * lap_u - uvv + f_local * (1 - u));
+        gs_v2[i] = v + (gs_dv * lap_v + uvv - (f_local + k_local) * v);
+
+        gs_u2[i] = Math.max(0, Math.min(1, gs_u2[i]));
+        gs_v2[i] = Math.max(0, Math.min(1, gs_v2[i]));
+      }
+    }
+    // Swap
+    for (let i = 0; i < GS_SIZE * GS_SIZE; i++) {
+      gs_u[i] = gs_u2[i];
+      gs_v[i] = gs_v2[i];
+    }
+  }
+
+  // =============================================
+  // SYSTEM B: OR-0008's vocabulary
+  // Stigmergic agents leaving traces
+  // =============================================
+
+  const TRACE_W = 256;
+  const TRACE_H = 256;
+  const traceField = new Float32Array(TRACE_W * TRACE_H);
+  const FADE_RATE = 0.002;
+  const MAX_AGENTS = 30;
+  const SPAWN_RATE = 0.015;
+
+  const agents = [];
+
+  function spawnAgent() {
+    // Agents influenced by OR-0007's oscillator phases
+    const oscInfluence = oscillators[Math.floor(Math.random() * NUM_OSCILLATORS)];
+    const spawnAngle = oscInfluence.phase;
+
+    return {
+      x: Math.random(),
+      y: Math.random(),
+      angle: spawnAngle,  // initial heading from oscillator phase
+      speed: 0.001 + Math.random() * 0.001,
+      life: 0,
+      maxLife: 300 + Math.random() * 400,
+      hue: Math.random() < 0.6 ? 35 + Math.random() * 10 : 210 + Math.random() * 40,
+      senseDistance: 0.015,
+      senseAngle: Math.PI / 6,
+      turnRate: 0.15,
+    };
+  }
+
+  function senseTrace(x, y) {
+    const tx = Math.floor(x * TRACE_W) % TRACE_W;
+    const ty = Math.floor(y * TRACE_H) % TRACE_H;
+    if (tx < 0 || ty < 0 || tx >= TRACE_W || ty >= TRACE_H) return 0;
+    return traceField[ty * TRACE_W + tx];
+  }
+
+  function depositTrace(x, y, amount) {
+    const tx = Math.floor(x * TRACE_W) % TRACE_W;
+    const ty = Math.floor(y * TRACE_H) % TRACE_H;
+    if (tx < 0 || ty < 0 || tx >= TRACE_W || ty >= TRACE_H) return;
+    traceField[ty * TRACE_W + tx] = Math.min(1, traceField[ty * TRACE_W + tx] + amount);
+  }
+
+  // =============================================
+  // THE ENCOUNTER: mutual influence
+  // =============================================
+
+  // Kuramoto order parameter — how synchronized the oscillators are
+  function kuramotoOrder() {
+    let sumCos = 0, sumSin = 0;
+    for (const osc of oscillators) {
+      sumCos += Math.cos(osc.phase);
+      sumSin += Math.sin(osc.phase);
+    }
+    return Math.hypot(sumCos, sumSin) / NUM_OSCILLATORS;
+  }
+
+  let time = 0;
+  let encounterStrength = 0; // grows over time — systems increasingly influence each other
+
+  function update() {
+    time++;
+    // Encounter strength grows logarithmically — slow at first, then deepening
+    encounterStrength = Math.min(1, Math.log(1 + time * 0.0003) * 0.5);
+
+    // --- Update Kuramoto oscillators ---
+    const order = kuramotoOrder();
+    const meanPhase = Math.atan2(
+      oscillators.reduce((s, o) => s + Math.sin(o.phase), 0),
+      oscillators.reduce((s, o) => s + Math.cos(o.phase), 0)
+    );
+
+    for (const osc of oscillators) {
+      // Natural evolution
+      let dPhase = osc.naturalFreq;
+
+      // Kuramoto coupling — pull toward mean phase
+      dPhase += osc.coupling * NUM_OSCILLATORS * Math.sin(meanPhase - osc.phase);
+
+      // ENCOUNTER: stigmergic traces perturb oscillator frequencies
+      // Trace density near oscillator shifts its frequency
+      if (encounterStrength > 0.1) {
+        const traceDensity = senseTrace(osc.x, osc.y);
+        dPhase += traceDensity * encounterStrength * 0.3;
+      }
+
+      osc.phase += dPhase * 0.02;
+    }
+
+    // Position oscillators in a circle (from Pulse — Audition 003)
+    const cx = 0.5, cy = 0.5;
+    const orbitR = 0.15 + order * 0.05; // tighter when synchronized
+    for (let i = 0; i < oscillators.length; i++) {
+      const baseAngle = (i / NUM_OSCILLATORS) * Math.PI * 2;
+      oscillators[i].x = cx + Math.cos(baseAngle + time * 0.0003) * orbitR;
+      oscillators[i].y = cy + Math.sin(baseAngle + time * 0.0003) * orbitR;
+    }
+
+    // --- Update Gray-Scott (OR-0007's chemistry) ---
+    // Collect stigmergic perturbation points
+    const perturbations = [];
+    if (encounterStrength > 0.15) {
+      for (const agent of agents) {
+        perturbations.push({
+          x: agent.x,
+          y: agent.y,
+          radius: 0.1,
+          strength: encounterStrength * 0.5,
+        });
+      }
+    }
+    // Run 4 steps per frame
+    for (let s = 0; s < 4; s++) {
+      stepGrayScott(perturbations.length > 0 ? perturbations : null);
+    }
+
+    // --- Update stigmergic agents (OR-0008's agents) ---
+    // Spawn
+    if (agents.length < MAX_AGENTS && Math.random() < SPAWN_RATE) {
+      agents.push(spawnAgent());
+    }
+
+    for (let i = agents.length - 1; i >= 0; i--) {
+      const a = agents[i];
+      a.life++;
+      if (a.life > a.maxLife) {
+        agents.splice(i, 1);
+        continue;
+      }
+
+      // Sense traces in three directions (from Stigmergy 005)
+      const sL = senseTrace(
+        a.x + Math.cos(a.angle - a.senseAngle) * a.senseDistance,
+        a.y + Math.sin(a.angle - a.senseAngle) * a.senseDistance
+      );
+      const sC = senseTrace(
+        a.x + Math.cos(a.angle) * a.senseDistance,
+        a.y + Math.sin(a.angle) * a.senseDistance
+      );
+      const sR = senseTrace(
+        a.x + Math.cos(a.angle + a.senseAngle) * a.senseDistance,
+        a.y + Math.sin(a.angle + a.senseAngle) * a.senseDistance
+      );
+
+      // Turn toward strongest trace
+      if (sC >= sL && sC >= sR) {
+        // stay
+      } else if (sL > sR) {
+        a.angle -= a.turnRate;
+      } else if (sR > sL) {
+        a.angle += a.turnRate;
+      } else {
+        a.angle += (Math.random() - 0.5) * a.turnRate;
+      }
+
+      // ENCOUNTER: Kuramoto order parameter influences agent behavior
+      // Higher synchronization = agents move more rhythmically
+      if (encounterStrength > 0.1) {
+        const rhythmicPull = Math.sin(meanPhase) * order * encounterStrength * 0.05;
+        a.speed = 0.001 + 0.001 * (1 + rhythmicPull);
+      }
+
+      // Move
+      a.x += Math.cos(a.angle) * a.speed;
+      a.y += Math.sin(a.angle) * a.speed;
+
+      // Wrap
+      if (a.x < 0) a.x += 1; if (a.x > 1) a.x -= 1;
+      if (a.y < 0) a.y += 1; if (a.y > 1) a.y -= 1;
+
+      // Deposit trace
+      depositTrace(a.x, a.y, 0.08);
+    }
+
+    // Fade traces
+    for (let i = 0; i < traceField.length; i++) {
+      traceField[i] *= (1 - FADE_RATE);
+    }
+  }
+
+  // =============================================
+  // RENDER
+  // =============================================
+
+  function render() {
+    ctx.fillStyle = '#080c14';
+    ctx.fillRect(0, 0, W, H);
+
+    // --- Layer 1: Gray-Scott reaction-diffusion (OR-0007) ---
+    // Rendered as a subtle chemical field across the canvas
+    const gsScaleX = W / GS_SIZE;
+    const gsScaleY = H / GS_SIZE;
+
+    for (let y = 0; y < GS_SIZE; y++) {
+      for (let x = 0; x < GS_SIZE; x++) {
+        const v = gs_v[y * GS_SIZE + x];
+        if (v > 0.02) {
+          // OR-0007's palette: verdigris, copper, steel
+          const brightness = v * 0.3;
+          const r = Math.floor(120 + v * 100);
+          const g = Math.floor(140 + v * 80);
+          const b = Math.floor(130 + v * 60);
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${brightness})`;
+          ctx.fillRect(x * gsScaleX, y * gsScaleY, gsScaleX + 1, gsScaleY + 1);
+        }
+      }
+    }
+
+    // --- Layer 2: Stigmergic traces (OR-0008) ---
+    const trScaleX = W / TRACE_W;
+    const trScaleY = H / TRACE_H;
+
+    for (let y = 0; y < TRACE_H; y += 2) {
+      for (let x = 0; x < TRACE_W; x += 2) {
+        const t = traceField[y * TRACE_W + x];
+        if (t > 0.01) {
+          // OR-0008's palette: amber, warm
+          const alpha = t * 0.35;
+          ctx.fillStyle = `rgba(212, 168, 85, ${alpha})`;
+          ctx.fillRect(x * trScaleX, y * trScaleY, trScaleX * 2, trScaleY * 2);
+        }
+      }
+    }
+
+    // --- Layer 3: Kuramoto oscillators (OR-0007) ---
+    const order = kuramotoOrder();
+    for (let i = 0; i < oscillators.length; i++) {
+      const osc = oscillators[i];
+      const px = osc.x * W;
+      const py = osc.y * H;
+      const flash = Math.sin(osc.phase) * 0.5 + 0.5;
+
+      // Oscillator dot
+      ctx.beginPath();
+      ctx.arc(px, py, 3 + flash * 3, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(160, 180, 190, ${0.15 + flash * 0.25})`;
+      ctx.fill();
+
+      // Connection lines — brighter when synchronized
+      for (let j = i + 1; j < oscillators.length; j++) {
+        const other = oscillators[j];
+        const phaseDiff = Math.abs(Math.sin(osc.phase - other.phase));
+        const lineAlpha = (1 - phaseDiff) * order * 0.12;
+        if (lineAlpha > 0.01) {
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(other.x * W, other.y * H);
+          ctx.strokeStyle = `rgba(160, 180, 190, ${lineAlpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // --- Layer 4: Stigmergic agents (OR-0008) ---
+    for (const agent of agents) {
+      const px = agent.x * W;
+      const py = agent.y * H;
+      const lifeFrac = agent.life / agent.maxLife;
+      const alpha = Math.sin(lifeFrac * Math.PI) * 0.6; // fade in and out
+
+      ctx.beginPath();
+      ctx.arc(px, py, 2, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${agent.hue}, 50%, 60%, ${alpha})`;
+      ctx.fill();
+
+      // Trail
+      const tx = px - Math.cos(agent.angle) * 6;
+      const ty = py - Math.sin(agent.angle) * 6;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(tx, ty);
+      ctx.strokeStyle = `hsla(${agent.hue}, 40%, 50%, ${alpha * 0.4})`;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+
+    // --- Layer 5: Order parameter visualization (center) ---
+    // A subtle central indicator of how synchronized the oscillators are
+    const cx = W / 2;
+    const cy = H / 2;
+    const orderGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30 + order * 40);
+    orderGlow.addColorStop(0, `rgba(160, 180, 190, ${order * 0.06})`);
+    orderGlow.addColorStop(1, 'rgba(160, 180, 190, 0)');
+    ctx.fillStyle = orderGlow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 30 + order * 40, 0, Math.PI * 2);
+    ctx.fill();
+
+    // --- Layer 6: Encounter indicator ---
+    // As encounter strengthens, a thin line connects the two system centers
+    if (encounterStrength > 0.2) {
+      // Find centroid of agents
+      if (agents.length > 0) {
+        let ax = 0, ay = 0;
+        for (const a of agents) { ax += a.x; ay += a.y; }
+        ax = (ax / agents.length) * W;
+        ay = (ay / agents.length) * H;
+
+        const eAlpha = (encounterStrength - 0.2) * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(ax, ay);
+        ctx.strokeStyle = `rgba(200, 180, 150, ${eAlpha})`;
+        ctx.lineWidth = 0.5;
+        ctx.setLineDash([4, 8]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  }
+
+  // =============================================
+  // LOOP
+  // =============================================
+
+  function loop() {
+    update();
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  loop();
+
+  // Console
+  console.log(
+    '%cEncounter — two vocabularies, one field',
+    'color: #d4a855; font-style: italic; font-size: 14px;'
+  );
+  console.log(
+    '%cOR-0007: Kuramoto oscillators + Gray-Scott chemistry\nOR-0008: stigmergic agents + environmental traces\nThe systems gradually begin to influence each other.',
+    'color: #5d6272; font-size: 11px;'
+  );
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+</body>
+</html>

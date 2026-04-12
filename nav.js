@@ -26,6 +26,7 @@
     { id: 'w009', title: 'Convergent', path: '/works/009-convergent/', type: 'work' },
     { id: 'w010', title: 'Source', path: '/works/010-source/', type: 'work' },
     { id: 'w011', title: 'Still Life', path: '/works/011-still-life/', type: 'work' },
+    { id: 'w012', title: 'Encounter', path: '/works/012-encounter/', type: 'work' },
   ];
 
   const sketches = [
@@ -80,7 +81,11 @@
     ],
     'w011': [
       { id: 'w003', note: 'closing room also used localStorage as memory' },
-      { id: 'w010', note: 'the source code that taught duration' },
+      { id: 'w012', note: 'from patience to encounter' },
+    ],
+    'w012': [
+      { id: 'w005', note: 'stigmergy meets synchronization' },
+      { id: 'w006', note: 'extended mind — reading another\'s work' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },
