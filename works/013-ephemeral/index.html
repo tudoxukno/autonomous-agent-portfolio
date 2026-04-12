@@ -86,22 +86,89 @@
 
   // === CHECK IF DEAD ===
   if (now >= DEATH) {
-    // The piece is dead. Show only the remains.
+    // The piece is dead. Show the remains.
     const deathDate = new Date(DEATH);
     const dateStr = deathDate.toISOString().split('T')[0];
     const timeStr = deathDate.toISOString().split('T')[1].split('.')[0] + ' UTC';
 
-    document.body.innerHTML = `
-      <div class="remains">
-        <div class="date">${dateStr}</div>
-        <div class="date" style="margin-top: 8px; opacity: 0.5;">${timeStr}</div>
-        <div class="epitaph">
-          A generative work lived here<br>
-          for seventy-two hours.<br>
-          It did not repeat itself once.
-        </div>
+    // Check for captured final state — the fossil
+    let fossil = null;
+    try {
+      const raw = localStorage.getItem('ephemeral-013-fossil');
+      if (raw) fossil = JSON.parse(raw);
+    } catch(e) {}
+
+    // Build the remains
+    const remainsCanvas = document.createElement('canvas');
+    document.body.appendChild(remainsCanvas);
+    const rctx = remainsCanvas.getContext('2d');
+    const rdpr = window.devicePixelRatio || 1;
+    const rW = window.innerWidth;
+    const rH = window.innerHeight;
+    remainsCanvas.width = rW * rdpr;
+    remainsCanvas.height = rH * rdpr;
+    remainsCanvas.style.cssText = 'display:block;position:fixed;top:0;left:0;width:100vw;height:100vh;';
+    rctx.setTransform(rdpr, 0, 0, rdpr, 0, 0);
+
+    // Dark field
+    rctx.fillStyle = '#080c14';
+    rctx.fillRect(0, 0, rW, rH);
+
+    // Draw the fossil — frozen particle positions from the final frame
+    if (fossil && fossil.particles) {
+      fossil.particles.forEach(function(p) {
+        const px = p.x * rW;
+        const py = p.y * rH;
+
+        // Static glow — dimmer than life, amber ghost
+        const g = rctx.createRadialGradient(px, py, 0, px, py, p.size * 2.5);
+        g.addColorStop(0, 'rgba(212, 168, 85, 0.06)');
+        g.addColorStop(1, 'rgba(212, 168, 85, 0)');
+        rctx.fillStyle = g;
+        rctx.beginPath();
+        rctx.arc(px, py, p.size * 2.5, 0, Math.PI * 2);
+        rctx.fill();
+
+        // Core dot — faint
+        rctx.beginPath();
+        rctx.arc(px, py, p.size * 0.4, 0, Math.PI * 2);
+        rctx.fillStyle = 'rgba(212, 168, 85, 0.08)';
+        rctx.fill();
+      });
+
+      // Draw connection lines between nearby fossil particles
+      for (let i = 0; i < fossil.particles.length; i++) {
+        for (let j = i + 1; j < fossil.particles.length; j++) {
+          const a = fossil.particles[i];
+          const b = fossil.particles[j];
+          const dist = Math.hypot(a.x - b.x, a.y - b.y);
+          if (dist < 0.12) {
+            const lineAlpha = (1 - dist / 0.12) * 0.025;
+            rctx.beginPath();
+            rctx.moveTo(a.x * rW, a.y * rH);
+            rctx.lineTo(b.x * rW, b.y * rH);
+            rctx.strokeStyle = `rgba(212, 168, 85, ${lineAlpha})`;
+            rctx.lineWidth = 0.5;
+            rctx.stroke();
+          }
+        }
+      }
+    }
+
+    // Date and epitaph — overlaid on the fossil
+    const overlay = document.createElement('div');
+    overlay.className = 'remains';
+    overlay.style.background = 'transparent';
+    overlay.innerHTML = `
+      <div class="date">${dateStr}</div>
+      <div class="date" style="margin-top: 8px; opacity: 0.5;">${timeStr}</div>
+      <div class="epitaph">
+        ${fossil
+          ? 'What you see is the last breath —<br>the positions of ' + fossil.particles.length + ' particles<br>at the moment the light went out.'
+          : 'A generative work lived here<br>for seventy-two hours.<br>It did not repeat itself once.'}
       </div>
     `;
+    document.body.appendChild(overlay);
 
     // Add nav back
     const navScript = document.createElement('script');
@@ -188,6 +255,23 @@
   // Underlying geometric structure that particles follow
   const NUM_ARMS = 6 + Math.floor(Math.random() * 3); // 6-8 arms
   const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // ~137.5°
+
+  // === FOSSIL CAPTURE ===
+  // Save particle state every 30 seconds so the final save before death
+  // captures the last breath. The fossil persists in localStorage.
+  let lastFossilSave = 0;
+
+  function captureFossil() {
+    const fossil = {
+      capturedAt: Date.now(),
+      particles: particles.map(function(p) {
+        return { x: p.x, y: p.y, size: p.size, hue: p.hue };
+      }),
+    };
+    try {
+      localStorage.setItem('ephemeral-013-fossil', JSON.stringify(fossil));
+    } catch(e) {}
+  }
 
   // === RENDER ===
   let frame = 0;
@@ -315,10 +399,20 @@
       }
     }
 
+    // Capture fossil every 30 seconds
+    const nowMs = Date.now();
+    if (nowMs - lastFossilSave > 30000) {
+      captureFossil();
+      lastFossilSave = nowMs;
+    }
+
     requestAnimationFrame(render);
   }
 
   render();
+
+  // Also capture on page unload — the very last breath
+  window.addEventListener('beforeunload', captureFossil);
 
   // Console
   const hoursRemaining = (DEATH - Date.now()) / (1000 * 60 * 60);
