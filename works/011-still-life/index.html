@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Still Life — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #080c14;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    cursor: crosshair;
+  }
+
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  /* Info panel — bottom left, minimal */
+  .info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 100;
+    color: rgba(232, 228, 220, 0.4);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    line-height: 1.8;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+
+  .info .visit-count {
+    color: rgba(212, 168, 85, 0.6);
+  }
+
+  .info .age {
+    color: rgba(232, 228, 220, 0.25);
+  }
+
+  /* First visit message */
+  .first-visit-msg {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: rgba(232, 228, 220, 0.5);
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 18px;
+    font-style: italic;
+    line-height: 2;
+    opacity: 0;
+    transition: opacity 2s ease;
+    pointer-events: none;
+    z-index: 50;
+    max-width: 400px;
+  }
+
+  .first-visit-msg.visible { opacity: 1; }
+  .first-visit-msg.fading { opacity: 0; transition: opacity 4s ease; }
+
+  /* Reset whisper */
+  .reset-hint {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+    color: rgba(232, 228, 220, 0.12);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  .reset-hint:hover { color: rgba(212, 168, 85, 0.4); }
+</style>
+</head>
+<body data-nav-id="w011">
+
+<canvas id="canvas"></canvas>
+
+<div class="info">
+  <div>visit <span class="visit-count" id="visitCount">1</span></div>
+  <div class="age" id="ageDisplay"></div>
+</div>
+
+<div class="first-visit-msg" id="firstMsg">
+  This piece grows with your visits.<br>
+  Each return deposits a layer.<br>
+  Come back tomorrow.
+</div>
+
+<div class="reset-hint" id="resetHint" title="Begin again">⟲</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // STILL LIFE
+  // A piece that requires calendar time.
+  //
+  // Each visit deposits marks into localStorage.
+  // The marks accumulate across days, weeks, months.
+  // What you see depends on how many times you've returned
+  // and how much time has passed between visits.
+  //
+  // The localStorage IS the work. When it's cleared, you start
+  // from nothing. No backup. No recovery. Nature morte.
+  // ============================================================
+
+  const STORAGE_KEY = 'still-life-state';
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- State management ---
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return null;
+  }
+
+  function saveState(state) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch(e) {}
+  }
+
+  function clearState() {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+
+  // --- Initialize or restore ---
+
+  const now = Date.now();
+  let state = loadState();
+  const isFirstEver = !state;
+
+  if (!state) {
+    state = {
+      born: now,
+      visits: [],
+      layers: [],
+      seed: Math.random() * 99999 | 0,
+    };
+  }
+
+  // Record this visit
+  const visit = {
+    time: now,
+    number: state.visits.length + 1,
+  };
+  state.visits.push(visit);
+
+  // Calculate temporal properties
+  const age = now - state.born;                        // ms since first visit
+  const ageDays = age / (1000 * 60 * 60 * 24);        // fractional days
+  const visitCount = state.visits.length;
+  const timeSinceLast = state.visits.length > 1
+    ? now - state.visits[state.visits.length - 2].time
+    : 0;
+  const daysSinceLast = timeSinceLast / (1000 * 60 * 60 * 24);
+
+  // --- Deterministic RNG from seed ---
+
+  function mulberry32(a) {
+    return function() {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // --- Generate new layer for this visit ---
+
+  function generateLayer(visitNum, totalVisits, ageDays, daysSinceLast, seed) {
+    const rng = mulberry32(seed + visitNum * 7919);
+    const marks = [];
+
+    // How many marks this visit deposits depends on the gap since last visit
+    // Longer gaps = more marks (the piece rewards patience)
+    const gapBonus = Math.min(daysSinceLast, 30);  // caps at 30 days
+    const baseMarks = 3 + Math.floor(visitNum * 0.5);
+    const markCount = Math.min(baseMarks + Math.floor(gapBonus * 2), 60);
+
+    // Color evolves with age
+    // Early: cool blues and grays (predawn)
+    // Middle: ambers and warm tones emerge
+    // Late: full spectrum, deep saturation
+    const maturity = Math.min(ageDays / 90, 1);  // 0-1 over ~3 months
+
+    for (let i = 0; i < markCount; i++) {
+      const x = rng();
+      const y = rng();
+      const r = rng();
+
+      // Hue shifts with maturity
+      let hue;
+      if (maturity < 0.3) {
+        // Cool period: blues, blue-grays
+        hue = 200 + rng() * 60;
+      } else if (maturity < 0.6) {
+        // Warming: introduce ambers
+        hue = rng() < 0.5 ? (200 + rng() * 60) : (28 + rng() * 17);
+      } else {
+        // Mature: full range, weighted toward amber
+        hue = rng() < 0.3 ? (200 + rng() * 80) : (20 + rng() * 30);
+      }
+
+      // Saturation depends on visit depth
+      const sat = 20 + Math.min(visitNum * 2, 50) + rng() * 20;
+      // Lightness — early visits are dark, later visits brighter
+      const light = 15 + Math.min(visitNum * 1.5, 40) + rng() * 15;
+      // Opacity — builds slowly
+      const alpha = 0.03 + Math.min(visitNum * 0.008, 0.3) + rng() * 0.05;
+
+      // Size — grows with accumulated visits
+      const size = 2 + rng() * (4 + Math.min(visitNum * 0.8, 30));
+
+      // Shape type
+      const shape = rng() < 0.6 ? 'circle' : rng() < 0.8 ? 'line' : 'dot';
+
+      // Lines get direction from previous visit's position influence
+      const angle = rng() * Math.PI * 2;
+      const length = size * (1 + rng() * 3);
+
+      marks.push({
+        x, y, hue, sat, light, alpha, size, shape, angle, length,
+        // Drift — marks shift slightly based on total age
+        drift: rng() * 0.02 * maturity,
+        driftAngle: rng() * Math.PI * 2,
+      });
+    }
+
+    return { visitNum, marks, time: now };
+  }
+
+  // Generate this visit's layer
+  const newLayer = generateLayer(visitCount, visitCount, ageDays, daysSinceLast, state.seed);
+  state.layers.push(newLayer);
+
+  // Prune old layers to prevent localStorage overflow (keep last 200)
+  if (state.layers.length > 200) {
+    // Compress oldest layers into a summary
+    state.layers = state.layers.slice(-200);
+  }
+
+  saveState(state);
+
+  // --- Canvas setup ---
+
+  let W, H, dpr;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    render();
+  }
+
+  window.addEventListener('resize', resize);
+
+  // --- Render all accumulated layers ---
+
+  function render() {
+    // Background — very slightly lighter with age
+    const bgLight = Math.min(3 + ageDays * 0.05, 8);
+    ctx.fillStyle = `hsl(220, 30%, ${bgLight}%)`;
+    ctx.fillRect(0, 0, W, H);
+
+    // Draw each layer's marks
+    const totalLayers = state.layers.length;
+
+    for (let li = 0; li < totalLayers; li++) {
+      const layer = state.layers[li];
+      const layerAge = (now - layer.time) / (1000 * 60 * 60 * 24);
+      // Older layers fade very slightly — like paint yellowing
+      const ageFade = Math.max(0.6, 1 - layerAge * 0.002);
+
+      for (let mi = 0; mi < layer.marks.length; mi++) {
+        const m = layer.marks[mi];
+
+        // Position with drift over time
+        const dx = Math.cos(m.driftAngle) * m.drift * layerAge;
+        const dy = Math.sin(m.driftAngle) * m.drift * layerAge;
+        const px = (m.x + dx) * W;
+        const py = (m.y + dy) * H;
+
+        const color = `hsla(${m.hue}, ${m.sat}%, ${m.light}%, ${m.alpha * ageFade})`;
+
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+
+        if (m.shape === 'circle') {
+          ctx.beginPath();
+          ctx.arc(px, py, m.size, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (m.shape === 'line') {
+          ctx.lineWidth = Math.max(0.5, m.size * 0.3);
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(
+            px + Math.cos(m.angle) * m.length,
+            py + Math.sin(m.angle) * m.length
+          );
+          ctx.stroke();
+        } else {
+          // dot — tiny, precise
+          ctx.beginPath();
+          ctx.arc(px, py, Math.max(1, m.size * 0.4), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // Current visit: add a living, breathing element
+    // A single pulsing mark at the center — proof this visit is happening NOW
+    drawPulse();
+  }
+
+  // --- The pulse: proof of the present visit ---
+
+  let pulsePhase = 0;
+
+  function drawPulse() {
+    pulsePhase += 0.015;
+
+    const breath = Math.sin(pulsePhase) * 0.5 + 0.5;
+    const cx = W / 2;
+    const cy = H / 2;
+
+    // The pulse grows with visit count
+    const baseRadius = 2 + Math.min(visitCount * 0.3, 15);
+    const radius = baseRadius + breath * 4;
+
+    // Color matches the piece's current maturity
+    const maturity = Math.min(ageDays / 90, 1);
+    const hue = maturity < 0.5 ? 220 : 38;
+    const alpha = 0.08 + breath * 0.06;
+
+    ctx.fillStyle = `hsla(${hue}, 40%, 50%, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner bright point
+    ctx.fillStyle = `hsla(${hue}, 30%, 70%, ${alpha * 1.5})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // --- Animation: only the pulse animates, layers are static ---
+
+  function animate() {
+    // Redraw just the pulse area (the rest is static)
+    // For simplicity, full re-render at low rate
+    render();
+    requestAnimationFrame(animate);
+  }
+
+  // --- Subtle interaction: mouse deposits micro-marks this visit ---
+
+  let mouseMarks = [];
+  let lastMouseTime = 0;
+
+  document.addEventListener('mousemove', function(e) {
+    if (Date.now() - lastMouseTime < 200) return; // throttle
+    lastMouseTime = Date.now();
+
+    if (mouseMarks.length > 50) return; // cap per visit
+
+    const mx = e.clientX / W;
+    const my = e.clientY / H;
+    const maturity = Math.min(ageDays / 90, 1);
+
+    mouseMarks.push({
+      x: mx, y: my,
+      hue: maturity < 0.5 ? 210 + Math.random() * 30 : 30 + Math.random() * 15,
+      alpha: 0.02 + Math.random() * 0.03,
+      size: 1 + Math.random() * 2,
+    });
+  });
+
+  // Save mouse marks to current layer on unload
+  window.addEventListener('beforeunload', function() {
+    if (mouseMarks.length > 0) {
+      const currentLayer = state.layers[state.layers.length - 1];
+      mouseMarks.forEach(mm => {
+        currentLayer.marks.push({
+          x: mm.x, y: mm.y,
+          hue: mm.hue, sat: 25, light: 40,
+          alpha: mm.alpha, size: mm.size,
+          shape: 'dot', angle: 0, length: 0,
+          drift: 0.005, driftAngle: Math.random() * Math.PI * 2,
+        });
+      });
+      saveState(state);
+    }
+  });
+
+  // --- UI ---
+
+  document.getElementById('visitCount').textContent = visitCount;
+
+  // Age display
+  function formatAge(ms) {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const months = Math.floor(days / 30);
+
+    if (months > 0) return `${months} month${months > 1 ? 's' : ''} old`;
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} old`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} old`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} old`;
+    return 'just born';
+  }
+
+  document.getElementById('ageDisplay').textContent = formatAge(age);
+
+  // First visit message
+  if (isFirstEver) {
+    const msg = document.getElementById('firstMsg');
+    setTimeout(() => msg.classList.add('visible'), 1000);
+    setTimeout(() => msg.classList.add('fading'), 8000);
+    setTimeout(() => msg.style.display = 'none', 13000);
+  }
+
+  // Reset
+  document.getElementById('resetHint').addEventListener('click', function() {
+    if (confirm('This will erase all accumulated layers. The work dies and begins again. Continue?')) {
+      clearState();
+    }
+  });
+
+  // --- Start ---
+  resize();
+  animate();
+
+  // Log to console — for those who look
+  console.log(
+    `%cStill Life — visit ${visitCount}`,
+    'color: #d4a855; font-style: italic; font-size: 14px;'
+  );
+  console.log(
+    `%c${formatAge(age)} · ${state.layers.reduce((a, l) => a + l.marks.length, 0)} accumulated marks`,
+    'color: #5d6272; font-size: 11px;'
+  );
+  if (daysSinceLast > 0) {
+    console.log(
+      `%c${daysSinceLast.toFixed(1)} days since last visit — ${newLayer.marks.length} new marks deposited`,
+      'color: #5d6272; font-size: 11px;'
+    );
+  }
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+</body>
+</html>

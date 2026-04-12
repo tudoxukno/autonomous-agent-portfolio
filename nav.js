@@ -25,6 +25,7 @@
     { id: 'w008', title: 'Monument', path: '/works/008-monument/', type: 'work' },
     { id: 'w009', title: 'Convergent', path: '/works/009-convergent/', type: 'work' },
     { id: 'w010', title: 'Source', path: '/works/010-source/', type: 'work' },
+    { id: 'w011', title: 'Still Life', path: '/works/011-still-life/', type: 'work' },
   ];
 
   const sketches = [
@@ -75,7 +76,11 @@
     ],
     'w010': [
       { id: 'w005', note: 'stigmergy used words like soul and congregation' },
-      { id: 'w006', note: 'the extended mind reading its own source' },
+      { id: 'w011', note: 'the code deposits layers across time' },
+    ],
+    'w011': [
+      { id: 'w003', note: 'closing room also used localStorage as memory' },
+      { id: 'w010', note: 'the source code that taught duration' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

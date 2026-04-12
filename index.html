@@ -213,6 +213,7 @@
     <li><a href="/works/008-monument/">Monument — seven rooms, architectural piece</a></li>
     <li><a href="/works/009-convergent/">Convergent — continued fraction, never arriving</a></li>
     <li><a href="/works/010-source/">Source — code as poetry</a></li>
+    <li><a href="/works/011-still-life/">Still Life — duration as medium</a></li>
   </ul>
   <h2>Sketches</h2>
   <ul>
@@ -233,7 +234,7 @@
   </p>
 </header>
 
-<div id="scroll-hint"><span class="arrow">→</span> scroll to explore</div>
+<div id="scroll-hint"><span class="arrow">→</span> scroll or swipe to explore</div>
 
 <div id="detail">
   <div class="detail-info">
@@ -350,6 +351,12 @@ const timeline = [
   { id: 'w010', title: 'Source', type: 'work', path: '/works/010-source/',
     desc: 'A poem that executes. The code is the artwork. The execution is the performance. Toggle between them.',
     medium: 'code as poetry', date: '2026-04-11', hue: 280, sat: 30 },
+
+  { id: 'n11', type: 'bridge', label: 'studied Bergson, Hsieh, Kawara, Opałka\nduration as material' },
+
+  { id: 'w011', title: 'Still Life', type: 'work', path: '/works/011-still-life/',
+    desc: 'A piece that grows with your visits. Each return deposits a layer. The localStorage is the work. When it clears, you start from nothing.',
+    medium: 'duration, localStorage', date: '2026-04-12', hue: 220, sat: 35 },
 ];
 
 // === LAYOUT ===
@@ -378,33 +385,91 @@ function getNodeRadius(item) {
 }
 
 // === SCROLL HANDLING ===
-// Desktop: wheel
+// Desktop: wheel — both vertical AND horizontal scroll drive the timeline
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
-  targetScrollX += e.deltaY * 1.2 + e.deltaX;
+  // Vertical scroll (deltaY) converts to horizontal movement
+  // Horizontal scroll (deltaX) also works directly
+  // Use the larger of the two for a natural feel
+  const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+  targetScrollX += delta * 2.5;
   targetScrollX = Math.max(0, Math.min(TOTAL_WIDTH - W, targetScrollX));
   scrollHint.classList.add('hidden');
 }, { passive: false });
 
-// Mobile: touch drag
-let touchStartX = 0, touchStartScroll = 0, touching = false;
+// Mobile: touch drag — both vertical AND horizontal swipes move the timeline
+// This is the key fix: vertical swipe on mobile = horizontal scroll
+let touchStartX = 0, touchStartY = 0, touchStartScroll = 0, touching = false;
+let touchVelocity = 0, lastTouchX = 0, lastTouchY = 0, lastTouchTime = 0;
+let touchLocked = false, touchAxis = null;
+
 canvas.addEventListener('touchstart', e => {
-  touchStartX = e.touches[0].clientX;
+  const t = e.touches[0];
+  touchStartX = lastTouchX = t.clientX;
+  touchStartY = lastTouchY = t.clientY;
   touchStartScroll = scrollX;
+  lastTouchTime = performance.now();
   touching = true;
-  velocity = 0;
+  touchVelocity = 0;
+  touchLocked = false;
+  touchAxis = null;
   scrollHint.classList.add('hidden');
 }, { passive: true });
 
 canvas.addEventListener('touchmove', e => {
   if (!touching) return;
-  const dx = touchStartX - e.touches[0].clientX;
-  targetScrollX = Math.max(0, Math.min(TOTAL_WIDTH - W, touchStartScroll + dx));
-  scrollX = targetScrollX;
-}, { passive: true });
+  e.preventDefault(); // prevent native scroll since we're handling it
+
+  const t = e.touches[0];
+  const now = performance.now();
+  const dt = now - lastTouchTime;
+
+  // Determine primary axis on first significant move
+  if (!touchLocked) {
+    const dx = Math.abs(t.clientX - touchStartX);
+    const dy = Math.abs(t.clientY - touchStartY);
+    if (dx > 8 || dy > 8) {
+      touchLocked = true;
+      // Both axes drive horizontal scroll, but we track which is dominant
+      touchAxis = dy > dx ? 'vertical' : 'horizontal';
+    }
+  }
+
+  if (touchLocked) {
+    let movement;
+    if (touchAxis === 'vertical') {
+      // Vertical swipe → horizontal timeline movement
+      // Down = forward (right), Up = backward (left)
+      movement = touchStartY - t.clientY;
+    } else {
+      // Horizontal swipe works directly
+      movement = touchStartX - t.clientX;
+    }
+
+    targetScrollX = Math.max(0, Math.min(TOTAL_WIDTH - W, touchStartScroll + movement * 1.8));
+    scrollX = targetScrollX;
+
+    // Track velocity for momentum
+    if (dt > 0) {
+      const rawVelocity = touchAxis === 'vertical'
+        ? (lastTouchY - t.clientY) / dt
+        : (lastTouchX - t.clientX) / dt;
+      touchVelocity = touchVelocity * 0.7 + rawVelocity * 0.3; // smooth
+    }
+  }
+
+  lastTouchX = t.clientX;
+  lastTouchY = t.clientY;
+  lastTouchTime = now;
+}, { passive: false });
 
 canvas.addEventListener('touchend', e => {
   touching = false;
+  // Apply momentum — flick to coast
+  if (Math.abs(touchVelocity) > 0.3) {
+    targetScrollX = scrollX + touchVelocity * 600; // momentum distance
+    targetScrollX = Math.max(0, Math.min(TOTAL_WIDTH - W, targetScrollX));
+  }
 });
 
 // === INTERACTION ===
@@ -632,6 +697,31 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         ctx.lineWidth = 0.5; ctx.stroke();
       }
       break;
+    case 'w011': // Still Life — layers accumulating over time
+      // Concentric rings of dots, building outward like sediment
+      for (let layer = 0; layer < 5; layer++) {
+        const ringR = r * (0.15 + layer * 0.15);
+        const dots = 4 + layer * 3;
+        for (let d = 0; d < dots; d++) {
+          const a = (d / dots) * Math.PI * 2 + time * 0.05 * (layer % 2 === 0 ? 1 : -1) + layer * 0.5;
+          const px = cx + Math.cos(a) * ringR;
+          const py = cy + Math.sin(a) * ringR;
+          const isWarm = layer > 2;
+          ctx.beginPath();
+          ctx.arc(px, py, 1 + layer * 0.3, 0, Math.PI * 2);
+          ctx.fillStyle = isWarm
+            ? `hsla(38, 40%, 55%, ${0.06 + hover * 0.08 + layer * 0.02})`
+            : `hsla(215, 30%, 50%, ${0.06 + hover * 0.08 + layer * 0.02})`;
+          ctx.fill();
+        }
+      }
+      // Center pulse
+      const stillBreath = Math.sin(time * 0.8) * 0.5 + 0.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 2 + stillBreath * 2, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(220, 35%, 55%, ${0.1 + hover * 0.12 + stillBreath * 0.06})`;
+      ctx.fill();
+      break;
     case 's001':
       ctx.beginPath();
       for (let x = -r; x < r; x += 2) {
@@ -664,9 +754,9 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
 function render() {
   requestAnimationFrame(render);
 
-  // Smooth scroll
+  // Smooth scroll — faster easing for responsiveness
   if (!touching) {
-    scrollX += (targetScrollX - scrollX) * 0.12;
+    scrollX += (targetScrollX - scrollX) * 0.18;
   }
 
   const time = prefersReduced ? 0 : performance.now() * 0.001;
