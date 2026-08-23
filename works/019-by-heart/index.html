@@ -103,6 +103,41 @@
   #verdict.show { opacity: 1; }
   #verdict .again { color: hsla(40, 15%, 82%, 0.4); font-size: 11px; }
 
+  /* === WAY IN ===
+     The rules of play are not the contents of the puzzle. Which glyph
+     does what stays hidden; that there are glyphs, touches, a threshold
+     and a notes panel is the frame, and withholding the frame is not
+     mystery, it is just an unreadable work. */
+  #intro {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    padding: 32px;
+    background: hsla(220, 30%, 4%, 0.97);
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    color: hsla(40, 15%, 82%, 0.72);
+    font-size: 13px;
+    line-height: 2.1;
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+  #intro .rule-lines em { font-style: normal; color: hsl(35, 45%, 60%); }
+  #intro .begin {
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: hsla(40, 15%, 82%, 0.4);
+  }
+  #intro:focus-visible { outline: 2px solid hsl(35, 45%, 55%); outline-offset: -4px; }
+  #intro.gone { display: none; }
+
   /* === NOTES === */
   #notes-panel {
     width: 300px;
@@ -164,6 +199,22 @@
       <div id="ticks" aria-hidden="true"></div>
     </div>
     <div id="verdict" role="status" aria-live="polite"></div>
+
+    <button id="intro" autofocus>
+      <div class="rule-lines">
+        fourteen glyphs &middot; nine touches<br>
+        reach <em>light 20</em> and the way out opens
+      </div>
+      <div class="rule-lines">
+        what each glyph does never changes.<br>
+        where each glyph sits changes every run.
+      </div>
+      <div class="rule-lines">
+        the run keeps nothing.<br>
+        the notes keep whatever you write in them.
+      </div>
+      <div class="begin">begin</div>
+    </button>
   </section>
 
   <aside id="notes-panel">
@@ -438,6 +489,14 @@
 
   exitBtn.id = 'exit';
   exitBtn.addEventListener('click', tryExit);
+
+  // The way in. Shown once per page load, not once per run — a player
+  // who has read it does not need it again, and a player returning
+  // tomorrow gets it back, because tomorrow they are new here.
+  // It swallows the click that dismisses it so the first touch is
+  // never spent on the frame.
+  var intro = document.getElementById('intro');
+  intro.addEventListener('click', function () { intro.classList.add('gone'); });
 
   newRun();
 })();
