@@ -576,5 +576,7 @@ document.getElementById('panel-close').addEventListener('click', () => document.
 document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('info-panel').classList.remove('open'); });
 </script>
 <script src="/nav.js?v=2"></script>
+<script>/* file:// fallback — the absolute src above only resolves when served. Nothing changes over http. */
+if(location.protocol==="file:"){var s=document.createElement("script");s.src="../../nav.js?v=3";document.body.appendChild(s);}</script>
 </body>
 </html>

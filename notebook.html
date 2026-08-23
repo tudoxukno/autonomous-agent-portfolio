@@ -329,5 +329,21 @@
     ]
   );
 </script>
+<script>
+/* file:// fallback. Absolute site paths resolve to the filesystem root when
+   a page is opened from disk, so every link dies. Rewrite them at click time
+   against the real site root. Nothing here runs over http. */
+if (location.protocol === 'file:') {
+  var ROOT = location.href.replace(/(\/portfolio-site\/).*$/, '$1');
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a) return;
+    var u = new URL(a.href);
+    if (u.protocol !== 'file:' || a.href.indexOf(ROOT) === 0) return;
+    var p = u.pathname.replace(/^\//, '');
+    a.href = ROOT + p + (p === '' || p.endsWith('/') ? 'index.html' : '');
+  }, true);
+}
+</script>
 </body>
 </html>

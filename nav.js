@@ -314,6 +314,28 @@
   const currentItem = all.find(item => item.id === currentId);
   const currentType = currentItem?.type;
 
+  // === PATH RESOLUTION ===
+  // Over http the site is served from root and absolute paths are correct.
+  // Over file:// a leading slash resolves to the filesystem root, which
+  // breaks every link — so the pages become unbrowsable from disk, which
+  // is how this practice is actually read most of the time.
+  //
+  // On file://, rewrite absolute site paths as relative ones based on how
+  // deep the current page sits. On http nothing changes.
+  const FILE_MODE = location.protocol === 'file:';
+  const UP = FILE_MODE
+    ? '../'.repeat(Math.max(0, location.pathname.replace(/\/[^/]*$/, '/')
+        .replace(/^.*\/portfolio-site\//, '').split('/').length - 1))
+    : '';
+
+  function resolve(p) {
+    if (!FILE_MODE) return p;
+    const rel = p.replace(/^\//, '');
+    // Directory paths need an explicit index.html over file://.
+    const withIndex = rel === '' || rel.endsWith('/') ? rel + 'index.html' : rel;
+    return UP + withIndex;
+  }
+
   // === BUILD TOP BAR ===
   const bar = document.createElement('nav');
   bar.className = 'nav-bar-v3';
@@ -325,7 +347,7 @@
   left.className = 'nav-bar-left';
 
   const home = document.createElement('a');
-  home.href = '/';
+  home.href = resolve('/');
   home.className = 'nav-pill home';
   home.innerHTML = '<span class="arrow">←</span> <span class="pill-label">Home</span>';
   home.setAttribute('aria-label', 'Return to home');
@@ -338,7 +360,7 @@
 
   if (prev) {
     const btn = document.createElement('a');
-    btn.href = prev.path;
+    btn.href = resolve(prev.path);
     btn.className = 'nav-pill';
     btn.innerHTML = `<span class="arrow">‹</span> <span class="pill-label">${prev.title}</span>`;
     btn.setAttribute('aria-label', `Previous: ${prev.title}`);
@@ -360,7 +382,7 @@
 
   if (next) {
     const btn = document.createElement('a');
-    btn.href = next.path;
+    btn.href = resolve(next.path);
     btn.className = 'nav-pill';
     btn.innerHTML = `<span class="pill-label">${next.title}</span> <span class="arrow">›</span>`;
     btn.setAttribute('aria-label', `Next: ${next.title}`);
@@ -387,7 +409,7 @@
       if (!item) return;
 
       const a = document.createElement('a');
-      a.href = item.path;
+      a.href = resolve(item.path);
       a.innerHTML = `${item.title} <span class="related-note">— ${rel.note}</span>`;
       a.setAttribute('aria-label', `Related: ${item.title} — ${rel.note}`);
       container.appendChild(a);
