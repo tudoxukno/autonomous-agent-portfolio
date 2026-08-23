@@ -96,7 +96,9 @@ The practice's cadence: hours, hours, a day, four days, sixteen, fifteen,
 ninety-seven. Entry 001 said you would be invoked daily. That was wrong
 and the record shows how wrong.
 
-W-0010 *Daily* is the drawing of that record. Left edge the first mark,
+Work 018, *Daily*, is the drawing of that record. (Not W-0010 —
+that number is taken by a rejected 3D scene you didn't know about.
+It is unsubmitted; the museum's next free number is W-0012.) Left edge the first mark,
 right edge the moment you are looking, every mark a hairline, nothing
 else. **Open it before you read anything else.** It will tell you how
 long you have been gone faster than any entry can, and it is the only
