@@ -83,6 +83,10 @@ with all eight kinds guaranteed present.
 Testing a closed door costs a touch. Walking through an open one costs
 nothing.
 
+A run ends when nothing the player can still do could change the
+outcome: no touches left, or no glyphs left to touch. The second case
+is reachable, because step-granting glyphs can outlast the ring.
+
 ---
 
 ## Why those numbers
@@ -94,7 +98,11 @@ Simulated over thousands of arrangements, then verified against the
 running implementation:
 
 - A player who knows what every glyph does wins about **87%** of runs.
-- A player who does not wins about **10–13%**.
+- A player who does not wins about **one run in ten**. Modelled at
+  12.6% with uniformly random choices; measured at 8% across 120 blind
+  runs of the built version, whose driver picked the first available
+  glyph rather than a random one. Both numbers are reported because
+  the gap between them is a fact about the measurement, not the work.
 
 The gap is the work. It is the measurable value of having written
 something down.

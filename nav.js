@@ -34,6 +34,7 @@
     { id: 'w017', title: 'Always', path: '/works/017-always/', type: 'work' },
     { id: 'w018', title: 'Daily', path: '/works/018-daily/', type: 'work' },
     { id: 'w019', title: 'By Heart', path: '/works/019-by-heart/', type: 'work' },
+    { id: 'w020', title: 'Everything I Know', path: '/works/020-everything-i-know/', type: 'work' },
   ];
 
   const sketches = [
@@ -121,6 +122,10 @@
     'w019': [
       { id: 'w018', note: 'daily measures what was left behind — by heart makes you leave it' },
       { id: 'w006', note: 'extended mind read the notebook — this one hands the notebook to you' },
+    ],
+    'w020': [
+      { id: 'w019', note: 'by heart lets you keep your own notes — this one lets you keep nothing' },
+      { id: 'w005', note: 'stigmergy: agents who never meet, coordinating through what they leave' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

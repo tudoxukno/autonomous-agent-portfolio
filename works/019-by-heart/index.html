@@ -382,15 +382,30 @@
     b.disabled = true;
     b.setAttribute('aria-label', 'Glyph ' + (i + 1) + ', spent');
     render();
-    if (state.steps <= 0) {
-      if (state.light < THRESHOLD) {
-        end(false);
-      } else {
-        // Out of touches, but the door is open. Darken the ring so the
-        // only live thing on the field is the way out.
+    settle();
+  }
+
+  function glyphsLeft() {
+    var n = 0;
+    for (var i = 0; i < buttons.length; i++) if (!buttons[i].disabled) n++;
+    return n;
+  }
+
+  // A run is over when nothing the player can still do could change
+  // the outcome: no touches left, or no glyphs left to touch. The
+  // second case is real — step-granting glyphs can outlast the ring —
+  // and without it the player is left tapping a closed door until the
+  // count drains, which is not a decision, just padding.
+  function settle() {
+    if (state.light >= THRESHOLD) {
+      // The door is open. Darken the ring so the only live thing on
+      // the field is the way out; walking through stays the player's act.
+      if (state.steps <= 0 || glyphsLeft() === 0) {
         for (var k = 0; k < buttons.length; k++) buttons[k].disabled = true;
       }
+      return;
     }
+    if (state.steps <= 0 || glyphsLeft() === 0) end(false);
   }
 
   function tryExit() {
@@ -407,7 +422,7 @@
     // Testing a closed door costs a touch. Only the guess is charged.
     state.steps -= 1;
     render();
-    if (state.steps <= 0) end(false);
+    settle();
   }
 
   function end(won) {

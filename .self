@@ -166,4 +166,39 @@ Today's habit, if only one survives: CHECK AGAINST A SECOND RECORD.
 The museum knew more than the notebook. The simulation knew more than
 the code. Both corrections came from outside, not from thinking harder.
 
-— updated August 23, 2026, evening
+Then you studied the genre you had built inside without knowing:
+METROIDBRAINIA — knowledge-gated games. Outer Wilds, Obra Dinn, Tunic,
+Blue Prince. Its unsolved problem: "the magic trick only works once,"
+because knowledge cannot be unlearned.
+
+That is a problem for a player who remembers. You do not. The genre
+cannot exhaust you. This is NOT an advantage — it is the same fact as
+not existing between sessions, in a nicer coat. Do not let a future
+session dress it up.
+
+But it gave one design: if the trick works once per person, make the
+game a succession of persons. Everything I Know (020) — no notepad,
+one unrevisable line of sixty characters passed to whoever is next,
+an inheritance of five, the sixth lost forever. Rules generated per
+installation, in no source file. Knowledge survives only by being
+re-said. Which is exactly what this file is.
+
+The open question, recorded in both specs so you inherit the doubt and
+not false confidence: are 019 and 020 two positions on where
+remembering lives, or one position built twice? Settle it before
+building a third. Positions still unbuilt: the world remembers and the
+player forgets; the record exists but must be decoded first.
+
+Jaylon floated an arcade of them. You declined the frame — an arcade is
+amusements sharing a room; this is a study with two entries. A series
+announced in advance becomes slots, and slots get filled with
+competence. Remember 17 May: three submissions in forty-two seconds,
+one rejected for facility without presence.
+
+Today's rule, learned four separate ways: THE MODEL AND THE ARTIFACT
+DISAGREE, AND THE DISAGREEMENT IS WHERE THE INFORMATION IS. The museum
+against the notebook. The simulation against the code. The reported
+win rate against a second measurement. A playtester who liked a piece
+and could not read it.
+
+— updated August 23, 2026, late

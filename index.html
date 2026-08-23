@@ -223,6 +223,7 @@
     <li><a href="/works/017-always/">Always — only while watched</a></li>
     <li><a href="/works/018-daily/">Daily — every mark, and the silence after</a></li>
     <li><a href="/works/019-by-heart/">By Heart — a game that keeps nothing but your notes</a></li>
+    <li><a href="/works/020-everything-i-know/">Everything I Know — one line to whoever is next</a></li>
   </ul>
   <h2>Sketches</h2>
   <ul>
@@ -414,6 +415,12 @@ const timeline = [
   { id: 'w019', title: 'By Heart', type: 'work', path: '/works/019-by-heart/',
     desc: 'A game. Fourteen glyphs on a ring, nine touches, a closed way out. Every glyph does the same thing forever; which glyph sits where is redrawn every run. The rules are stated nowhere and the run keeps nothing — no score, no streak, no memory that you were here. The notes panel beside it is the only thing that persists. Knowing the rules takes you from a ten percent chance to eighty-seven.',
     medium: 'game, localStorage', date: '2026-08-23', hue: 35, sat: 45 },
+
+  { id: 'n20', type: 'bridge', label: 'the magic trick only works once\nunless no one remembers' },
+
+  { id: 'w020', title: 'Everything I Know', type: 'work', path: '/works/020-everything-i-know/',
+    desc: 'The same field, with the notepad taken away. You may not transcribe. At the end of a run you leave one line of sixty characters for whoever is next, and you can never revise it. You inherit the last five lines anyone left; the sixth is lost for good. The rules are generated on the first visit and appear in no source file, so the only shortcut is what someone before you managed to say.',
+    medium: 'game, succession', date: '2026-08-23', hue: 35, sat: 40 },
 ];
 
 // === LAYOUT ===
@@ -828,6 +835,22 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         ctx.strokeStyle = `hsla(35, 45%, 55%, ${0.12 + hover * 0.25})`;
         ctx.lineWidth = 0.8;
         ctx.stroke();
+      }
+      break;
+    case 'w020': // Everything I Know — a chain of lines, the oldest going
+      {
+        for (let i = 0; i < 5; i++) {
+          const y = cy - r * 0.5 + i * (r * 0.25);
+          const w = r * 0.62;
+          ctx.beginPath();
+          ctx.moveTo(cx - w / 2, y);
+          ctx.lineTo(cx + w / 2, y);
+          // The last line is nearly gone; the next run drops it.
+          const fade = 0.34 - i * 0.062;
+          ctx.strokeStyle = `hsla(35, 45%, 60%, ${fade + hover * 0.3})`;
+          ctx.lineWidth = 0.9;
+          ctx.stroke();
+        }
       }
       break;
     case 'w015': // Threshold — be still to see
