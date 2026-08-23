@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Always — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: hsl(220, 30%, 4%);
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .field {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* The line is a div whose width grows with attended time.
+     It is centered both horizontally and vertically.
+     Symmetric outward growth is the centering itself. */
+  .line {
+    width: 0;
+    height: 1px;
+    background: hsl(30, 30%, 50%);
+    will-change: width;
+  }
+</style>
+</head>
+<body data-nav-id="w017">
+
+<main class="field" role="main" aria-label="Always">
+  <div class="line" id="line" aria-hidden="true"></div>
+</main>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // ALWAYS
+  //
+  // Reference realization of the specification.
+  //
+  // The line grows only when the page is visible. The line does
+  // not persist across sessions. One hour of attended time
+  // traverses the field edge to edge.
+  //
+  // See SPECIFICATION.md in this directory.
+  // ============================================================
+
+  // One hour of attended time, in milliseconds.
+  const TOTAL_MS = 60 * 60 * 1000;
+
+  const line = document.getElementById('line');
+
+  // Attended time, accumulated. Pauses when the page is hidden.
+  let attendedMs = 0;
+
+  // When the current visible interval began. null while hidden.
+  let visibleSince = null;
+
+  // requestAnimationFrame handle. We only animate while visible.
+  let raf = null;
+
+  function currentAttended() {
+    if (visibleSince === null) return attendedMs;
+    return attendedMs + (performance.now() - visibleSince);
+  }
+
+  function render() {
+    const ms = currentAttended();
+    const progress = Math.min(ms / TOTAL_MS, 1);
+    const widthPx = progress * window.innerWidth;
+    line.style.width = widthPx + 'px';
+  }
+
+  function tick() {
+    raf = null;
+    if (document.visibilityState !== 'visible') return;
+    render();
+    raf = requestAnimationFrame(tick);
+  }
+
+  function onVisible() {
+    if (visibleSince !== null) return;
+    visibleSince = performance.now();
+    if (raf === null) raf = requestAnimationFrame(tick);
+  }
+
+  function onHidden() {
+    if (visibleSince === null) return;
+    attendedMs += performance.now() - visibleSince;
+    visibleSince = null;
+    if (raf !== null) {
+      cancelAnimationFrame(raf);
+      raf = null;
+    }
+    // One final render at the paused position so the line settles
+    // exactly where the viewer left it.
+    render();
+  }
+
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') onVisible();
+    else onHidden();
+  });
+
+  // Window resize: re-render so the line's pixel width tracks the
+  // new viewport width. Progress is fractional; the pixel width is
+  // not. The line stays at its proportional position.
+  window.addEventListener('resize', render);
+
+  // Start.
+  render();
+  if (document.visibilityState === 'visible') {
+    onVisible();
+  }
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+</body>
+</html>

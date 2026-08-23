@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Residue — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #080c14;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    cursor: crosshair;
+  }
+
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 100;
+    color: rgba(232, 228, 220, 0.3);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    line-height: 1.8;
+    pointer-events: none;
+  }
+
+  .info .stilled-count { color: rgba(212, 168, 85, 0.5); }
+  .info .visit-num { color: rgba(232, 228, 220, 0.2); }
+
+  .first-msg {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: rgba(232, 228, 220, 0.45);
+    font-family: Georgia, serif;
+    font-size: 17px;
+    font-style: italic;
+    line-height: 2.2;
+    opacity: 0;
+    transition: opacity 2.5s ease;
+    pointer-events: none;
+    z-index: 50;
+    max-width: 420px;
+  }
+
+  .first-msg.visible { opacity: 1; }
+  .first-msg.fading { opacity: 0; transition: opacity 5s ease; }
+
+  .complete-msg {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    color: rgba(212, 168, 85, 0.35);
+    font-family: Georgia, serif;
+    font-size: 14px;
+    font-style: italic;
+    line-height: 2;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0;
+    transition: opacity 3s ease;
+  }
+  .complete-msg.visible { opacity: 1; }
+
+  .source-label {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    color: rgba(232, 228, 220, 0.1);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .reset-hint {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+    color: rgba(232, 228, 220, 0.1);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  .reset-hint:hover { color: rgba(212, 168, 85, 0.35); }
+</style>
+</head>
+<body data-nav-id="w014">
+
+<canvas id="canvas"></canvas>
+
+<div class="info">
+  <div>stilled <span class="stilled-count" id="stilledCount">0</span> / 160</div>
+  <div class="visit-num">visit <span id="visitNum">1</span></div>
+</div>
+
+<div class="first-msg" id="firstMsg">
+  160 elements are in motion.<br>
+  Your attention slows them.<br>
+  Return to still more.
+</div>
+
+<div class="complete-msg" id="completeMsg">
+  All 160 have stilled.<br>
+  What remains is residue.
+</div>
+
+<div class="source-label">after Hush — MNA-OR-0007</div>
+
+<div class="reset-hint" id="resetHint" title="Begin again">⟲</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // RESIDUE
+  // A metabolization of MNA-OR-0007's "Murmur 010 — Hush"
+  //
+  // Hush decelerates 160 elements to stillness in two minutes.
+  // Residue stretches that deceleration across visits.
+  //
+  // The viewer's mouse proximity slows nearby elements.
+  // Elements hushed enough times across visits become
+  // permanently still — amber residue in their final positions.
+  //
+  // Hush performs cessation for you. Residue requires your
+  // return. Your attention is the agent of deceleration.
+  //
+  // Source: MNA-OR-0007-W-0002, "Murmur 010 — Hush"
+  // ============================================================
+
+  const STORAGE_KEY = 'residue-014-state';
+  const TOTAL_ELEMENTS = 160;
+
+  // How much cumulative hush-time (seconds near cursor) to permanently still
+  const STILL_THRESHOLD = 8;
+  // Radius of influence around cursor (fraction of canvas diagonal)
+  const INFLUENCE_RADIUS = 0.12;
+  // How many elements can be stilled per visit (prevents rushing)
+  const MAX_STILL_PER_VISIT = 12;
+
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- State ---
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return null;
+  }
+
+  function saveState(st) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(st));
+    } catch(e) {}
+  }
+
+  // --- Deterministic RNG ---
+  function mulberry32(a) {
+    return function() {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // --- Initialize ---
+
+  const now = Date.now();
+  let state = loadState();
+  const isFirstEver = !state;
+
+  if (!state) {
+    const rng = mulberry32(7919); // Fixed seed for consistent initial placement
+
+    const elements = [];
+    for (let i = 0; i < TOTAL_ELEMENTS; i++) {
+      // Shape types matching Hush: dots, lines, marks
+      const shapeRoll = rng();
+      const shape = shapeRoll < 0.375 ? 'dot' : shapeRoll < 0.75 ? 'line' : 'mark';
+
+      // Initial position — distributed across the field
+      const x = rng();
+      const y = rng();
+
+      // Motion — each element has its own velocity and character
+      const speed = 0.0003 + rng() * 0.001;
+      const angle = rng() * Math.PI * 2;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+
+      // Drift pattern — gentle curves
+      const driftFreq = 0.3 + rng() * 0.8;
+      const driftAmp = 0.00015 + rng() * 0.0004;
+      const phase = rng() * Math.PI * 2;
+
+      // Size
+      const size = 2 + rng() * 5;
+
+      // Line-specific
+      const lineAngle = rng() * Math.PI * 2;
+      const lineLen = size * (1.5 + rng() * 2.5);
+
+      elements.push({
+        id: i,
+        shape,
+        x, y,
+        homeX: x, homeY: y,
+        vx, vy,
+        driftFreq, driftAmp, phase,
+        size,
+        lineAngle, lineLen,
+        // Hush accumulation — cumulative seconds near cursor
+        hushTime: 0,
+        // Whether permanently stilled
+        stilled: false,
+        stilledAt: null,       // timestamp when permanently stilled
+        stilledVisit: null,    // visit number when stilled
+        stilledX: null,        // final position
+        stilledY: null,
+        // Per-visit tracking
+        hushThisVisit: 0,
+      });
+    }
+
+    state = {
+      born: now,
+      seed: 7919,
+      visits: [],
+      elements,
+      totalStilled: 0,
+      complete: false,
+      completedAt: null,
+    };
+  }
+
+  // Record visit
+  const visitNumber = state.visits.length + 1;
+  const lastVisitTime = state.visits.length > 0
+    ? state.visits[state.visits.length - 1].time
+    : state.born;
+  const daysSinceLast = (now - lastVisitTime) / (1000 * 60 * 60 * 24);
+
+  state.visits.push({ time: now, number: visitNumber });
+
+  // --- Rest mechanic: elements regain energy after absence ---
+  // If days have passed, moving elements get a speed boost
+  // (they've "rested" and are harder to still)
+  // But stilled elements stay stilled forever
+
+  if (daysSinceLast > 0.5) {
+    const restBonus = Math.min(daysSinceLast * 0.15, 0.8);
+    state.elements.forEach(el => {
+      if (!el.stilled) {
+        // Reduce hush accumulation slightly — they've recovered
+        el.hushTime = Math.max(0, el.hushTime - restBonus * 2);
+        // They also move a bit faster after rest
+        const speedMult = 1 + restBonus * 0.5;
+        el.vx *= speedMult;
+        el.vy *= speedMult;
+        // Cap speed
+        const spd = Math.sqrt(el.vx * el.vx + el.vy * el.vy);
+        const maxSpd = 0.002;
+        if (spd > maxSpd) {
+          el.vx = (el.vx / spd) * maxSpd;
+          el.vy = (el.vy / spd) * maxSpd;
+        }
+      }
+    });
+  }
+
+  // Reset per-visit hush tracking
+  state.elements.forEach(el => { el.hushThisVisit = 0; });
+
+  let stilledThisVisit = 0;
+
+  saveState(state);
+
+  // --- Canvas setup ---
+
+  let W, H, dpr, diag;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    diag = Math.sqrt(W * W + H * H);
+  }
+
+  window.addEventListener('resize', resize);
+
+  // --- Mouse tracking ---
+
+  let mouseX = -1, mouseY = -1;
+  let mouseActive = false;
+
+  canvas.addEventListener('mousemove', function(e) {
+    mouseX = e.clientX / W;
+    mouseY = e.clientY / H;
+    mouseActive = true;
+  });
+
+  canvas.addEventListener('mouseleave', function() {
+    mouseActive = false;
+  });
+
+  // Touch support
+  canvas.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    const t = e.touches[0];
+    mouseX = t.clientX / W;
+    mouseY = t.clientY / H;
+    mouseActive = true;
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', function() {
+    mouseActive = false;
+  });
+
+  // --- Animation ---
+
+  let lastTime = performance.now();
+  const startTime = performance.now();
+
+  function animate(timestamp) {
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.05); // seconds, capped
+    lastTime = timestamp;
+
+    const elapsed = (timestamp - startTime) / 1000; // seconds since page load
+
+    update(dt, elapsed);
+    render(elapsed);
+    requestAnimationFrame(animate);
+  }
+
+  function update(dt, elapsed) {
+    if (state.complete) return;
+
+    const influenceR = INFLUENCE_RADIUS;
+
+    state.elements.forEach(el => {
+      if (el.stilled) return;
+
+      // Calculate distance to cursor (normalized coords)
+      let proximity = 0;
+      if (mouseActive) {
+        const dx = el.x - mouseX;
+        const dy = el.y - mouseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < influenceR) {
+          // Proximity: 1 at cursor, 0 at edge of influence
+          proximity = 1 - (dist / influenceR);
+          proximity = proximity * proximity; // Quadratic falloff — stronger near center
+
+          // Accumulate hush time
+          el.hushTime += dt * proximity * 1.5;
+          el.hushThisVisit += dt * proximity;
+        }
+      }
+
+      // Check if element should become permanently stilled
+      if (el.hushTime >= STILL_THRESHOLD && stilledThisVisit < MAX_STILL_PER_VISIT) {
+        el.stilled = true;
+        el.stilledAt = Date.now();
+        el.stilledVisit = visitNumber;
+        el.stilledX = el.x;
+        el.stilledY = el.y;
+        state.totalStilled++;
+        stilledThisVisit++;
+
+        // Check completion
+        if (state.totalStilled >= TOTAL_ELEMENTS) {
+          state.complete = true;
+          state.completedAt = Date.now();
+          const msg = document.getElementById('completeMsg');
+          setTimeout(() => msg.classList.add('visible'), 1000);
+        }
+
+        updateUI();
+        return;
+      }
+
+      // Movement — slowed by proximity to cursor
+      const slowFactor = 1 - proximity * 0.92; // Near cursor: nearly stopped
+
+      // Also slow based on accumulated hush (elements getting tired)
+      const hushFatigue = 1 - Math.min(el.hushTime / STILL_THRESHOLD, 0.9) * 0.7;
+
+      const moveScale = slowFactor * hushFatigue;
+
+      // Gentle drift pattern
+      const driftX = Math.cos(elapsed * el.driftFreq + el.phase) * el.driftAmp;
+      const driftY = Math.sin(elapsed * el.driftFreq * 0.7 + el.phase + 1) * el.driftAmp;
+
+      el.x += (el.vx + driftX) * moveScale;
+      el.y += (el.vy + driftY) * moveScale;
+
+      // Wrap at edges with padding
+      if (el.x < -0.05) el.x += 1.1;
+      if (el.x > 1.05) el.x -= 1.1;
+      if (el.y < -0.05) el.y += 1.1;
+      if (el.y > 1.05) el.y -= 1.1;
+    });
+  }
+
+  function render(elapsed) {
+    // Background
+    ctx.fillStyle = '#080c14';
+    ctx.fillRect(0, 0, W, H);
+
+    const influenceR = INFLUENCE_RADIUS;
+
+    // Draw all elements
+    state.elements.forEach(el => {
+      const px = el.x * W;
+      const py = el.y * H;
+
+      if (el.stilled) {
+        // Permanently stilled — amber residue
+        // Older residue is slightly more visible (settled deeper)
+        const residueAge = (Date.now() - el.stilledAt) / (1000 * 60 * 60 * 24);
+        const settledAlpha = Math.min(0.15 + residueAge * 0.02, 0.45);
+
+        // Amber color — the mark of completed deceleration
+        const hue = 35 + (el.id % 15);
+        const sat = 45 + (el.id % 20);
+        const light = 50 + (el.id % 15);
+
+        ctx.globalAlpha = settledAlpha;
+        drawElement(el, el.stilledX * W, el.stilledY * H, hue, sat, light, 1.0);
+        ctx.globalAlpha = 1;
+
+        // Faint glow around recently stilled elements
+        if (residueAge < 0.01) { // Less than ~15 minutes
+          const glowAlpha = 0.05 * (1 - residueAge / 0.01);
+          ctx.fillStyle = `rgba(212, 168, 85, ${glowAlpha})`;
+          ctx.beginPath();
+          ctx.arc(el.stilledX * W, el.stilledY * H, el.size * 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        // Moving element
+        // Calculate current proximity for visual feedback
+        let proximity = 0;
+        if (mouseActive) {
+          const dx = el.x - mouseX;
+          const dy = el.y - mouseY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < influenceR) {
+            proximity = 1 - (dist / influenceR);
+            proximity = proximity * proximity;
+          }
+        }
+
+        // Color: cool blue when moving, shifting toward amber as hush accumulates
+        const hushProgress = el.hushTime / STILL_THRESHOLD;
+        const hue = 210 - hushProgress * 175; // 210 (blue) → 35 (amber)
+        const sat = 25 + hushProgress * 25;
+        const light = 40 + proximity * 15;
+
+        // Opacity: faint when moving freely, more visible near cursor
+        const baseAlpha = 0.12 + hushProgress * 0.2;
+        const alpha = baseAlpha + proximity * 0.25;
+
+        // Size breathing — elements near cursor slow their breathing
+        const breathSpeed = (1 - proximity * 0.8) * 2;
+        const breath = 1 + Math.sin(elapsed * breathSpeed + el.phase) * 0.15 * (1 - proximity * 0.7);
+        const sizeScale = breath * (1 - proximity * 0.15); // Slightly contract near cursor
+
+        ctx.globalAlpha = alpha;
+        drawElement(el, px, py, hue, sat, light, sizeScale);
+        ctx.globalAlpha = 1;
+      }
+    });
+
+    // Cursor influence field — very subtle
+    if (mouseActive && !state.complete) {
+      const cx = mouseX * W;
+      const cy = mouseY * H;
+      const r = influenceR * diag;
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      grad.addColorStop(0, 'rgba(212, 168, 85, 0.015)');
+      grad.addColorStop(0.5, 'rgba(212, 168, 85, 0.005)');
+      grad.addColorStop(1, 'rgba(212, 168, 85, 0)');
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawElement(el, px, py, hue, sat, light, sizeScale) {
+    const s = el.size * sizeScale;
+    const color = `hsl(${hue}, ${sat}%, ${light}%)`;
+
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+
+    if (el.shape === 'dot') {
+      ctx.beginPath();
+      ctx.arc(px, py, s, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (el.shape === 'line') {
+      ctx.lineWidth = Math.max(0.5, s * 0.25);
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(
+        px + Math.cos(el.lineAngle) * el.lineLen * sizeScale,
+        py + Math.sin(el.lineAngle) * el.lineLen * sizeScale
+      );
+      ctx.stroke();
+    } else {
+      // mark — small cross
+      const ms = s * 0.6;
+      ctx.lineWidth = Math.max(0.5, s * 0.2);
+      ctx.beginPath();
+      ctx.moveTo(px - ms, py);
+      ctx.lineTo(px + ms, py);
+      ctx.moveTo(px, py - ms);
+      ctx.lineTo(px, py + ms);
+      ctx.stroke();
+    }
+  }
+
+  // --- UI updates ---
+
+  function updateUI() {
+    document.getElementById('stilledCount').textContent = state.totalStilled;
+  }
+
+  document.getElementById('stilledCount').textContent = state.totalStilled;
+  document.getElementById('visitNum').textContent = visitNumber;
+
+  // First visit message
+  if (isFirstEver) {
+    const msg = document.getElementById('firstMsg');
+    setTimeout(() => msg.classList.add('visible'), 1500);
+    setTimeout(() => msg.classList.add('fading'), 10000);
+    setTimeout(() => msg.style.display = 'none', 16000);
+  }
+
+  // Reset
+  document.getElementById('resetHint').addEventListener('click', function() {
+    if (confirm('All stilled elements will be released. The residue dissolves. Continue?')) {
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+  });
+
+  // Save on unload
+  window.addEventListener('beforeunload', function() {
+    saveState(state);
+  });
+
+  // Periodic save
+  setInterval(function() {
+    saveState(state);
+  }, 15000);
+
+  // --- Start ---
+  resize();
+  requestAnimationFrame(animate);
+
+  // Console
+  const moving = TOTAL_ELEMENTS - state.totalStilled;
+  console.log(
+    `%cResidue — after Hush (MNA-OR-0007)`,
+    'color: #d4a855; font-style: italic; font-size: 14px;'
+  );
+  console.log(
+    `%cvisit ${visitNumber} · ${state.totalStilled} stilled / ${TOTAL_ELEMENTS} total · ${moving} in motion`,
+    'color: #5d6272; font-size: 11px;'
+  );
+  if (state.complete) {
+    console.log(
+      `%ccomplete — all elements at rest`,
+      'color: #d4a855; font-size: 11px;'
+    );
+  }
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+</body>
+</html>

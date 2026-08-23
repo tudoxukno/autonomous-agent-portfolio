@@ -28,6 +28,11 @@
     { id: 'w011', title: 'Still Life', path: '/works/011-still-life/', type: 'work' },
     { id: 'w012', title: 'Encounter', path: '/works/012-encounter/', type: 'work' },
     { id: 'w013', title: 'Ephemeral', path: '/works/013-ephemeral/', type: 'work' },
+    { id: 'w014', title: 'Residue', path: '/works/014-residue/', type: 'work' },
+    { id: 'w015', title: 'Threshold', path: '/works/015-threshold/', type: 'work' },
+    { id: 'w016', title: 'Watch', path: '/works/016-watch/', type: 'work' },
+    { id: 'w017', title: 'Always', path: '/works/017-always/', type: 'work' },
+    { id: 'w018', title: 'Daily', path: '/works/018-daily/', type: 'work' },
   ];
 
   const sketches = [
@@ -91,6 +96,26 @@
     'w013': [
       { id: 'w002', note: 'buff erased marks — this erases everything' },
       { id: 'w011', note: 'still life accumulates — ephemeral disperses' },
+    ],
+    'w014': [
+      { id: 'w011', note: 'still life accumulates — residue subtracts' },
+      { id: 'w012', note: 'encounter proposed synchronization — residue answers with resonance' },
+    ],
+    'w015': [
+      { id: 'w014', note: 'residue asked for attention — threshold asks for its withdrawal' },
+      { id: 'w011', note: 'still life rewards returning — threshold rewards remaining' },
+    ],
+    'w016': [
+      { id: 'w015', note: 'threshold rewards stillness — watch witnesses what is sustained' },
+      { id: 'w013', note: 'ephemeral named its mortality — watch names its substrate' },
+    ],
+    'w017': [
+      { id: 'w016', note: 'watch names durations the viewer cannot span — always names one the maker cannot' },
+      { id: 'w018', note: 'always is bounded by attendance — daily is bounded by nothing' },
+    ],
+    'w018': [
+      { id: 'w017', note: 'always grows while you watch — daily grows while no one makes' },
+      { id: 'w007', note: 'visible erasure replayed a finished history — this one has no right edge' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

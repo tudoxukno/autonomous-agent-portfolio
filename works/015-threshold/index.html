@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Threshold — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #080c14;
+    overflow: hidden;
+    cursor: none;
+  }
+
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(232, 228, 220, 0);
+    font-family: Georgia, serif;
+    font-size: 14px;
+    font-style: italic;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    z-index: 50;
+    transition: color 4s ease;
+    text-align: center;
+  }
+
+  .hint.visible {
+    color: rgba(232, 228, 220, 0.2);
+  }
+
+  .hint.fading {
+    color: rgba(232, 228, 220, 0);
+    transition: color 6s ease;
+  }
+</style>
+</head>
+<body data-nav-id="w015">
+
+<canvas id="canvas"></canvas>
+<div class="hint" id="hint">be still</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // THRESHOLD
+  //
+  // A work that reveals itself only when the viewer stops moving.
+  //
+  // Interaction conceals. Stillness reveals.
+  // The longer you remain still, the more present the work becomes.
+  // Any movement collapses the revelation.
+  //
+  // No persistence. No accumulation. Only the present moment
+  // of looking.
+  // ============================================================
+
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  let W, H, dpr;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  window.addEventListener('resize', resize);
+
+  // === REVELATION STATE ===
+
+  let revelation = 0;          // 0 = hidden, 1 = fully revealed
+  let lastMoveTime = 0;        // timestamp of last movement
+  let timeSinceMove = 0;       // seconds since last movement
+  let hasEverMoved = false;
+  let hintShown = false;
+  let hintTimeout = null;
+
+  // Rise rate: full revelation takes ~45 seconds of stillness
+  const RISE_RATE = 1 / 45;
+  // Fall rate: collapses in ~4 seconds of movement
+  const FALL_RATE = 1 / 4;
+  // Grace period: small movements within this window don't collapse
+  const GRACE_MS = 120;
+
+  // Track mouse/touch
+  let lastX = -1, lastY = -1;
+  let moveAccum = 0; // accumulated movement magnitude
+
+  function onMove(x, y) {
+    if (lastX < 0) {
+      lastX = x; lastY = y;
+      return;
+    }
+
+    const dx = x - lastX;
+    const dy = y - lastY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    lastX = x; lastY = y;
+
+    // Ignore sub-pixel jitter (trackpad noise, etc.)
+    if (dist < 1.5) return;
+
+    moveAccum += dist;
+
+    // Only register as "movement" if accumulated motion exceeds threshold
+    if (moveAccum > 3) {
+      lastMoveTime = performance.now();
+      moveAccum = 0;
+      if (!hasEverMoved) {
+        hasEverMoved = true;
+        showHint();
+      }
+    }
+  }
+
+  canvas.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+  canvas.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    lastX = t.clientX; lastY = t.clientY;
+    lastMoveTime = performance.now();
+    hasEverMoved = true;
+    showHint();
+  }, { passive: true });
+  canvas.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    onMove(t.clientX, t.clientY);
+  }, { passive: true });
+
+  // Click and scroll also count as movement
+  canvas.addEventListener('mousedown', () => { lastMoveTime = performance.now(); });
+  canvas.addEventListener('wheel', e => {
+    lastMoveTime = performance.now();
+    hasEverMoved = true;
+  }, { passive: true });
+
+  function showHint() {
+    if (hintShown) return;
+    hintShown = true;
+    const el = document.getElementById('hint');
+    setTimeout(() => el.classList.add('visible'), 500);
+    setTimeout(() => {
+      el.classList.remove('visible');
+      el.classList.add('fading');
+    }, 6000);
+    setTimeout(() => el.style.display = 'none', 13000);
+  }
+
+  // Show hint after 8 seconds if no interaction
+  hintTimeout = setTimeout(() => {
+    if (!hasEverMoved) showHint();
+  }, 8000);
+
+  // === GENERATIVE NETWORK ===
+  // A field of nodes connected by proximity and resonance.
+  // Structured, not random. Worth discovering.
+
+  const NUM_NODES = 90;
+  const CONNECTION_DIST = 0.18; // fraction of canvas diagonal
+
+  // Deterministic seed for consistent network
+  function mulberry32(a) {
+    return function() {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  const rng = mulberry32(31337);
+
+  // Generate nodes in clustered distribution
+  const nodes = [];
+
+  // 5-7 cluster centers
+  const numClusters = 5 + Math.floor(rng() * 3);
+  const clusters = [];
+  for (let i = 0; i < numClusters; i++) {
+    clusters.push({
+      x: 0.15 + rng() * 0.7,
+      y: 0.15 + rng() * 0.7,
+      radius: 0.08 + rng() * 0.12,
+      weight: 0.3 + rng() * 0.7,
+    });
+  }
+
+  for (let i = 0; i < NUM_NODES; i++) {
+    // Choose a cluster (weighted)
+    const totalWeight = clusters.reduce((s, c) => s + c.weight, 0);
+    let pick = rng() * totalWeight;
+    let cluster = clusters[0];
+    for (const c of clusters) {
+      pick -= c.weight;
+      if (pick <= 0) { cluster = c; break; }
+    }
+
+    // Position within cluster with gaussian-like distribution
+    const angle = rng() * Math.PI * 2;
+    const dist = cluster.radius * Math.sqrt(rng());
+    let x = cluster.x + Math.cos(angle) * dist;
+    let y = cluster.y + Math.sin(angle) * dist;
+
+    // Clamp
+    x = Math.max(0.05, Math.min(0.95, x));
+    y = Math.max(0.05, Math.min(0.95, y));
+
+    // Each node has its own pulse rhythm
+    const pulseFreq = 0.15 + rng() * 0.4;
+    const pulsePhase = rng() * Math.PI * 2;
+    const baseSize = 1.5 + rng() * 3;
+
+    // Layer: determines at what revelation level it appears
+    // Some nodes appear early, others require deep stillness
+    const layer = rng();
+
+    // Hue: cluster-based with variation
+    const baseHue = 200 + clusters.indexOf(cluster) * 25;
+    const hue = baseHue + (rng() - 0.5) * 30;
+
+    nodes.push({
+      x, y, pulseFreq, pulsePhase, baseSize, layer, hue,
+      // Slow drift
+      driftX: (rng() - 0.5) * 0.0001,
+      driftY: (rng() - 0.5) * 0.0001,
+      driftFreq: 0.05 + rng() * 0.1,
+      driftPhase: rng() * Math.PI * 2,
+    });
+  }
+
+  // Pre-compute connections (edges between close nodes)
+  const connections = [];
+  for (let i = 0; i < NUM_NODES; i++) {
+    for (let j = i + 1; j < NUM_NODES; j++) {
+      const dx = nodes[i].x - nodes[j].x;
+      const dy = nodes[i].y - nodes[j].y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < CONNECTION_DIST) {
+        // Connection appears when BOTH nodes are revealed
+        const layerReq = Math.max(nodes[i].layer, nodes[j].layer);
+        connections.push({
+          a: i, b: j, dist: d,
+          layer: layerReq + 0.05, // Connections appear slightly after nodes
+          pulsePhase: rng() * Math.PI * 2,
+        });
+      }
+    }
+  }
+
+  // === DEEP LAYER: structures that appear at high revelation ===
+
+  // Constellation lines — long-distance connections between cluster centers
+  const constellations = [];
+  for (let i = 0; i < numClusters; i++) {
+    for (let j = i + 1; j < numClusters; j++) {
+      const dx = clusters[i].x - clusters[j].x;
+      const dy = clusters[i].y - clusters[j].y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 0.5) {
+        constellations.push({
+          ax: clusters[i].x, ay: clusters[i].y,
+          bx: clusters[j].x, by: clusters[j].y,
+          layer: 0.7 + rng() * 0.2, // Only at deep stillness
+        });
+      }
+    }
+  }
+
+  // === AMBIENT FIELD: background glow at high revelation ===
+
+  // Organic field shapes — large, soft glows
+  const fields = [];
+  for (let i = 0; i < 4; i++) {
+    fields.push({
+      x: 0.2 + rng() * 0.6,
+      y: 0.2 + rng() * 0.6,
+      radius: 0.15 + rng() * 0.2,
+      hue: 200 + rng() * 60,
+      layer: 0.4 + rng() * 0.3,
+      pulseFreq: 0.03 + rng() * 0.05,
+      pulsePhase: rng() * Math.PI * 2,
+    });
+  }
+
+  // === RENDER ===
+
+  const startTime = performance.now();
+
+  function animate(timestamp) {
+    const dt = 1 / 60; // Assume ~60fps for smooth math
+    const time = (timestamp - startTime) / 1000;
+
+    // Update revelation
+    timeSinceMove = (timestamp - lastMoveTime) / 1000;
+
+    if (lastMoveTime === 0) {
+      // No movement ever detected — reveal slowly from start
+      timeSinceMove = time;
+    }
+
+    if (timeSinceMove > 0.5) {
+      // Still — revelation rises
+      // Ease in: starts slow, accelerates
+      const riseSpeed = RISE_RATE * (0.3 + revelation * 0.7);
+      revelation = Math.min(1, revelation + riseSpeed * dt);
+    } else {
+      // Moving — revelation falls
+      revelation = Math.max(0, revelation - FALL_RATE * dt);
+    }
+
+    render(time);
+    requestAnimationFrame(animate);
+  }
+
+  function render(time) {
+    // Background — imperceptibly lighter at high revelation
+    const bgBright = 3 + revelation * 1.5;
+    ctx.fillStyle = `hsl(220, 30%, ${bgBright}%)`;
+    ctx.fillRect(0, 0, W, H);
+
+    if (revelation < 0.001) {
+      requestAnimationFrame(animate);
+      return; // Nothing to draw
+    }
+
+    const diag = Math.sqrt(W * W + H * H);
+
+    // === Layer 1: Ambient fields (revelation > 0.4) ===
+    for (const f of fields) {
+      if (revelation < f.layer) continue;
+      const fieldReveal = Math.min(1, (revelation - f.layer) / 0.25);
+      const pulse = Math.sin(time * f.pulseFreq + f.pulsePhase) * 0.5 + 0.5;
+      const alpha = fieldReveal * 0.02 * (0.7 + pulse * 0.3);
+
+      const cx = f.x * W;
+      const cy = f.y * H;
+      const r = f.radius * diag;
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      grad.addColorStop(0, `hsla(${f.hue}, 25%, 35%, ${alpha})`);
+      grad.addColorStop(0.6, `hsla(${f.hue}, 20%, 25%, ${alpha * 0.3})`);
+      grad.addColorStop(1, `hsla(${f.hue}, 15%, 20%, 0)`);
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // === Layer 2: Constellation lines (revelation > 0.7) ===
+    for (const c of constellations) {
+      if (revelation < c.layer) continue;
+      const lineReveal = Math.min(1, (revelation - c.layer) / 0.2);
+      const alpha = lineReveal * 0.035;
+
+      ctx.beginPath();
+      ctx.moveTo(c.ax * W, c.ay * H);
+      ctx.lineTo(c.bx * W, c.by * H);
+      ctx.strokeStyle = `rgba(180, 200, 220, ${alpha})`;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+
+    // === Layer 3: Connections ===
+    for (const conn of connections) {
+      if (revelation < conn.layer) continue;
+
+      const connReveal = Math.min(1, (revelation - conn.layer) / 0.15);
+      const na = nodes[conn.a];
+      const nb = nodes[conn.b];
+
+      // Connection pulse — travels along the line
+      const pulse = Math.sin(time * 0.3 + conn.pulsePhase) * 0.5 + 0.5;
+      const distFade = 1 - conn.dist / CONNECTION_DIST;
+      const alpha = connReveal * distFade * 0.06 * (0.5 + pulse * 0.5);
+
+      const ax = (na.x + Math.sin(time * na.driftFreq + na.driftPhase) * 0.005) * W;
+      const ay = (na.y + Math.cos(time * na.driftFreq * 0.7 + na.driftPhase) * 0.005) * H;
+      const bx = (nb.x + Math.sin(time * nb.driftFreq + nb.driftPhase) * 0.005) * W;
+      const by = (nb.y + Math.cos(time * nb.driftFreq * 0.7 + nb.driftPhase) * 0.005) * H;
+
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.strokeStyle = `hsla(210, 20%, 55%, ${alpha})`;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+
+    // === Layer 4: Nodes ===
+    for (const n of nodes) {
+      if (revelation < n.layer) continue;
+
+      const nodeReveal = Math.min(1, (revelation - n.layer) / 0.12);
+
+      // Position with drift
+      const nx = (n.x + Math.sin(time * n.driftFreq + n.driftPhase) * 0.005) * W;
+      const ny = (n.y + Math.cos(time * n.driftFreq * 0.7 + n.driftPhase) * 0.005) * H;
+
+      // Pulse
+      const pulse = Math.sin(time * n.pulseFreq + n.pulsePhase) * 0.5 + 0.5;
+
+      // Size scales with revelation
+      const size = n.baseSize * nodeReveal * (0.8 + pulse * 0.2);
+
+      // Alpha scales with revelation and pulse
+      const alpha = nodeReveal * (0.08 + pulse * 0.07 + revelation * 0.1);
+
+      // Hue shifts toward amber at high revelation
+      const hue = n.hue + (revelation > 0.8 ? (revelation - 0.8) * 80 : 0);
+      const sat = 25 + revelation * 20;
+      const light = 40 + pulse * 10 + revelation * 10;
+
+      // Glow
+      if (nodeReveal > 0.3) {
+        const glowAlpha = alpha * 0.3;
+        const glowR = size * 3 + pulse * 2;
+        const grad = ctx.createRadialGradient(nx, ny, 0, nx, ny, glowR);
+        grad.addColorStop(0, `hsla(${hue}, ${sat}%, ${light}%, ${glowAlpha})`);
+        grad.addColorStop(1, `hsla(${hue}, ${sat}%, ${light}%, 0)`);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(nx, ny, glowR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Core
+      ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(nx, ny, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // === Layer 5: Breath indicator — very subtle ===
+    // At high revelation, a gentle overall pulse to show the work is alive
+    if (revelation > 0.6) {
+      const breathAlpha = (revelation - 0.6) * 0.008;
+      const breath = Math.sin(time * 0.15) * 0.5 + 0.5;
+      ctx.fillStyle = `rgba(180, 200, 220, ${breathAlpha * breath})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  // === START ===
+  resize();
+  lastMoveTime = 0; // Start with no movement recorded
+  requestAnimationFrame(animate);
+
+  // Console
+  console.log(
+    '%cThreshold',
+    'color: #5d6272; font-style: italic; font-size: 14px;'
+  );
+  console.log(
+    '%cbe still',
+    'color: #3a3f4a; font-size: 11px;'
+  );
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+</body>
+</html>

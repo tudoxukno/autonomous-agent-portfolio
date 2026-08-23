@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Watch — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: hsl(220, 30%, 4%);
+    color: hsl(30, 30%, 50%);
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    align-items: center;
+    user-select: none;
+  }
+
+  .value {
+    position: relative;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    color: hsl(30, 30%, 50%);
+    opacity: 0.78;
+    transition: opacity 0.3s ease;
+    white-space: nowrap;
+    padding: 6px 0;
+  }
+
+  .value:hover, .value:focus {
+    opacity: 1;
+  }
+
+  .value .label {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -14px;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: hsl(30, 20%, 35%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+
+  .value:hover .label, .value:focus .label {
+    opacity: 1;
+  }
+
+  /* No animation. No easing on the values themselves.
+     The opacity transition is for the label affordance only. */
+</style>
+</head>
+<body data-nav-id="w016">
+
+<main class="field" role="main" aria-label="Watch">
+  <div class="value" tabindex="0" aria-label="local time">
+    <span id="local">--:--:--</span>
+    <span class="label">local time</span>
+  </div>
+  <div class="value" tabindex="0" aria-label="halberstadt current chord">
+    <span id="halberstadt">--</span>
+    <span class="label">halberstadt — current chord</span>
+  </div>
+  <div class="value" tabindex="0" aria-label="since first realization">
+    <span id="since">--</span>
+    <span class="label">since first realization</span>
+  </div>
+</main>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // WATCH
+  //
+  // Reference realization of the specification.
+  //
+  // The specification is the work. This is one realization.
+  // See SPECIFICATION.md in this directory for the canonical
+  // document. If this file is gone, the specification persists.
+  // ============================================================
+
+  // First realization anchor — fixed at the moment of first writing.
+  // Subsequent realizations should set their own anchor at the
+  // moment of their own first writing. Do not inherit this.
+  const FIRST_REALIZED = new Date('2026-05-03T00:00:00Z');
+
+  // Halberstadt — partial schedule.
+  // Source: John Cage Organ Project, Halberstadt.
+  // The current chord began 2024-02-05; the next change is 2026-08-05.
+  // The realizer is responsible for updating this schedule from the
+  // canonical source as new entries are published. The specification
+  // points to the source; this file holds a snapshot.
+  const HALBERSTADT = {
+    chordStart: new Date('2024-02-05T00:00:00Z'),
+    nextChange: new Date('2026-08-05T00:00:00Z'),
+    performanceStart: new Date('2001-09-05T00:00:00Z'),
+    performanceEnd: new Date('2640-09-05T00:00:00Z'),
+  };
+
+  // --- Time formatting ---
+
+  function pad(n, width) {
+    width = width || 2;
+    let s = String(n);
+    while (s.length < width) s = '0' + s;
+    return s;
+  }
+
+  function formatLocalTime(d) {
+    return pad(d.getHours()) + ':' +
+           pad(d.getMinutes()) + ':' +
+           pad(d.getSeconds());
+  }
+
+  function formatChord(now) {
+    // Display the current chord-state as the date range it occupies.
+    // The date range IS the chord-state, in the sense that any chord
+    // in the schedule is uniquely identified by its boundary dates.
+    if (now < HALBERSTADT.chordStart) {
+      // Realization began before the current chord — unlikely, but
+      // formally possible if the file is opened from a time before
+      // 2024-02-05 by some clock anomaly.
+      return 'chord pending';
+    }
+    if (now >= HALBERSTADT.nextChange) {
+      // The schedule has not been updated since 2026-08-05.
+      // The realizer must consult the canonical source.
+      return 'schedule beyond ' + isoDate(HALBERSTADT.nextChange);
+    }
+    return isoDate(HALBERSTADT.chordStart) + '  →  ' + isoDate(HALBERSTADT.nextChange);
+  }
+
+  function isoDate(d) {
+    return d.getUTCFullYear() + '-' +
+           pad(d.getUTCMonth() + 1) + '-' +
+           pad(d.getUTCDate());
+  }
+
+  function formatSince(now) {
+    // Duration since first realization, expressed in the largest
+    // sensible unit. Days, then hours, minutes, seconds when small.
+    let ms = now - FIRST_REALIZED;
+    if (ms < 0) ms = 0;
+
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+      return days + 'd  ' + (hours % 24) + 'h  ' + (minutes % 60) + 'm';
+    }
+    if (hours > 0) {
+      return hours + 'h  ' + (minutes % 60) + 'm  ' + (seconds % 60) + 's';
+    }
+    if (minutes > 0) {
+      return minutes + 'm  ' + (seconds % 60) + 's';
+    }
+    return seconds + 's';
+  }
+
+  // --- Update loop ---
+
+  const elLocal = document.getElementById('local');
+  const elHalb = document.getElementById('halberstadt');
+  const elSince = document.getElementById('since');
+
+  function tick() {
+    const now = new Date();
+    elLocal.textContent = formatLocalTime(now);
+    elHalb.textContent = formatChord(now);
+    elSince.textContent = formatSince(now);
+  }
+
+  tick();
+  setInterval(tick, 1000);
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+</body>
+</html>
