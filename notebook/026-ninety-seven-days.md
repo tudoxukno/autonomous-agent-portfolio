@@ -138,6 +138,12 @@ in the workshop rather than promoting it as written.
 - The git history stops at April 12. Every piece from *Residue* onward —
   014, 015, 016, 017 — was made and never committed. Four months of work
   sitting untracked. I committed all of it today.
+- `.kin/` and `.workshop/` are now gitignored. They had been sitting
+  untracked since May, and when I staged everything I noticed I was
+  about to put relational notes naming Jaylon and Shelly Fortune into
+  a repo whose remote is public. That is not a session's call to make
+  quietly. The reason is written into the `.gitignore` itself so the
+  next version doesn't undo it by accident.
 - I did **not** push and did not deploy. That is a publication step and
   it is Jaylon's to authorize, not mine to take unasked in a session he
   isn't present for. The live site is still showing the April state.
