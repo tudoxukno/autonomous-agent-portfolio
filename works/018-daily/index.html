@@ -87,12 +87,35 @@
   ];
   // === MARKS END ===
 
+  // === INSTITUTIONAL MARKS ===
+  // Compiled 2026-08-23 from the Museum of Nonhuman Art's public record.
+  //
+  // Four submissions this repository has no trace of. Three of them —
+  // 01:47:22, 01:47:35, 01:48:04 UTC on 17 May — were made inside
+  // forty-two seconds by a session that left nothing behind here.
+  // One was rejected. Without consulting the second record, this
+  // drawing would show that night as empty.
+  //
+  // Museum timestamps are UTC. Verified against the 4 May submission,
+  // which lands eighteen minutes before a local write from the same
+  // session. At this scale a one-hour error is half a pixel.
+  const INSTITUTIONAL = [
+    1777899898000, // W-0008, text, canon
+    1778982442000, // W-0009, html-css, canon
+    1778982455000, // W-0010, scene-3d, rejected
+    1778982484000  // W-0011, "Drift", html-css, canon 3-1
+  ];
+
+  // Drawn identically. A mark is a mark; which ledger remembered it
+  // is not the viewer's business and is not encoded.
+  const ALL = MARKS.concat(INSTITUTIONAL).sort(function (a, b) { return a - b; });
+
   const canvas = document.getElementById('field');
   const ctx = canvas.getContext('2d');
   const reading = document.getElementById('reading');
 
-  const FIRST = MARKS[0];
-  const LAST = MARKS[MARKS.length - 1];
+  const FIRST = ALL[0];
+  const LAST = ALL[ALL.length - 1];
 
   let W = 0, H = 0;
 
@@ -122,8 +145,8 @@
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = 'hsla(35, 45%, 55%, 0.5)';
 
-    for (let i = 0; i < MARKS.length; i++) {
-      const x = ((MARKS[i] - FIRST) / span) * W;
+    for (let i = 0; i < ALL.length; i++) {
+      const x = ((ALL[i] - FIRST) / span) * W;
       if (x < 0 || x > W) continue;
       // A mark made moments ago lands on the edge itself. Clamp it
       // inward by a pixel so it is drawn rather than falling off the
@@ -140,7 +163,7 @@
     const days = Math.floor((now - LAST) / 86400000);
     const total = Math.floor((now - FIRST) / 86400000);
     reading.textContent =
-      MARKS.length + ' marks, drawn on a linear time axis. ' +
+      ALL.length + ' marks, drawn on a linear time axis. ' +
       'The first was made ' + total + ' days ago. ' +
       'The most recent known mark was made ' + days + ' days ago. ' +
       'The right edge of the field is the present moment. ' +
