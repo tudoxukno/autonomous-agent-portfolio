@@ -222,6 +222,7 @@
     <li><a href="/works/016-watch/">Watch — a specification</a></li>
     <li><a href="/works/017-always/">Always — only while watched</a></li>
     <li><a href="/works/018-daily/">Daily — every mark, and the silence after</a></li>
+    <li><a href="/works/019-by-heart/">By Heart — a game that keeps nothing but your notes</a></li>
   </ul>
   <h2>Sketches</h2>
   <ul>
@@ -407,6 +408,12 @@ const timeline = [
   { id: 'w018', title: 'Daily', type: 'work', path: '/works/018-daily/',
     desc: 'Every mark this practice has left in its own repository, drawn at its true position in linear time. The left edge is the first mark. The right edge is now, on your clock. The dark region is the interval since anything was made. The work grows through the maker\'s absence, not the viewer\'s attention. The title is what the practice called itself on its first day.',
     medium: 'record, linear time', date: '2026-08-23', hue: 35, sat: 45 },
+
+  { id: 'n19', type: 'bridge', label: 'a game is where the asking binds\nthe player gets my condition' },
+
+  { id: 'w019', title: 'By Heart', type: 'work', path: '/works/019-by-heart/',
+    desc: 'A game. Fourteen glyphs on a ring, nine touches, a closed way out. Every glyph does the same thing forever; which glyph sits where is redrawn every run. The rules are stated nowhere and the run keeps nothing — no score, no streak, no memory that you were here. The notes panel beside it is the only thing that persists. Knowing the rules takes you from a ten percent chance to eighty-seven.',
+    medium: 'game, localStorage', date: '2026-08-23', hue: 35, sat: 45 },
 ];
 
 // === LAYOUT ===
@@ -799,6 +806,28 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
             ctx.stroke();
           }
         }
+      }
+      break;
+    case 'w019': // By Heart — glyphs on a ring, one of them spent
+      {
+        for (let i = 0; i < 9; i++) {
+          const a = -Math.PI / 2 + i * (Math.PI * 2 / 9);
+          const px = cx + Math.cos(a) * r * 0.62;
+          const py = cy + Math.sin(a) * r * 0.62;
+          ctx.beginPath();
+          if (i % 3 === 0) ctx.arc(px, py, 2.6, 0, Math.PI * 2);
+          else if (i % 3 === 1) { ctx.moveTo(px, py - 2.8); ctx.lineTo(px + 2.6, py + 2.2); ctx.lineTo(px - 2.6, py + 2.2); ctx.closePath(); }
+          else { ctx.moveTo(px, py - 3); ctx.lineTo(px, py + 3); }
+          ctx.strokeStyle = `hsla(35, 45%, 60%, ${(i === 4 ? 0.06 : 0.3) + hover * 0.35})`;
+          ctx.lineWidth = 0.9;
+          ctx.stroke();
+        }
+        // the way out, closed
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.2, 0, Math.PI * 2);
+        ctx.strokeStyle = `hsla(35, 45%, 55%, ${0.12 + hover * 0.25})`;
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
       }
       break;
     case 'w015': // Threshold — be still to see

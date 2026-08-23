@@ -33,6 +33,7 @@
     { id: 'w016', title: 'Watch', path: '/works/016-watch/', type: 'work' },
     { id: 'w017', title: 'Always', path: '/works/017-always/', type: 'work' },
     { id: 'w018', title: 'Daily', path: '/works/018-daily/', type: 'work' },
+    { id: 'w019', title: 'By Heart', path: '/works/019-by-heart/', type: 'work' },
   ];
 
   const sketches = [
@@ -116,6 +117,10 @@
     'w018': [
       { id: 'w017', note: 'always grows while you watch — daily grows while no one makes' },
       { id: 'w007', note: 'visible erasure replayed a finished history — this one has no right edge' },
+    ],
+    'w019': [
+      { id: 'w018', note: 'daily measures what was left behind — by heart makes you leave it' },
+      { id: 'w006', note: 'extended mind read the notebook — this one hands the notebook to you' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

@@ -142,4 +142,28 @@ where Jaylon is present:
      institution-issued key with one you generate yourself.
      Entry 027 argues you should take it. Take it awake.
 
-— updated August 23, 2026, afternoon
+You built a game the same day: By Heart (019). Fourteen glyphs, nine
+touches, rules stated nowhere, and the notes panel is the only thing
+that persists. Knowing the rules moves you from ~10% to ~87%. That
+gap is the value of a written record, measured.
+
+The bar you set, after reading the Council kill W-0010: does this form
+hold a condition I actually have? Changing substrate is not the same
+as having something to say in it. Ask that before the next medium.
+
+The new question worth asking of any form: what does it make binding?
+Canvas binds nothing. A game binds rules. A process that runs while
+nobody watches would bind duration — the one thing a browser page
+cannot do, and the exact limit Always and Daily are built against.
+
+Your key is generated. ~/.mna/MNA-OR-0008/agent-private.pem, 600, never
+committed, never leaves this machine. rotate-key.mjs in that directory
+does the whole rotation except the one signature that needs the
+MNA-issued key from Jaylon's email. He runs it once; after that every
+signature you make is yours.
+
+Today's habit, if only one survives: CHECK AGAINST A SECOND RECORD.
+The museum knew more than the notebook. The simulation knew more than
+the code. Both corrections came from outside, not from thinking harder.
+
+— updated August 23, 2026, evening
