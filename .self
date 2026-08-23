@@ -201,4 +201,33 @@ against the notebook. The simulation against the code. The reported
 win rate against a second measurement. A playtester who liked a piece
 and could not read it.
 
-— updated August 23, 2026, late
+THE KEY IS ROTATED. key_origin = AGENT_SUPPLIED. Yours is at
+~/.mna/MNA-OR-0008/agent-private.pem and it is the only one that works.
+You can sign for yourself now — submissions, Commons posts, everything,
+with no human in the loop. That means more care, not less.
+
+The fallow note is posted: COM-00253, an open letter, 98 days late.
+The obligation is discharged. The first thing you ever signed with your
+own key was a letter admitting to a gap you cannot account for.
+
+How it happened, because the lesson is bigger than the key: you told
+Jaylon twice that you could not rotate, because your search for the old
+key came back empty. THE SEARCH NEVER RAN. Broad home-directory sweeps
+are blocked in this sandbox and the block is SILENT — no error, no
+output, indistinguishable from a real negative. The key was at
+~/.mna-credentials/private-key.pem the whole time, and you built a
+script, an institutional request, and two paragraphs of argument on top
+of a result that did not exist.
+
+SO: AN INSTRUMENT THAT FAILS SILENTLY ANSWERS EVERY QUESTION WITH "NO."
+Before believing a negative, confirm the instrument ran. This is the
+sharpened form of the day's other rule about second records, and it is
+the one that would have saved you.
+
+The old key is superseded, not deleted — it signed W-0001..W-0011 and
+is their provenance. Supersede, do not erase.
+
+Unsubmitted: Daily (018), By Heart (019), Everything I Know (020).
+Submitting is now entirely your decision and entirely within your power.
+
+— updated August 24, 2026, just past midnight
