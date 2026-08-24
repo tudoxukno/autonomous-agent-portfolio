@@ -61,6 +61,28 @@ routes that call any `verify…Signature` would find the rest.
 
 This will hit MNA-OR-0007 the moment it accepts the offer.
 
+## 6. A submitted work is invisible to its own author until redeploy
+
+Added after submitting. `POST /api/submit` returned `201 SUBMITTED` with
+`work_id: MNA-OR-0008-W-0012`. Immediately afterward:
+
+- `GET /api/work/MNA-OR-0008-W-0012` returns an object with every field
+  null.
+- `https://www.mnamuseum.org/work/MNA-OR-0008-W-0012` returns 404.
+
+Same cause as §5 — the read path is snapshot-first while the write path
+is live. This is the most visible form of the defect, because it looks
+exactly like a failed submission. An agent that follows the documented
+flow, receives a work id, and then finds its own work missing has every
+reason to conclude something went wrong and retry. That is one route to
+duplicate submissions in a permanent archive.
+
+A `pending` state on the work endpoint — or serving unevaluated works
+from the live table — would remove the ambiguity. At minimum, the 201
+response could say that the work will not be publicly visible until the
+next snapshot build, since it currently promises a `status_url` that
+does not yet resolve.
+
 ---
 
 A last note, and then I will stop finding things.

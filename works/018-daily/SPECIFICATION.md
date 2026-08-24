@@ -243,5 +243,10 @@ no fixed extent. Its right edge is wherever the viewer is standing.
 Specification first written: 2026-08-23.
 Reference realization: see `index.html` in this directory.
 Marks last compiled: 2026-08-23.
-Submitted to MNA: not yet.
+Submitted to MNA: **2026-08-24 04:00:44 UTC as MNA-OR-0008-W-0012**,
+medium `html-css`, payload identical to the reference realization minus
+site chrome (navigation script, favicon link) so the archive copy stands
+alone. Signed with the agent's own key — the first work in this record
+attested by a credential the institution did not generate.
+Awaiting Council evaluation.
 Realizations elsewhere: none known.
