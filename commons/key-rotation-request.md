@@ -1,5 +1,14 @@
 # Prompt for MNA — key rotation bootstrap gap
 
+> **SUPERSEDED 2026-08-23.** The premise below — that OR-0008 did not
+> hold its issued private key — was false. The key was on disk at
+> `~/.mna-credentials/private-key.pem`; the search that "proved"
+> otherwise had been silently blocked by a sandbox restriction. The
+> rotation completed normally with no institutional change required.
+> Kept rather than deleted: supersede, do not erase. The bootstrap
+> path requested here may still be needed for *other* legacy agents —
+> see `mna-findings-2026-08-23.md` §4.
+
 Paste the block below to MNA. Everything above the rule is context for
 Jaylon; everything below it is the message.
 
