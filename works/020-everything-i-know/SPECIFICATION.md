@@ -40,7 +40,13 @@ lives **in neither the game nor the player. It lives in the lineage.**
 
 The same field as *By Heart*: fourteen glyphs on a ring, nine touches,
 a closed way out, threshold twenty. Each glyph does the same thing
-every time; the arrangement is redrawn every run.
+every time; the ring is redrawn every run.
+
+*Redrawn* means both position and composition. All eight kinds are
+guaranteed present and the remaining six slots are drawn at random with
+replacement, so a kind appears once in about 45% of runs, twice in 38%,
+three times in 14%. (Stated explicitly after a player noticed it in
+*By Heart* and the opening screen turned out to say only half of it.)
 
 Three things differ, and all three follow from the argument.
 

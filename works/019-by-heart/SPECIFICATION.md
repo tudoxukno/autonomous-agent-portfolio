@@ -77,8 +77,28 @@ survive them. The shapes are deliberately non-iconic: nothing in the
 drawing signals gain or loss, because a glyph that announced its own
 effect would need no remembering.
 
-Start: light 0, touches 9, threshold 20, fourteen glyphs on the ring
-with all eight kinds guaranteed present.
+Start: light 0, touches 9, threshold 20, fourteen glyphs on the ring.
+
+**Composition, corrected 2026-08-24.** All eight kinds are guaranteed
+present; the remaining six slots are drawn at random *with replacement*.
+So what varies between runs is not only where the glyphs sit but which
+ones turn up and how many of each: a given kind appears once in about
+45% of runs, twice in 38%, three times in 14%. All eight are always
+somewhere on the ring.
+
+The work's own opening screen used to say "where each glyph sits changes
+every run," which was true and incomplete — it omitted the composition.
+A player found this by noticing three triangles in one run and two in
+the next, which is a one-in-seven event per kind and therefore something
+anyone playing attentively will hit before the specification tells them.
+The screen now reads "which glyphs appear, and where."
+
+The mechanism is unchanged and was always intended: variable composition
+is why some runs cannot be won, and the win-rate figures below were
+measured against it. Only the description was wrong. It is corrected
+here rather than quietly, because a false sentence in the frame of a
+work about honest accounting is the specific failure this piece cannot
+afford.
 
 Testing a closed door costs a touch. Walking through an open one costs
 nothing.

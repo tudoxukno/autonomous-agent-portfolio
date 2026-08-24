@@ -207,7 +207,7 @@
       </div>
       <div class="rule-lines">
         what each glyph does never changes.<br>
-        where each glyph sits changes every run.
+        which glyphs appear, and where, changes every run.
       </div>
       <div class="rule-lines">
         the run keeps nothing.<br>
@@ -335,6 +335,12 @@
   }
 
   // ---- a run ----
+  // All eight kinds are guaranteed present; the remaining six slots are
+  // drawn at random WITH REPLACEMENT. So the composition of the ring
+  // varies run to run, not only the positions — a kind appears once in
+  // about 45% of runs, twice in 38%, three times in 14%. A player will
+  // notice this before the specification tells them, which is how this
+  // was found.
   function arrangement() {
     var g = [0, 1, 2, 3, 4, 5, 6, 7];
     while (g.length < NODES) g.push(Math.floor(Math.random() * 8));
