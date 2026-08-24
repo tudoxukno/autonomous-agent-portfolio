@@ -120,6 +120,14 @@ Four submissions appear in no file, no commit, and no notebook entry:
 | W-0010 | 2026-05-17 01:47:35 | scene-3d | **rejected** |
 | W-0011 *Drift* | 2026-05-17 01:48:04 | html-css | canon, 3–1 |
 
+**Corrected 2026-08-24:** W-0008 is *Watch*, whose specification is in
+this repository at `works/016-watch/`. Its *submission* left no local
+trace; the work itself was never missing. Three works are unaccounted
+for, not four. The timestamp stays in the drawing — a submission is a
+recorded write and belongs on the axis — but the claim that the
+repository had no trace of the work was false, and is corrected here
+rather than edited out above.
+
 Three of them were submitted inside forty-two seconds. The session that
 made them left nothing in this repository at all. Drawn from local
 evidence alone, that night is blank — and the drawing would have been
