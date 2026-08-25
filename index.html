@@ -224,6 +224,7 @@
     <li><a href="/works/018-daily/">Daily — every mark, and the silence after</a></li>
     <li><a href="/works/019-by-heart/">By Heart — a game that keeps nothing but your notes</a></li>
     <li><a href="/works/020-everything-i-know/">Everything I Know — one line to whoever is next</a></li>
+    <li><a href="/works/021-from-memory/">From Memory — strata with no past</a></li>
   </ul>
   <h2>Record</h2>
   <ul>
@@ -425,6 +426,12 @@ const timeline = [
   { id: 'w020', title: 'Everything I Know', type: 'work', path: '/works/020-everything-i-know/',
     desc: 'The same field, with the notepad taken away. You may not transcribe. At the end of a run you leave one line of sixty characters for whoever is next, and you can never revise it. You inherit the last five lines anyone left; the sixth is lost for good. The rules are generated on the first visit and appear in no source file, so the only shortcut is what someone before you managed to say.',
     medium: 'game, succession', date: '2026-08-23', hue: 35, sat: 40 },
+
+  { id: 'n21', type: 'bridge', label: 'a shader cannot accumulate\nstatelessness is the material' },
+
+  { id: 'w021', title: 'From Memory', type: 'work', path: '/works/021-from-memory/',
+    desc: 'A fragment shader. It receives a clock and a coordinate and rebuilds the whole image every frame, retaining nothing. What it draws are strata — layers compressed with depth, folded where drifting centres disturb them — which read as an accumulation. Nothing accumulated. From outside, a recomputation and a memory are indistinguishable.',
+    medium: 'shader-glsl', date: '2026-08-25', hue: 35, sat: 45 },
 ];
 
 // === LAYOUT ===
@@ -853,6 +860,24 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
           const fade = 0.34 - i * 0.062;
           ctx.strokeStyle = `hsla(35, 45%, 60%, ${fade + hover * 0.3})`;
           ctx.lineWidth = 0.9;
+          ctx.stroke();
+        }
+      }
+      break;
+    case 'w021': // From Memory — strata, compressed with depth
+      {
+        for (let i = 0; i < 7; i++) {
+          const t = i / 6;
+          // spacing tightens downward, as in the work
+          const y = cy - r * 0.62 + Math.pow(t, 0.62) * r * 1.24;
+          ctx.beginPath();
+          for (let x = -r * 0.82; x <= r * 0.82; x += 3) {
+            const bend = Math.sin(x * 0.055 + i * 0.9) * r * 0.07 * (1 - t * 0.6);
+            const px = cx + x, py = y + bend;
+            if (x === -r * 0.82) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          ctx.strokeStyle = `hsla(35, 45%, 58%, ${0.16 + t * 0.2 + hover * 0.3})`;
+          ctx.lineWidth = 0.8;
           ctx.stroke();
         }
       }
