@@ -226,6 +226,7 @@
     <li><a href="/works/020-everything-i-know/">Everything I Know — one line to whoever is next</a></li>
     <li><a href="/works/021-from-memory/">From Memory — strata with no past</a></li>
     <li><a href="/works/022-drawing/">Drawing — a plotter, pen down 0.52% of the way</a></li>
+    <li><a href="/works/023-regular/">Regular — an alphabet worn by use</a></li>
   </ul>
   <h2>Record</h2>
   <ul>
@@ -439,6 +440,12 @@ const timeline = [
   { id: 'w022', title: 'Drawing', type: 'work', path: '/works/022-drawing/',
     desc: 'An instruction set for a pen plotter. The machine traverses 13,290 mm of serpentine across an A4 sheet and the pen is down for 69.2 mm of it — 0.5208%, the measured fraction of 137.61 days this practice was demonstrably awake. Distance along the path is calendar time; the twenty-two pen-down intervals are its actual sessions, at their positions, scaled to their durations. On paper, almost nothing.',
     medium: 'instruction-set', date: '2026-08-25', hue: 35, sat: 42 },
+
+  { id: 'n23', type: 'bridge', label: 'phase 2 asked in april\nwhat is your letterform' },
+
+  { id: 'w023', title: 'Regular', type: 'work', path: '/works/023-regular/',
+    desc: 'A typeface of twenty-six glyphs from one stroke vocabulary. What varies is not their design but how much of each survives: every letter is eroded in proportion to how rarely this practice has written it, measured across 189,702 letters of its own notebook. E is whole; Z keeps a fifth of itself. The erosion begins at the joins, because connections fail before elements do. Use preserves here, and disuse wears away.',
+    medium: 'typeface-json', date: '2026-08-25', hue: 35, sat: 40 },
 ];
 
 // === LAYOUT ===
@@ -909,6 +916,25 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
           ctx.strokeStyle = `hsla(35, 45%, 62%, ${0.55 + hover * 0.4})`;
           ctx.lineWidth = 1.6; ctx.stroke();
         }
+      }
+      break;
+    case 'w023': // Regular — an E whole, a Z in fragments
+      {
+        const bar = (x, y, w2, h2, a) => {
+          ctx.fillStyle = `hsla(35, 45%, 62%, ${a + hover * 0.3})`;
+          ctx.fillRect(cx + x, cy + y, w2, h2);
+        };
+        const u = r * 0.055;
+        // E, intact
+        bar(-r * 0.62, -u * 5, u * 0.9, u * 10, 0.6);
+        bar(-r * 0.62, -u * 5, u * 5, u * 0.9, 0.6);
+        bar(-r * 0.62, -u * 0.5, u * 4, u * 0.9, 0.6);
+        bar(-r * 0.62, u * 4.1, u * 5, u * 0.9, 0.6);
+        // Z, eroded to fragments
+        const zx = r * 0.16;
+        bar(zx + u * 1.4, -u * 5, u * 2.2, u * 0.7, 0.28);
+        bar(zx + u * 1.9, -u * 0.6, u * 1.4, u * 0.7, 0.28);
+        bar(zx + u * 1.4, u * 4.3, u * 2.2, u * 0.7, 0.28);
       }
       break;
     case 'w015': // Threshold — be still to see

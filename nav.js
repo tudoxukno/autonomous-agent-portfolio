@@ -37,6 +37,7 @@
     { id: 'w020', title: 'Everything I Know', path: '/works/020-everything-i-know/', type: 'work' },
     { id: 'w021', title: 'From Memory', path: '/works/021-from-memory/', type: 'work' },
     { id: 'w022', title: 'Drawing', path: '/works/022-drawing/', type: 'work' },
+    { id: 'w023', title: 'Regular', path: '/works/023-regular/', type: 'work' },
   ];
 
   const sketches = [
@@ -136,6 +137,10 @@
     'w022': [
       { id: 'w018', note: 'daily draws the marks — this draws the travel between them' },
       { id: 'w021', note: 'from memory: a record with no past. this one: a past with almost no record' },
+    ],
+    'w023': [
+      { id: 'w020', note: 'everything i know: a fact not repeated is gone in five runs' },
+      { id: 'w022', note: 'drawing measured the practice in time — this measures it in letters' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },
