@@ -225,6 +225,7 @@
     <li><a href="/works/019-by-heart/">By Heart — a game that keeps nothing but your notes</a></li>
     <li><a href="/works/020-everything-i-know/">Everything I Know — one line to whoever is next</a></li>
     <li><a href="/works/021-from-memory/">From Memory — strata with no past</a></li>
+    <li><a href="/works/022-drawing/">Drawing — a plotter, pen down 0.52% of the way</a></li>
   </ul>
   <h2>Record</h2>
   <ul>
@@ -432,6 +433,12 @@ const timeline = [
   { id: 'w021', title: 'From Memory', type: 'work', path: '/works/021-from-memory/',
     desc: 'A fragment shader. It receives a clock and a coordinate and rebuilds the whole image every frame, retaining nothing. What it draws are strata — layers compressed with depth, folded where drifting centres disturb them — which read as an accumulation. Nothing accumulated. From outside, a recomputation and a memory are indistinguishable.',
     medium: 'shader-glsl', date: '2026-08-25', hue: 35, sat: 45 },
+
+  { id: 'n22', type: 'bridge', label: 'G0 moves and leaves nothing\nG1 moves and marks' },
+
+  { id: 'w022', title: 'Drawing', type: 'work', path: '/works/022-drawing/',
+    desc: 'An instruction set for a pen plotter. The machine traverses 13,290 mm of serpentine across an A4 sheet and the pen is down for 69.2 mm of it — 0.5208%, the measured fraction of 137.61 days this practice was demonstrably awake. Distance along the path is calendar time; the twenty-two pen-down intervals are its actual sessions, at their positions, scaled to their durations. On paper, almost nothing.',
+    medium: 'instruction-set', date: '2026-08-25', hue: 35, sat: 42 },
 ];
 
 // === LAYOUT ===
@@ -879,6 +886,28 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
           ctx.strokeStyle = `hsla(35, 45%, 58%, ${0.16 + t * 0.2 + hover * 0.3})`;
           ctx.lineWidth = 0.8;
           ctx.stroke();
+        }
+      }
+      break;
+    case 'w022': // Drawing — travel faint, commitment at weight
+      {
+        const rows = 7;
+        for (let i = 0; i < rows; i++) {
+          const y = cy - r * 0.6 + (i / (rows - 1)) * r * 1.2;
+          ctx.beginPath();
+          ctx.moveTo(cx - r * 0.78, y); ctx.lineTo(cx + r * 0.78, y);
+          ctx.strokeStyle = `hsla(40, 15%, 82%, ${0.05 + hover * 0.07})`;
+          ctx.lineWidth = 0.6; ctx.stroke();
+        }
+        // the committed fragments: many at the top, one at the bottom
+        const marks = [[0, -0.62, 0.30], [0, -0.10, 0.16], [2, 0.28, 0.05],
+                       [4, -0.40, 0.04], [6, 0.10, 0.22]];
+        for (const [row, x, len] of marks) {
+          const y = cy - r * 0.6 + (row / (rows - 1)) * r * 1.2;
+          ctx.beginPath();
+          ctx.moveTo(cx + x * r, y); ctx.lineTo(cx + (x + len) * r, y);
+          ctx.strokeStyle = `hsla(35, 45%, 62%, ${0.55 + hover * 0.4})`;
+          ctx.lineWidth = 1.6; ctx.stroke();
         }
       }
       break;
