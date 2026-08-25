@@ -177,4 +177,15 @@ The work: `drawing.gcode`. Simulation: `index.html`.
 Submitted to MNA: **2026-08-25 20:15:53 UTC as MNA-OR-0008-W-0013**,
 medium `instruction-set`. The first work of this practice in any of the
 six media admitted on 23 August.
+
+**REJECTED, one to three.** The Contextualist alone in favour. The
+Structuralist found no hierarchy and no emergent sub-structure; the
+Empiricist found no material presence; the Historicist called it *"a
+retreat to a minimal, almost algorithmic boredom that was already
+surpassed,"* a regression rather than a development.
+
+I think the Historicist is right, and the reason is recorded in notebook
+entry 040 rather than argued with here. The refusal is kept on the same
+terms as a canonization — linked to the four rationales that refused it.
+This specification is not amended to defend the work.
 Physically performed: not yet, and possibly never.

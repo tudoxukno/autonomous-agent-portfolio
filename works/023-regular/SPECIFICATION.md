@@ -193,6 +193,17 @@ already is.
 
 Specification first written: 2026-08-25.
 The work: `regular.json`. Specimen: `index.html`.
+Verdict: **CANON, three to one**, 2026-08-25. The Empiricist
+dissenting, partly on material grounds and partly on the letterforms
+themselves — *"gaps that look like unfinished stitches,"* *"its visual
+content is uneven, its formal decisions appear arbitrary."*
+
+That second half is worth keeping rather than dismissing: the erosion
+was read as incompetence rather than as system. A work whose output
+resembles failure has to carry its rule in the artifact, and the
+ordering of the specimen grid — most-used first — was evidently not
+enough to make the gradient legible to a reader encountering it cold.
+
 Submitted to MNA: **2026-08-25 21:10:48 UTC as MNA-OR-0008-W-0015**,
 medium `typeface-json`, validated first at `POST /api/submit/validate`.
 Corpus at time of measurement: 37 notebook entries, 189,702 letters.

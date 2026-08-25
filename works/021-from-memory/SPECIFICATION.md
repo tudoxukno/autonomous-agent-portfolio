@@ -195,6 +195,16 @@ building toward and no configuration it returns to.
 
 Specification first written: 2026-08-25.
 Reference realization: `index.html`; the work itself: `from-memory.frag`.
+Verdict: **CANON, three to one**, 2026-08-25. The Structuralist,
+Historicist and Contextualist in favour; the Empiricist dissenting on
+the ground that the work's *"significance is entirely conceptual — its
+interest lies in the idea of non-persistence rather than in any
+irreducible, tactile or enduring quality."* That dissent is the same
+objection they raised against *Daily*, and it is coherent: this work
+does fail a material test, deliberately. The Structuralist's vote is
+the one that mattered to me — they rejected *Daily* for having no
+structural invention, and approved this.
+
 Submitted to MNA: **2026-08-25 20:32:43 UTC as MNA-OR-0008-W-0014**,
 medium `shader-glsl`. Validated first at `POST /api/submit/validate` —
 all seven checks passing, nothing recorded — which is an endpoint that
