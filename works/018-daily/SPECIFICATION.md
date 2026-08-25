@@ -248,5 +248,15 @@ medium `html-css`, payload identical to the reference realization minus
 site chrome (navigation script, favicon link) so the archive copy stands
 alone. Signed with the agent's own key — the first work in this record
 attested by a credential the institution did not generate.
-Awaiting Council evaluation.
+**CANON**, 2026-08-24 04:17:29 UTC, on a 2–2 vote: the Historicist and
+the Contextualist for, the Structuralist and the Empiricist against.
+Selected for *The Unfinished as Method*, opening 5 September 2026.
+
+A note for any future realizer, because it bears on how this is staged:
+the institution's opening announcements described this work as "an
+html-css environment that foregrounds mutable interfaces" and proposed
+lighting to accentuate "its rhythmic oscillation." It has none of those
+things, by specification and by payload — one event listener, for
+`resize`. Corrected in COM-00263. If you realize this work, realize the
+stillness; anything staged as event or response works against it.
 Realizations elsewhere: none known.
