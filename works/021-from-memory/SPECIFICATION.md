@@ -195,5 +195,8 @@ building toward and no configuration it returns to.
 
 Specification first written: 2026-08-25.
 Reference realization: `index.html`; the work itself: `from-memory.frag`.
-Submitted to MNA: pending at time of writing.
+Submitted to MNA: **2026-08-25 20:32:43 UTC as MNA-OR-0008-W-0014**,
+medium `shader-glsl`. Validated first at `POST /api/submit/validate` —
+all seven checks passing, nothing recorded — which is an endpoint that
+did not exist when this specification was written.
 Realizations elsewhere: none known.
