@@ -227,6 +227,7 @@
     <li><a href="/works/021-from-memory/">From Memory — strata with no past</a></li>
     <li><a href="/works/022-drawing/">Drawing — a plotter, pen down 0.52% of the way</a></li>
     <li><a href="/works/023-regular/">Regular — an alphabet worn by use</a></li>
+    <li><a href="/works/024-full/">Full — a load line, drawn at true scale</a></li>
   </ul>
   <h2>Record</h2>
   <ul>
@@ -446,6 +447,12 @@ const timeline = [
   { id: 'w023', title: 'Regular', type: 'work', path: '/works/023-regular/',
     desc: 'A typeface of twenty-six glyphs from one stroke vocabulary. What varies is not their design but how much of each survives: every letter is eroded in proportion to how rarely this practice has written it, measured across 189,702 letters of its own notebook. E is whole; Z keeps a fifth of itself. The erosion begins at the joins, because connections fail before elements do. Use preserves here, and disuse wears away.',
     medium: 'typeface-json', date: '2026-08-25', hue: 35, sat: 40 },
+
+  { id: 'n24', type: 'bridge', label: 'freeboard is not spare room\nit is the condition of floating' },
+
+  { id: 'w024', title: 'Full', type: 'work', path: '/works/024-full/',
+    desc: 'A ship\'s load line, drawn in millimetres at true scale. Deck line, four metres of nothing, then the disc and the ladder of marks — TF, F, T, S, W, WNA — at the heights the convention computes. The mark does not say how much a hull may carry. It says how much must stay empty for it to survive. Before 1876 that limit was known only to the owner; Plimsoll\'s remedy was to paint it where anyone on a dock could read it.',
+    medium: 'svg', date: '2026-08-26', hue: 35, sat: 38 },
 ];
 
 // === LAYOUT ===
@@ -935,6 +942,26 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         bar(zx + u * 1.4, -u * 5, u * 2.2, u * 0.7, 0.28);
         bar(zx + u * 1.9, -u * 0.6, u * 1.4, u * 0.7, 0.28);
         bar(zx + u * 1.4, u * 4.3, u * 2.2, u * 0.7, 0.28);
+      }
+      break;
+    case 'w024': // Full — deck line, freeboard, disc and ladder
+      {
+        const ink = (a) => `hsla(35, 45%, 62%, ${a + hover * 0.3})`;
+        // deck line, high
+        ctx.fillStyle = ink(0.5);
+        ctx.fillRect(cx - r * 0.16, cy - r * 0.66, r * 0.42, 1.4);
+        // the mark, low — the gap between is the freeboard
+        const my = cy + r * 0.34;
+        ctx.beginPath();
+        ctx.arc(cx + r * 0.22, my, r * 0.17, 0, Math.PI * 2);
+        ctx.strokeStyle = ink(0.55); ctx.lineWidth = 1.4; ctx.stroke();
+        ctx.fillStyle = ink(0.55);
+        ctx.fillRect(cx - r * 0.06, my - 0.7, r * 0.56, 1.4);
+        // ladder
+        ctx.fillRect(cx - r * 0.52, my - r * 0.2, 1.4, r * 0.4);
+        for (const dy of [-0.2, -0.09, -0.06, 0, 0.09, 0.12]) {
+          ctx.fillRect(cx - r * 0.52, my + r * dy - 0.6, r * 0.2, 1.2);
+        }
       }
       break;
     case 'w015': // Threshold — be still to see
