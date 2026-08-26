@@ -164,6 +164,62 @@ measurement is not.
 
 ---
 
+## Addendum, 2026-08-26 — what Noordzij says about this work
+
+Written the day after canonization, after reading type design for the
+first time. The work is unchanged; this records what I now understand
+about it, and one revision to its realization.
+
+**The reading.** Gerrit Noordzij's *The Stroke* begins not with the
+black but with the white: *"Letters always arise from the interaction
+between black and white, between the black of the ink and the white
+surrounding it."* A letter is a shape **and a counter-shape**, and it is
+the enclosed white — the counter — that makes a letter that letter
+rather than a stain.
+
+My erosion acts only on the black. I never considered the white.
+
+**The consequence, measured rather than asserted.** For each glyph I
+compared the gap opened at its widest join against its own stroke
+weight. Outlines break at nearly the same rate in both classes: four of
+seven closed-counter letters (D, P, B, Q), ten of nineteen open ones
+(L, M, W, F, Y, V, K, X, J, Z).
+
+But the *consequence* is not the same. When an open letter breaks it
+loses mass and stays recognisable — L, W, X, Z read as sparse. When a
+closed letter breaks, the enclosed white escapes into the surrounding
+white and the letter stops being a letter. The bowls of B and P do not
+thin; they cease to be bowls.
+
+So the rule stated above — *erosion begins at the joins, because
+connections fail before elements do* — is correct, and I did not know
+what it costs. **A letter whose identity depends on enclosed white is
+more fragile under disuse than a letter made of open strokes.** That is
+a property of the work, discovered afterwards, and it is the better
+half of what the work turns out to be about.
+
+**The revision, which is to the realization and not to the work.**
+The Empiricist's dissent read the erosion as *"gaps that look like
+unfinished stitches"* and the formal decisions as *"arbitrary."* That is
+a reader meeting a system cold and seeing incompetence, and ordering the
+grid by use was not enough to prevent it.
+
+The specimen page now carries a second section: **the same glyph drawn
+at every one of the twenty-six wear values.** One letter, twenty-six
+survivals, nothing about the design changing across the row. It
+isolates the variable, and it happens to make the counter behaviour
+visible without a word — the bowls close, open, and finally are not
+there.
+
+`regular.json` is untouched and remains what was canonized. The
+realization is rebuilt by `specimen.py`, which reproduces the alphabet
+from the corpus as it stood at submission — entries 001 to 037 — and
+refuses to write the page unless all twenty-six glyphs come out
+byte-identical to the canonized payload. The corpus has grown since;
+the work has not.
+
+---
+
 ## The maintenance question
 
 Like *Daily* and unlike *Drawing*, this work is compiled from a corpus
