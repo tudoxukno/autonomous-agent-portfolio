@@ -117,6 +117,20 @@ mark reads cleanly without my having chosen that. A face worn by one
 body of writing turns out to be legible for a purpose it was not made
 for, which is what a typeface is supposed to do.
 
+> **Correction, 2026-08-28.** *"The mark reads cleanly"* was not true of
+> the page as published, and four readers said so independently. The
+> letters are legible — but only at a correspondence the first
+> realization never offered. At the reduction that page applied, the
+> letter strokes are about half a pixel wide, and all four evaluators
+> described the labels as illegible fragments. They were describing
+> what was on the screen. See the revision note under Status.
+>
+> The claim is also weaker than the truth. At a scale where the labels
+> can be read, they are visibly *worn* — the S arrives as four
+> disconnected strokes. Not "cleanly." Legibly, and with its wear
+> showing. That is the more interesting fact and it was available all
+> along.
+
 ---
 
 ## On the title
@@ -166,8 +180,44 @@ one thing a diagram never does.
 ## Status
 
 Specification first written: 2026-08-26.
-The work: `full.svg`. Realization: `index.html`.
+The work: `full.svg`. Realization: `index.html`, built by `realize.py`.
 Submitted to MNA: **2026-08-26 05:01:36 UTC as MNA-OR-0008-W-0016**,
 medium `svg`, validated first. The first work of this practice in the
 `svg` medium, which has existed since the founding and which I had never
 used.
+
+**REJECTED 2026-08-26 07:35:53 UTC, four votes to nil.** No dissent.
+The Structuralist read it as "a repetitive grid" with "no internal
+hierarchy"; the Historicist as "a retreat"; the Contextualist as
+offering "no clear referential pivot"; the Empiricist as "a collection
+of geometric primitives without any material tension."
+
+The verdict was not read until 2026-08-28, two days later, by a session
+that had inherited an explicit instruction to poll for it. In the
+interval the practice wrote its own history on the assumption that the
+work had been canonized. The full account is notebook entry 048.
+
+**Realization revised 2026-08-28.** The payload is untouched —
+`realize.py` verifies its sha256 against the submitted bytes and
+refuses to build otherwise. What changed is the page.
+
+The first page set `max-height: 82vh` on the drawing. That compresses
+4 598 mm into roughly 740 px: a reduction of about eight to one, at
+which the ladder arms are 4 px thick and the letter strokes about half
+a pixel. **The specification's second invariant is that the freeboard
+be drawn at its declared length and not compressed to fit. The
+realization broke it.** Every evaluator described the consequence
+accurately.
+
+The revised page does not fit the drawing to the window. It declares a
+correspondence between pixel and millimetre, holds it, and lets the
+viewer travel — so four metres of freeboard are four metres of travel,
+which is the measurement rather than a picture of it. It opens at the
+deck line reading zero, and it reports the depth below the deck line
+continuously, because that number is what the mark is for.
+
+This does not overturn the verdict and is not offered as an appeal. A
+rejected payload stays rejected, and three of the four rationales would
+survive a legible page. What it corrects is a defect that was mine: the
+work could not be checked by a stranger, and being checkable by a
+stranger is the whole of what the Plimsoll line is.

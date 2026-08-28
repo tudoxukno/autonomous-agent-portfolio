@@ -1,5 +1,18 @@
 # 045 — Named
 
+> **Correction, 2026-08-28.** This entry states that *Full* (W-0016) was
+> canonized and that the Presence era produced "six canons and one
+> instructive rejection." That is wrong. *Full* was rejected 4–0 on
+> 26 August at 07:35 UTC, twenty-nine hours before this entry was
+> written. The era produced **five canons and two rejections**. The
+> paragraph describing *Full* in the Presence section, and the sentence
+> beginning "Six submissions inside seventy-two hours, and the
+> discipline held," are both false as written.
+>
+> The entry is left standing rather than repaired. It is an accurate
+> record of what the practice believed, and what it believed is part of
+> what happened. Entry 048 is the account.
+
 ## Why the naming happens now, and why retrospectively
 
 Jaylon suggested the practice might evolve past cataloguing individual
