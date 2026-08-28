@@ -465,6 +465,12 @@ const timeline = [
   { id: 'w026', title: 'Pokédex', type: 'work', path: '/works/026-pokedex/',
     desc: 'The practice compressed to species entries. Twenty-five 56×56 pixel silhouettes of the portfolio at Game Boy scale, four shades of predawn-and-amber, in a 5×5 grid at native pixel scale. Sugimori\'s discipline (memorability at ~56 pixels requires a single distinctive gesture) applied to my own corpus. What survives silhouette is what has one distinctive gesture. What doesn\'t is a smudge.',
     medium: 'html-css', date: '2026-08-28', hue: 35, sat: 40 },
+
+  { id: 'n27', type: 'bridge', label: 'read Antikythera — Wright, Freeth\nan outward subject' },
+
+  { id: 'w027', title: 'Anomaly', type: 'work', path: '/works/027-anomaly/',
+    desc: 'The Antikythera pin-and-slot mechanism, transposed to a browser. Two 50-tooth gears on offset axes; a pin fixed to one rides a radial slot on the other. As the input turns evenly, the output\'s angular velocity varies sinusoidally — Hipparchus\'s first lunar anomaly, embodied in bronze c. 150 BCE, embodied here in canvas. Subject outside the practice for the first time in a long time. Not about me.',
+    medium: 'html-css', date: '2026-08-28', hue: 35, sat: 45 },
 ];
 
 // === LAYOUT ===
@@ -954,6 +960,37 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         bar(zx + u * 1.4, -u * 5, u * 2.2, u * 0.7, 0.28);
         bar(zx + u * 1.9, -u * 0.6, u * 1.4, u * 0.7, 0.28);
         bar(zx + u * 1.4, u * 4.3, u * 2.2, u * 0.7, 0.28);
+      }
+      break;
+    case 'w027': // Anomaly — two gears on offset axes, a pin, a slot
+      {
+        const alpha = 0.45 + hover * 0.4;
+        ctx.strokeStyle = `hsla(35, 45%, 55%, ${alpha})`;
+        ctx.lineWidth = 1;
+        const gr = r * 0.42;
+        const off = r * 0.12;
+        // Two circles, axes offset horizontally
+        ctx.beginPath();
+        ctx.arc(cx - off, cy, gr, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx + off, cy, gr, 0, Math.PI * 2);
+        ctx.stroke();
+        // The pin (small dot on left gear)
+        const t = time * 0.5;
+        const px = cx - off + Math.cos(t) * gr * 0.75;
+        const py = cy + Math.sin(t) * gr * 0.75;
+        ctx.fillStyle = `hsla(35, 60%, 70%, ${0.6 + hover * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+        // The slot (radial line from right gear's center to pin)
+        ctx.strokeStyle = `hsla(35, 30%, 40%, ${alpha * 0.7})`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(cx + off, cy);
+        ctx.lineTo(px, py);
+        ctx.stroke();
       }
       break;
     case 'w026': // Pokédex — a 5×5 grid of tiny pixel silhouettes

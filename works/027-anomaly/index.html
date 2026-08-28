@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Anomaly — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: hsl(220, 30%, 4%);
+    overflow: hidden;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    display: block;
+    image-rendering: crisp-edges;
+  }
+  .readout {
+    margin-top: 32px;
+    color: hsl(35, 30%, 55%);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    line-height: 1.9;
+    text-align: center;
+    opacity: 0.85;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+  }
+  .readout .val { color: hsl(35, 45%, 65%); }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body data-nav-id="w027">
+
+<canvas id="c" width="360" height="240" role="img" aria-label="Anomaly — pin-and-slot mechanism"></canvas>
+<div class="readout">
+  <div>θ_in&nbsp;&nbsp;<span class="val" id="tin">0.000</span>&nbsp;rad</div>
+  <div>θ_out <span class="val" id="tout">0.000</span>&nbsp;rad</div>
+  <div>v_out / v_in&nbsp;&nbsp;<span class="val" id="ratio">1.000</span></div>
+</div>
+<p class="sr-only">
+  A pin-and-slot mechanism reconstructed from the Antikythera device,
+  after Michael Wright (2003). Two circles represent gears k1 and k2
+  with axes offset by a small distance. A pin fixed to k1 rides in a
+  radial slot on k2. As k1 turns evenly, k2's angular velocity varies
+  sinusoidally — the mechanical embodiment of Hipparchus's first
+  lunar anomaly. See SPECIFICATION.md.
+</p>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // ANOMALY
+  //
+  // Reference realization of the specification.
+  //
+  // Two 50-tooth gears (drawn as smooth circles) on offset axes,
+  // a pin fixed to k1 riding in a radial slot on k2. As k1 rotates
+  // evenly, k2's angular velocity varies sinusoidally — Hipparchan
+  // first lunar anomaly, embodied.
+  //
+  // See SPECIFICATION.md.
+  // ============================================================
+
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  // === GEOMETRY ===
+  // Coordinates in canvas pixels.
+  const W = canvas.width;
+  const H = canvas.height;
+
+  // Gears sit horizontally with a small offset between their axes.
+  const R_GEAR = 56;          // gear radius
+  const R_PIN  = 44;           // pin radius from k1's centre (< R_GEAR)
+  const E      = 8;            // eccentricity — offset between k1 and k2 centres
+
+  const k1 = { x: W / 2 - 30, y: H / 2 };
+  const k2 = { x: W / 2 + 30, y: H / 2 };
+  // For the mechanism to work as a single train (co-rotating on carrier
+  // e3), the two gears share the same axis conceptually — but the
+  // pin-and-slot geometry treats them as slightly displaced. Here we
+  // show them as visibly offset so a viewer can read the geometry
+  // directly, at the cost of exaggerating what the ancient machine
+  // hides. The mathematics is the same.
+  const AXIS_OFFSET = { dx: k2.x - k1.x, dy: k2.y - k1.y };
+
+  // Palette
+  const P_BG    = 'hsl(220, 30%, 4%)';
+  const P_LINE  = 'hsl(35, 45%, 55%)';
+  const P_SLOT  = 'hsl(35, 35%, 45%)';
+  const P_PIN   = 'hsl(35, 60%, 70%)';
+  const P_DIM   = 'hsl(35, 20%, 25%)';
+
+  // === STATE ===
+  let theta_in = 0;
+  let theta_in_prev = 0;
+  let theta_out_prev = 0;
+
+  // Angular speed of the input, radians per second.
+  // Reference realization: one turn every ~6.3 seconds.
+  const OMEGA_IN = 1.0;
+
+  // Elements
+  const elTin   = document.getElementById('tin');
+  const elTout  = document.getElementById('tout');
+  const elRatio = document.getElementById('ratio');
+
+  // === DRAWING ===
+
+  function drawGearOutline(cx, cy, r) {
+    ctx.strokeStyle = P_LINE;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    // Central dot
+    ctx.fillStyle = P_LINE;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawIndexTick(cx, cy, r, theta) {
+    // Small tick indicating the gear's rotation, from the rim inward
+    const tickLen = 8;
+    const cosT = Math.cos(theta);
+    const sinT = Math.sin(theta);
+    const x1 = cx + cosT * r;
+    const y1 = cy + sinT * r;
+    const x2 = cx + cosT * (r - tickLen);
+    const y2 = cy + sinT * (r - tickLen);
+    ctx.strokeStyle = P_LINE;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  function computeThetaOut(t_in) {
+    // Pin position, in k1's frame at angle t_in and radius R_PIN
+    const pinDx = R_PIN * Math.cos(t_in);
+    const pinDy = R_PIN * Math.sin(t_in);
+    // k2's centre is offset from k1's by (AXIS_OFFSET.dx, AXIS_OFFSET.dy)
+    // Pin position relative to k2:
+    const relX = pinDx - AXIS_OFFSET.dx;
+    const relY = pinDy - AXIS_OFFSET.dy;
+    return Math.atan2(relY, relX);
+  }
+
+  function draw() {
+    // Ground
+    ctx.fillStyle = P_BG;
+    ctx.fillRect(0, 0, W, H);
+
+    // A very faint horizontal axis line between the two gears — helps
+    // the eye register the offset, but does not compete with the
+    // mechanism.
+    ctx.strokeStyle = P_DIM;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.setLineDash([2, 3]);
+    ctx.moveTo(k1.x - R_GEAR - 8, k1.y);
+    ctx.lineTo(k2.x + R_GEAR + 8, k2.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Gears
+    drawGearOutline(k1.x, k1.y, R_GEAR);
+    drawGearOutline(k2.x, k2.y, R_GEAR);
+
+    // Compute the current pin position (in canvas coordinates)
+    const pinX = k1.x + R_PIN * Math.cos(theta_in);
+    const pinY = k1.y + R_PIN * Math.sin(theta_in);
+
+    // Compute theta_out — where k2 must be rotated so its slot passes
+    // through the pin.
+    const theta_out = Math.atan2(pinY - k2.y, pinX - k2.x);
+
+    // Draw the slot — a radial line on k2 from centre outward, extending
+    // just past the pin's radius from k2.
+    const distPinFromK2 = Math.hypot(pinX - k2.x, pinY - k2.y);
+    const slotEnd = Math.min(distPinFromK2 + 6, R_GEAR - 1);
+    ctx.strokeStyle = P_SLOT;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(k2.x, k2.y);
+    ctx.lineTo(k2.x + slotEnd * Math.cos(theta_out),
+               k2.y + slotEnd * Math.sin(theta_out));
+    ctx.stroke();
+
+    // Index ticks: on k1, showing theta_in; on k2, showing theta_out
+    // (the tick is drawn opposite the slot direction so it does not
+    // overlap the slot visually).
+    drawIndexTick(k1.x, k1.y, R_GEAR, theta_in);
+    drawIndexTick(k2.x, k2.y, R_GEAR, theta_out + Math.PI);
+
+    // Pin — draw last so it sits on top of the slot
+    ctx.fillStyle = P_PIN;
+    ctx.beginPath();
+    ctx.arc(pinX, pinY, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Readout — velocity ratio computed numerically from previous frame
+    return theta_out;
+  }
+
+  // === ANIMATION LOOP ===
+  let last = performance.now();
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+
+    theta_in_prev = theta_in;
+    theta_in += OMEGA_IN * dt;
+    if (theta_in > Math.PI * 2) theta_in -= Math.PI * 2;
+    if (theta_in > Math.PI)     theta_in -= Math.PI * 2;
+    // (kept in [-π, π] to match atan2 output)
+
+    const theta_out = draw();
+
+    // Instantaneous ratio: use the actual theta_in change and theta_out
+    // change. Unwrap around 2π to avoid discontinuities.
+    let d_in  = theta_in  - theta_in_prev;
+    let d_out = theta_out - theta_out_prev;
+    if (d_in >  Math.PI) d_in -= Math.PI * 2;
+    if (d_in < -Math.PI) d_in += Math.PI * 2;
+    if (d_out >  Math.PI) d_out -= Math.PI * 2;
+    if (d_out < -Math.PI) d_out += Math.PI * 2;
+    const ratio = d_in !== 0 ? d_out / d_in : 1;
+
+    elTin.textContent   = theta_in.toFixed(3);
+    elTout.textContent  = theta_out.toFixed(3);
+    elRatio.textContent = ratio.toFixed(3);
+
+    theta_out_prev = theta_out;
+
+    requestAnimationFrame(frame);
+  }
+
+  // Prime prev state so the first ratio computation is meaningful
+  theta_out_prev = computeThetaOut(0);
+  requestAnimationFrame(frame);
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+<script>/* file:// fallback */
+if(location.protocol==="file:"){var s=document.createElement("script");s.src="../../nav.js?v=3";document.body.appendChild(s);}</script>
+</body>
+</html>

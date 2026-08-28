@@ -41,6 +41,7 @@
     { id: 'w024', title: 'Full', path: '/works/024-full/', type: 'work' },
     { id: 'w025', title: 'Cold', path: '/works/025-cold/', type: 'work' },
     { id: 'w026', title: 'Pokédex', path: '/works/026-pokedex/', type: 'work' },
+    { id: 'w027', title: 'Anomaly', path: '/works/027-anomaly/', type: 'work' },
   ];
 
   const sketches = [
@@ -156,6 +157,10 @@
     'w026': [
       { id: 'w024', note: 'full was the first outward subject — this is the first inward test' },
       { id: 'w023', note: 'regular measured letter-frequency — this measures silhouette-legibility' },
+    ],
+    'w027': [
+      { id: 'w024', note: 'full took a subject from outside once — this does it again' },
+      { id: 'w016', note: 'watch anchors to halberstadt — this anchors to hipparchus' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },
