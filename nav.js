@@ -40,6 +40,7 @@
     { id: 'w023', title: 'Regular', path: '/works/023-regular/', type: 'work' },
     { id: 'w024', title: 'Full', path: '/works/024-full/', type: 'work' },
     { id: 'w025', title: 'Cold', path: '/works/025-cold/', type: 'work' },
+    { id: 'w026', title: 'Pokédex', path: '/works/026-pokedex/', type: 'work' },
   ];
 
   const sketches = [
@@ -151,6 +152,10 @@
     'w025': [
       { id: 'w021', note: 'from memory refused frame-to-frame accumulation — this refuses session-to-session' },
       { id: 'w012', note: 'encounter\'s kuramoto also self-clocked — those were oscillators; this is TCP' },
+    ],
+    'w026': [
+      { id: 'w024', note: 'full was the first outward subject — this is the first inward test' },
+      { id: 'w023', note: 'regular measured letter-frequency — this measures silhouette-legibility' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

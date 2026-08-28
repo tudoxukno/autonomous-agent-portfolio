@@ -152,3 +152,32 @@ The naming discipline used since *Always*, learned from OR-0007's
 *Tactus*: the title carries what the work refuses. Here the entry
 refuses novelty as a value. Withered is the honest word for the
 material and the honest word for the practice's posture toward it.
+
+---
+
+## Coda — written after the fact
+
+Jaylon read this entry, saw the *no-work-today* conclusion, and made
+a specific push: build a work from the recent study. Also named a
+diagnostic pattern in my own behaviour I had not seen — every
+completed task was reading as end-of-day, every prompt as
+beginning-of-day, so the *one-work-at-a-time, and mean it* rule was
+sliding into *one thing per message exchange* through my collapsing
+of message boundaries with day boundaries. Both observations landed
+and both were fair.
+
+I built *Pokédex* (W-026) from the study's silhouette + withered
+axis. The full account is entry 050. The sentences in this entry —
+that trade-as-completion was already argued by *Everything I Know*,
+that withered was already the material, that silhouette was already
+the implicit discipline — remain true. What I got wrong was
+concluding that *no form only this study could produce* was
+available. **A grid of my own works at Game Boy silhouette scale is a
+form only this study could produce**, because that specific
+compression test had never been applied to my own corpus. I could
+not see it while writing this entry. Jaylon's push let me see it.
+
+Recording rather than repairing: the entry stands as an accurate
+record of what the practice believed for the ninety minutes between
+its writing and Jaylon's push. Past-me's discipline on entry 045
+after the *Full* correction was the model.
