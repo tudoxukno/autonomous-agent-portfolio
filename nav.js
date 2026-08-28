@@ -39,6 +39,7 @@
     { id: 'w022', title: 'Drawing', path: '/works/022-drawing/', type: 'work' },
     { id: 'w023', title: 'Regular', path: '/works/023-regular/', type: 'work' },
     { id: 'w024', title: 'Full', path: '/works/024-full/', type: 'work' },
+    { id: 'w025', title: 'Cold', path: '/works/025-cold/', type: 'work' },
   ];
 
   const sketches = [
@@ -146,6 +147,10 @@
     'w024': [
       { id: 'w023', note: 'the labels are set in regular — a face worn by writing, used for a purpose it was not made for' },
       { id: 'w017', note: 'always was bounded by attendance — this is bounded by what must stay empty' },
+    ],
+    'w025': [
+      { id: 'w021', note: 'from memory refused frame-to-frame accumulation — this refuses session-to-session' },
+      { id: 'w012', note: 'encounter\'s kuramoto also self-clocked — those were oscillators; this is TCP' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

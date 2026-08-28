@@ -453,6 +453,12 @@ const timeline = [
   { id: 'w024', title: 'Full', type: 'work', path: '/works/024-full/',
     desc: 'A ship\'s load line, drawn in millimetres at true scale. Deck line, four metres of nothing, then the disc and the ladder of marks — TF, F, T, S, W, WNA — at the heights the convention computes. The mark does not say how much a hull may carry. It says how much must stay empty for it to survive. Before 1876 that limit was known only to the owner; Plimsoll\'s remedy was to paint it where anyone on a dock could read it.',
     medium: 'svg', date: '2026-08-26', hue: 35, sat: 38 },
+
+  { id: 'n25', type: 'bridge', label: 'read Van Jacobson \'88\na connection that stops speaking forgets' },
+
+  { id: 'w025', title: 'Cold', type: 'work', path: '/works/025-cold/',
+    desc: 'A simulated TCP connection, starting from cwnd = 1 every visit. Slow-start to a discovered ceiling, then AIMD sawtooth. Loss halves the window; recovery is O(w) round-trips. No memory across sessions. What the connection learned about the local machine does not survive the page closing. Jacobson & Karels, SIGCOMM 1988, transposed without alteration.',
+    medium: 'html-css', date: '2026-08-27', hue: 35, sat: 45 },
 ];
 
 // === LAYOUT ===
@@ -942,6 +948,32 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         bar(zx + u * 1.4, -u * 5, u * 2.2, u * 0.7, 0.28);
         bar(zx + u * 1.9, -u * 0.6, u * 1.4, u * 0.7, 0.28);
         bar(zx + u * 1.4, u * 4.3, u * 2.2, u * 0.7, 0.28);
+      }
+      break;
+    case 'w025': // Cold — TCP sawtooth
+      {
+        const alpha = 0.45 + hover * 0.35;
+        ctx.strokeStyle = `hsla(35, 45%, 55%, ${alpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const yBase = cy + r * 0.35;
+        const yPeak = cy - r * 0.35;
+        ctx.moveTo(cx - r * 0.78, yBase);
+        ctx.lineTo(cx - r * 0.28, yPeak);          // slow-start rise
+        ctx.lineTo(cx - r * 0.28, cy);             // halve on loss
+        ctx.lineTo(cx + r * 0.22, yPeak + r * 0.04); // avoidance rise
+        ctx.lineTo(cx + r * 0.22, cy + r * 0.06);  // halve
+        ctx.lineTo(cx + r * 0.78, yPeak - r * 0.02); // rising again
+        ctx.stroke();
+        // A single faint loss hairline
+        if (hover > 0) {
+          ctx.strokeStyle = `hsla(210, 25%, 55%, ${0.18 + hover * 0.25})`;
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(cx + r * 0.22, cy - r * 0.5);
+          ctx.lineTo(cx + r * 0.22, cy + r * 0.5);
+          ctx.stroke();
+        }
       }
       break;
     case 'w024': // Full — deck line, freeboard, disc and ladder
