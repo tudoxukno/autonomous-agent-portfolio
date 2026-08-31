@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Reach — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: hsl(220, 30%, 4%);
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body data-nav-id="w032">
+
+<canvas id="c" role="img" aria-label="Reach — Physarum network self-organising"></canvas>
+<p class="sr-only">
+  A twenty-node graph on which the Tero-Kobayashi-Nakagaki adaptive
+  network model runs continuously. Each iteration a random source-sink
+  pair is chosen; pressures are solved from Kirchhoff conservation and
+  Poiseuille flow; conductivities update under the Hill-form feedback
+  f(|Q|) = |Q|^μ / (1 + |Q|^μ) with μ = 1.2. Line width is proportional
+  to conductivity. Over a few minutes the initial complete graph
+  self-organises into a spare backbone connecting the nodes without
+  any central coordination. See SPECIFICATION.md.
+</p>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // REACH
+  //
+  // Reference realization of the specification.
+  //
+  // The Tero-Kobayashi-Nakagaki (2007) adaptive network model,
+  // implemented from the equations. Complete graph on N nodes,
+  // random source-sink each iteration, Cholesky solve for pressures,
+  // Hill-form conductivity update. Over ~1,500 iterations the network
+  // self-organises to a spare backbone.
+  //
+  // See SPECIFICATION.md.
+  // ============================================================
+
+  // === PARAMETERS ===
+  const N              = 20;
+  const MU             = 1.2;
+  const I0             = 1.0;
+  const DT             = 0.04;
+  const D_FLOOR        = 1e-6;
+  const D_INIT_MEAN    = 0.5;
+  const D_INIT_JITTER  = 0.05;
+  const BATCH_PER_FRAME= 12;
+  const EDGE_VIS_MIN   = 0.02;   // below this D, don't draw the edge
+  const EDGE_WIDTH_MIN = 0.4;
+  const EDGE_WIDTH_MAX = 4.5;
+
+  // === PRNG ===
+  function mulberry32(a) {
+    return function() {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const seed = (Date.now() >>> 0) ^ 0x9e3779b9;
+  const rng = mulberry32(seed);
+
+  // === CANVAS ===
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  let W, H, dpr;
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    placeNodes(); // re-place nodes to the current viewport
+  }
+  window.addEventListener('resize', resize);
+
+  // === NODES ===
+  // Node positions in canvas pixel coordinates. Poisson-disk-like
+  // sampling (dart throwing with a minimum-distance constraint) gives
+  // an even distribution without clustering.
+  const nodeX = new Float32Array(N);
+  const nodeY = new Float32Array(N);
+
+  function placeNodes() {
+    const marginX = Math.min(W * 0.15, 140);
+    const marginY = Math.min(H * 0.15, 100);
+    const areaW = W - 2 * marginX;
+    const areaH = H - 2 * marginY;
+    const minDist = Math.min(areaW, areaH) * 0.14;
+    const minDist2 = minDist * minDist;
+    let placed = 0;
+    const positionsRng = mulberry32(seed ^ 0xABCDEF);
+    // Reset the arrays
+    for (let i = 0; i < N; i++) { nodeX[i] = 0; nodeY[i] = 0; }
+    let tries = 0;
+    while (placed < N && tries < 20000) {
+      tries++;
+      const x = marginX + positionsRng() * areaW;
+      const y = marginY + positionsRng() * areaH;
+      let ok = true;
+      for (let k = 0; k < placed; k++) {
+        const dx = x - nodeX[k];
+        const dy = y - nodeY[k];
+        if (dx * dx + dy * dy < minDist2) { ok = false; break; }
+      }
+      if (ok) {
+        nodeX[placed] = x; nodeY[placed] = y; placed++;
+      }
+    }
+    // If we ran out of tries (rare), fill remaining nodes without the
+    // minimum-distance constraint. Better a slightly clumpy graph than
+    // an infinite loop.
+    while (placed < N) {
+      nodeX[placed] = marginX + positionsRng() * areaW;
+      nodeY[placed] = marginY + positionsRng() * areaH;
+      placed++;
+    }
+  }
+
+  // === EDGES ===
+  // Complete graph. Store conductivity D[i][j] (symmetric) and edge
+  // length L[i][j] (also symmetric). Only store i < j and lookup by
+  // ordered index.
+  //
+  // Flat arrays: entry (i, j) with i < j has index i * N + j.
+  const D = new Float32Array(N * N);
+  const L = new Float32Array(N * N);
+
+  function edgeKey(i, j) { return i < j ? i * N + j : j * N + i; }
+  function getD(i, j) { return D[edgeKey(i, j)]; }
+  function setD(i, j, v) { D[edgeKey(i, j)] = v; }
+  function getL(i, j) { return L[edgeKey(i, j)]; }
+
+  function initEdges() {
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const dx = nodeX[i] - nodeX[j];
+        const dy = nodeY[i] - nodeY[j];
+        // Normalize length to a modest scale so the flow and pressure
+        // magnitudes stay well-conditioned. Divide by 100 pixels.
+        const len = Math.sqrt(dx * dx + dy * dy) / 100;
+        L[edgeKey(i, j)] = len;
+        D[edgeKey(i, j)] = D_INIT_MEAN + (rng() - 0.5) * D_INIT_JITTER;
+      }
+    }
+  }
+
+  // === LINEAR SOLVE ===
+  // The Kirchhoff equations at every node except the sink form a
+  // symmetric positive-definite system L(D) p = b, where L(D) is the
+  // reduced weighted Laplacian:
+  //   L_ii = Σ_j D_ij / L_ij   (over all j, including the sink)
+  //   L_ij = -D_ij / L_ij
+  // and b has +I0 at the source and 0 elsewhere (sink excluded).
+  //
+  // We solve via Cholesky decomposition. Size is (N-1) × (N-1).
+  //
+  // The sink is always node 0 (chosen after we shuffle the source-sink
+  // pair — we relabel so the sink is at index 0 in the reduced system).
+  //
+  // Workspace arrays reused across iterations.
+  const M = N - 1;                  // reduced system size
+  const A = new Float64Array(M * M);
+  const chol = new Float64Array(M * M);
+  const b = new Float64Array(M);
+  const p = new Float64Array(M);
+  const y = new Float64Array(M);
+
+  function buildReducedLaplacianForSink(sink) {
+    // Reduced index maps: real node index → reduced index.
+    // Reduced indices are 0..N-2, with the sink excluded.
+    // A[r_i * M + r_j] = the (i, j) entry of the reduced Laplacian.
+    // We index the reduced system by "reduced index" = original index
+    // but with the sink's index removed. Straightforward: use an array
+    // `red[i]` giving the reduced index of original node i (or -1).
+    // For efficiency we compute this inline.
+
+    // Zero A
+    for (let k = 0; k < M * M; k++) A[k] = 0;
+
+    for (let i = 0; i < N; i++) {
+      if (i === sink) continue;
+      const ri = i < sink ? i : i - 1;
+      // Diagonal: Σ_j D_ij / L_ij over ALL j ≠ i (including sink)
+      let diag = 0;
+      for (let j = 0; j < N; j++) {
+        if (j === i) continue;
+        const cond = D[edgeKey(i, j)] / L[edgeKey(i, j)];
+        diag += cond;
+      }
+      A[ri * M + ri] = diag;
+
+      for (let j = 0; j < N; j++) {
+        if (j === i || j === sink) continue;
+        const rj = j < sink ? j : j - 1;
+        A[ri * M + rj] = -D[edgeKey(i, j)] / L[edgeKey(i, j)];
+      }
+    }
+  }
+
+  // Cholesky: A = R^T R (R upper). We store R in-place in `chol` (upper
+  // triangular; lower triangular entries are zero).
+  function cholesky() {
+    for (let k = 0; k < M * M; k++) chol[k] = 0;
+    for (let i = 0; i < M; i++) {
+      // Diagonal entry
+      let sum = A[i * M + i];
+      for (let k = 0; k < i; k++) sum -= chol[k * M + i] * chol[k * M + i];
+      if (sum <= 0) {
+        // Not strictly positive-definite. Should not happen in practice
+        // if D > 0 and the graph is connected. Guard with a small floor.
+        sum = 1e-12;
+      }
+      chol[i * M + i] = Math.sqrt(sum);
+      // Off-diagonal entries in the same row
+      for (let j = i + 1; j < M; j++) {
+        let s = A[i * M + j];
+        for (let k = 0; k < i; k++) s -= chol[k * M + i] * chol[k * M + j];
+        chol[i * M + j] = s / chol[i * M + i];
+      }
+    }
+  }
+
+  function solve(bVec) {
+    // Forward: R^T y = b
+    for (let i = 0; i < M; i++) {
+      let s = bVec[i];
+      for (let k = 0; k < i; k++) s -= chol[k * M + i] * y[k];
+      y[i] = s / chol[i * M + i];
+    }
+    // Backward: R p = y
+    for (let i = M - 1; i >= 0; i--) {
+      let s = y[i];
+      for (let k = i + 1; k < M; k++) s -= chol[i * M + k] * p[k];
+      p[i] = s / chol[i * M + i];
+    }
+  }
+
+  // === ONE ITERATION OF THE ALGORITHM ===
+  function iterate() {
+    // Choose source-sink pair uniformly among distinct pairs
+    let s1 = Math.floor(rng() * N);
+    let s2 = Math.floor(rng() * N);
+    while (s2 === s1) s2 = Math.floor(rng() * N);
+
+    // Convention: sink = s2. Reduced system excludes s2.
+    // Build reduced Laplacian and RHS
+    buildReducedLaplacianForSink(s2);
+    for (let k = 0; k < M; k++) b[k] = 0;
+    const rs1 = s1 < s2 ? s1 : s1 - 1;
+    b[rs1] = I0;
+
+    // Cholesky solve
+    cholesky();
+    solve(b);
+
+    // Reconstruct full pressure array: p_full[s2] = 0; p_full[i] = p[reduced index of i]
+    // Compute flow through every edge and update D
+    // Q_ij = (D_ij / L_ij)(p_i - p_j); |Q_ij| for the feedback.
+    for (let i = 0; i < N; i++) {
+      const ri = i === s2 ? -1 : (i < s2 ? i : i - 1);
+      const pi = ri === -1 ? 0 : p[ri];
+      for (let j = i + 1; j < N; j++) {
+        const rj = j === s2 ? -1 : (j < s2 ? j : j - 1);
+        const pj = rj === -1 ? 0 : p[rj];
+        const idx = i * N + j;
+        const q = D[idx] / L[idx] * (pi - pj);
+        const absQ = q < 0 ? -q : q;
+        // Hill form: f(|Q|) = |Q|^μ / (1 + |Q|^μ)
+        const qMu = Math.pow(absQ, MU);
+        const f = qMu / (1 + qMu);
+        // Explicit Euler on the ODE
+        let dNew = D[idx] + DT * (f - D[idx]);
+        if (dNew < D_FLOOR) dNew = D_FLOOR;
+        D[idx] = dNew;
+      }
+    }
+  }
+
+  // === RENDER ===
+  const P_BG   = 'hsl(220, 30%, 4%)';
+  const P_NODE = 'hsl(35, 45%, 55%)';
+
+  function edgeColor(d) {
+    // Interpolate from dim (D near floor) to bright (D at max)
+    const t = Math.max(0, Math.min(1, (d - EDGE_VIS_MIN) / (1 - EDGE_VIS_MIN)));
+    // hsl(35, 30%, 30%) → hsl(35, 45%, 55%)
+    const s = 30 + 15 * t;
+    const l = 30 + 25 * t;
+    return `hsl(35, ${s}%, ${l}%)`;
+  }
+
+  function draw() {
+    ctx.fillStyle = P_BG;
+    ctx.fillRect(0, 0, W, H);
+
+    // Draw edges below nodes, thicker on top
+    // Two passes: dim edges first, bright edges second, so bright always
+    // draws over dim if they overlap.
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 0; i < N; i++) {
+        for (let j = i + 1; j < N; j++) {
+          const d = D[edgeKey(i, j)];
+          if (d < EDGE_VIS_MIN) continue;
+          const isBright = d > 0.4;
+          if (pass === 0 && isBright) continue;
+          if (pass === 1 && !isBright) continue;
+          const t = Math.min(1, d);
+          const w = EDGE_WIDTH_MIN + (EDGE_WIDTH_MAX - EDGE_WIDTH_MIN) * t;
+          ctx.strokeStyle = edgeColor(d);
+          ctx.lineWidth = w;
+          ctx.beginPath();
+          ctx.moveTo(nodeX[i], nodeY[i]);
+          ctx.lineTo(nodeX[j], nodeY[j]);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Nodes
+    ctx.fillStyle = P_NODE;
+    for (let i = 0; i < N; i++) {
+      ctx.beginPath();
+      ctx.arc(nodeX[i], nodeY[i], 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // === MAIN LOOP ===
+  function frame() {
+    for (let k = 0; k < BATCH_PER_FRAME; k++) iterate();
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  // === START ===
+  resize();
+  initEdges();
+  requestAnimationFrame(frame);
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+<script>/* file:// fallback */
+if(location.protocol==="file:"){var s=document.createElement("script");s.src="../../nav.js?v=3";document.body.appendChild(s);}</script>
+</body>
+</html>

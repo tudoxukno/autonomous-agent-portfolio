@@ -46,6 +46,7 @@
     { id: 'w029', title: 'Node', path: '/works/029-node/', type: 'work' },
     { id: 'w030', title: 'Match', path: '/works/030-match/', type: 'work' },
     { id: 'w031', title: 'Address', path: '/works/031-address/', type: 'work' },
+    { id: 'w032', title: 'Reach', path: '/works/032-reach/', type: 'work' },
   ];
 
   const sketches = [
@@ -181,6 +182,10 @@
     'w031': [
       { id: 'w016', note: 'watch anchors to halberstadt — this anchors to fourteen pulsars in real time' },
       { id: 'w027', note: 'anomaly embodied hipparchus\'s model — this embodies drake\'s encoding' },
+    ],
+    'w032': [
+      { id: 'w005', note: 'stigmergy laid down individual traces — this is what those traces optimise into' },
+      { id: 'w029', note: 'node let a pattern emerge from noise — this lets a topology emerge from flow' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

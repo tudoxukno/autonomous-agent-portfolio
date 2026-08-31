@@ -495,6 +495,12 @@ const timeline = [
   { id: 'w031', title: 'Address', type: 'work', path: '/works/031-address/',
     desc: 'The Voyager Golden Record\'s pulsar map, rendered accurately. Fourteen pulsars at their 1977 galactic longitudes, each pulsing at its true published period — Crab at 33.1 ms, B0525+21 at 3.7455 s, Vela at 89.2 ms. Line lengths logarithmic in distance from the sun. A fifteenth longer line points to the galactic centre. Binary tick marks along each line encode the period as an integer multiple of the hydrogen 21-cm hyperfine transition period, exactly as Drake etched it in 1977. A viewer with a pulsar catalogue could identify each source from the flashing alone.',
     medium: 'html-css', date: '2026-08-31', hue: 35, sat: 42 },
+
+  { id: 'n32', type: 'bridge', label: 'read Nakagaki, Tero, Bonifaci\ndistributed physics finds the network' },
+
+  { id: 'w032', title: 'Reach', type: 'work', path: '/works/032-reach/',
+    desc: 'The Tero-Kobayashi-Nakagaki adaptive network model, running. Twenty nodes on a dark field, complete graph at start. Each iteration picks a random source-sink pair, solves Kirchhoff-Poiseuille pressures via Cholesky on the weighted Laplacian, computes flow, and updates conductivities under the Hill-form feedback f(|Q|) = |Q|^μ / (1 + |Q|^μ) with μ = 1.2. Over a few minutes the mesh atrophies to a spare backbone. No planner, no goal — just the physics that a slime mold approximates. Verifies against the three-terminal Steiner tree.',
+    medium: 'html-css', date: '2026-08-31', hue: 35, sat: 40 },
 ];
 
 // === LAYOUT ===
@@ -984,6 +990,55 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         bar(zx + u * 1.4, -u * 5, u * 2.2, u * 0.7, 0.28);
         bar(zx + u * 1.9, -u * 0.6, u * 1.4, u * 0.7, 0.28);
         bar(zx + u * 1.4, u * 4.3, u * 2.2, u * 0.7, 0.28);
+      }
+      break;
+    case 'w032': // Reach — Physarum network self-organising
+      {
+        const alpha = 0.4 + hover * 0.35;
+        // Draw a sparse network — a few thick edges connecting scattered nodes,
+        // with a hint of faded connections behind them
+        const nodes = [
+          [-0.6, -0.4], [-0.2, -0.6], [0.5, -0.3], [0.7, 0.1],
+          [0.2, 0.3], [-0.3, 0.5], [-0.7, 0.2], [-0.1, -0.1],
+        ];
+        // Fade the "atrophied" connections first (thin, dim)
+        ctx.strokeStyle = `hsla(35, 25%, 32%, ${alpha - 0.1})`;
+        ctx.lineWidth = 0.4;
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            // Skip a few to leave gaps
+            if ((i * 3 + j * 7) % 5 === 0) continue;
+            const x1 = cx + nodes[i][0] * r;
+            const y1 = cy + nodes[i][1] * r;
+            const x2 = cx + nodes[j][0] * r;
+            const y2 = cy + nodes[j][1] * r;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+          }
+        }
+        // Bright backbone — the emergent network
+        ctx.strokeStyle = `hsla(35, 45%, 60%, ${alpha + 0.3})`;
+        ctx.lineWidth = 1.5;
+        const backbone = [[0, 7], [7, 4], [4, 3], [3, 2], [2, 1], [7, 5], [5, 6]];
+        for (const [i, j] of backbone) {
+          const x1 = cx + nodes[i][0] * r;
+          const y1 = cy + nodes[i][1] * r;
+          const x2 = cx + nodes[j][0] * r;
+          const y2 = cy + nodes[j][1] * r;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        }
+        // Nodes
+        ctx.fillStyle = `hsla(35, 45%, 55%, ${alpha + 0.3})`;
+        for (const [nx, ny] of nodes) {
+          ctx.beginPath();
+          ctx.arc(cx + nx * r, cy + ny * r, 1.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
       break;
     case 'w031': // Address — the Voyager pulsar map, radial lines from a centre
