@@ -45,6 +45,7 @@
     { id: 'w028', title: 'Legible', path: '/works/028-legible/', type: 'work' },
     { id: 'w029', title: 'Node', path: '/works/029-node/', type: 'work' },
     { id: 'w030', title: 'Match', path: '/works/030-match/', type: 'work' },
+    { id: 'w031', title: 'Address', path: '/works/031-address/', type: 'work' },
   ];
 
   const sketches = [
@@ -176,6 +177,10 @@
     'w030': [
       { id: 'w018', note: 'daily was a record with an intended reader — this is the method for records without one' },
       { id: 'w029', note: 'node let one pattern emerge from noise — this matches many records against each other' },
+    ],
+    'w031': [
+      { id: 'w016', note: 'watch anchors to halberstadt — this anchors to fourteen pulsars in real time' },
+      { id: 'w027', note: 'anomaly embodied hipparchus\'s model — this embodies drake\'s encoding' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

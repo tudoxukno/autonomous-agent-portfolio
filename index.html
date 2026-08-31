@@ -489,6 +489,12 @@ const timeline = [
   { id: 'w030', title: 'Match', type: 'work', path: '/works/030-match/',
     desc: 'Dendrochronology\'s cross-dating method as running algorithm. A master chronology sits at the top of a dark field; a candidate ring-width strip slides past it as a skeleton plot. At each offset the Pearson correlation r and Student\'s t-value are computed against the overlap. When t exceeds 3.5 — Baillie & Pilcher\'s community threshold — the strip locks, colour shifts to match the master, and the timeline extends back by whatever the candidate covered before the overlap. A new candidate enters. Over minutes the chronology grows longer than any single tree could support. Douglass 1929: "each ring is a hieroglyph."',
     medium: 'html-css', date: '2026-08-31', hue: 35, sat: 45 },
+
+  { id: 'n31', type: 'bridge', label: 'read Drake, Sagan, Johnston\nthe address must decode itself' },
+
+  { id: 'w031', title: 'Address', type: 'work', path: '/works/031-address/',
+    desc: 'The Voyager Golden Record\'s pulsar map, rendered accurately. Fourteen pulsars at their 1977 galactic longitudes, each pulsing at its true published period — Crab at 33.1 ms, B0525+21 at 3.7455 s, Vela at 89.2 ms. Line lengths logarithmic in distance from the sun. A fifteenth longer line points to the galactic centre. Binary tick marks along each line encode the period as an integer multiple of the hydrogen 21-cm hyperfine transition period, exactly as Drake etched it in 1977. A viewer with a pulsar catalogue could identify each source from the flashing alone.',
+    medium: 'html-css', date: '2026-08-31', hue: 35, sat: 42 },
 ];
 
 // === LAYOUT ===
@@ -978,6 +984,38 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         bar(zx + u * 1.4, -u * 5, u * 2.2, u * 0.7, 0.28);
         bar(zx + u * 1.9, -u * 0.6, u * 1.4, u * 0.7, 0.28);
         bar(zx + u * 1.4, u * 4.3, u * 2.2, u * 0.7, 0.28);
+      }
+      break;
+    case 'w031': // Address — the Voyager pulsar map, radial lines from a centre
+      {
+        const alpha = 0.45 + hover * 0.35;
+        // Draw a few radial lines from centre at various angles
+        ctx.strokeStyle = `hsla(35, 25%, 40%, ${alpha})`;
+        ctx.lineWidth = 0.9;
+        const angles = [-Math.PI/2, -Math.PI/4, 0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, -3*Math.PI/4];
+        const lens = [r * 0.55, r * 0.72, r * 0.4, r * 0.85, r * 0.6, r * 0.75, r * 0.5, r * 0.68];
+        for (let i = 0; i < angles.length; i++) {
+          const ex = cx + Math.cos(angles[i]) * lens[i];
+          const ey = cy + Math.sin(angles[i]) * lens[i];
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(ex, ey);
+          ctx.stroke();
+          // Small pulsar disc at end — brightness pulses out of phase per line
+          const phase = (time * (0.3 + i * 0.15)) % 1;
+          const isOn = phase < 0.15;
+          ctx.fillStyle = isOn
+            ? `hsla(35, 60%, 75%, ${alpha + 0.3})`
+            : `hsla(35, 20%, 40%, ${alpha - 0.1})`;
+          ctx.beginPath();
+          ctx.arc(ex, ey, isOn ? 1.6 : 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Sun at centre
+        ctx.fillStyle = `hsla(35, 45%, 55%, ${alpha + 0.2})`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 1.4, 0, Math.PI * 2);
+        ctx.fill();
       }
       break;
     case 'w030': // Match — skeleton plots sliding past each other

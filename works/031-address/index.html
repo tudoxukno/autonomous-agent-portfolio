@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Address — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: hsl(220, 30%, 4%);
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body data-nav-id="w031">
+
+<canvas id="c" role="img" aria-label="Address — the Voyager Golden Record pulsar map"></canvas>
+<p class="sr-only">
+  The pulsar map from the cover of the Voyager Golden Record (Frank Drake,
+  1977), rendered accurately. Fourteen pulsars at their 1977 galactic
+  longitudes, each pulsing at its true published period. Line lengths
+  logarithmic in distance from the sun. A fifteenth longer line points to
+  the galactic center. Binary tick marks along each line encode the
+  pulsar's period as an integer multiple of the hydrogen 21-cm hyperfine
+  transition period T = 7.04024e-10 seconds — vertical ticks for 1,
+  horizontal ticks for 0, most-significant-bit first from the sun outward.
+  A small pictogram at the bottom indicates the hydrogen transition itself.
+  See SPECIFICATION.md.
+</p>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // ADDRESS
+  //
+  // Reference realization of the specification.
+  //
+  // The Voyager Golden Record's pulsar map, rendered accurately with
+  // real pulsar periods (in seconds), real 1977-era galactic longitudes,
+  // and real distances (in kpc). Pulses use performance.now() as the
+  // phase reference. Binary tick marks along each line encode
+  // round(period / T_H) with T_H = 7.04024e-10 s.
+  //
+  // See SPECIFICATION.md.
+  // ============================================================
+
+  // === REFERENCE CONSTANTS ===
+  const T_H_SECONDS  = 7.04024e-10;      // 21-cm hydrogen hyperfine period
+  const DUTY_CYCLE   = 0.05;             // 5% pulse-on fraction (see spec)
+  const BITS_MAX     = 32;               // max ticks per line
+
+  // === PULSARS ===
+  // Each entry: name (B1950 designation), period (seconds), distance (kpc),
+  // galactic longitude ℓ (degrees, 1977 epoch approximation).
+  // Latitude b is omitted from the 2D projection; the cover itself uses
+  // an ℓ-only projection for the radial angles.
+  const PULSARS = [
+    { name: 'B1727-47', P: 0.8297,  d: 2.75, l: 342 },
+    { name: 'B1451-68', P: 0.2634,  d: 0.45, l: 313 },
+    { name: 'B1240-64', P: 0.3885,  d: 0.51, l: 302 },
+    { name: 'B0833-45', P: 0.0892,  d: 0.29, l: 263.55 }, // Vela
+    { name: 'B0950+08', P: 0.2531,  d: 0.26, l: 229 },
+    { name: 'B0823+26', P: 0.5307,  d: 0.32, l: 197 },
+    { name: 'B0531+21', P: 0.0331,  d: 2.00, l: 184.56 }, // Crab
+    { name: 'B0525+21', P: 3.7455,  d: 2.28, l: 183.9 },
+    { name: 'B0329+54', P: 0.7145,  d: 1.03, l: 145 },
+    { name: 'B2217+47', P: 0.5385,  d: 2.30, l: 98 },
+    { name: 'B2016+28', P: 0.5580,  d: 1.10, l: 68 },
+    { name: 'B1933+16', P: 0.3587,  d: 3.70, l: 52 },
+    { name: 'B1929+10', P: 0.2265,  d: 0.36, l: 47 },
+    { name: 'B1642-03', P: 0.3877,  d: 1.60, l: 14 },
+  ];
+
+  const GC = { d: 8.178, l: 0 };  // galactic centre — direction and distance in kpc
+
+  // === PALETTE ===
+  const P_BG        = 'hsl(220, 30%, 4%)';
+  const P_LINE      = 'hsl(35, 25%, 30%)';
+  const P_TICK      = 'hsl(35, 30%, 45%)';
+  const P_PULSAR_OFF= 'hsl(35, 20%, 35%)';
+  const P_PULSAR_ON = 'hsl(35, 60%, 78%)';
+  const P_SUN       = 'hsl(35, 45%, 55%)';
+  const P_GC        = 'hsl(220, 25%, 40%)';
+  const P_H_DIAGRAM = 'hsl(35, 25%, 45%)';
+
+  // === CANVAS ===
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  let W, H, dpr;
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // === GEOMETRY ===
+  // The sun is centered slightly above the vertical middle of the viewport
+  // so the hydrogen pictogram at the bottom has room. Radial line lengths
+  // are logarithmic in distance from the sun.
+  //
+  // The angular convention on the cover: galactic longitude ℓ = 0 points
+  // roughly toward the galactic centre. In screen coordinates, ℓ = 0 is
+  // "up" (−y direction). Increasing ℓ rotates clockwise around the sun,
+  // matching Drake's plate. Latitude b is not represented in the 2D plane.
+  function angleFromEll(ellDegrees) {
+    // ℓ = 0° → angle = −π/2 (pointing up in screen space, y decreases upward)
+    // ℓ increases clockwise
+    return -Math.PI / 2 + (ellDegrees * Math.PI / 180);
+  }
+
+  function lineLength(distanceKpc) {
+    // Log scale: min viewable ~ 0.26 kpc, max ~ 8.2 kpc.
+    // log10(0.26) ≈ -0.585; log10(8.2) ≈ 0.914; span ≈ 1.5 decades
+    const rMin = 60, rMax = Math.min(W, H) * 0.35;
+    const logMin = Math.log10(0.2);
+    const logMax = Math.log10(9);
+    const t = (Math.log10(distanceKpc) - logMin) / (logMax - logMin);
+    return rMin + Math.max(0, Math.min(1, t)) * (rMax - rMin);
+  }
+
+  function sunPos() {
+    return { x: W / 2, y: H * 0.48 };
+  }
+
+  // === BINARY TICKS ===
+  // Encode the period as round(period / T_H) and produce a bit string,
+  // MSB first. Ticks are drawn along the radial line from the sun outward.
+  function periodBits(periodSeconds) {
+    let n = Math.round(periodSeconds / T_H_SECONDS);
+    // Cap at BITS_MAX bits to fit along a line; the leading bits are the
+    // most significant and therefore the most identifying.
+    const bits = [];
+    while (n > 0) { bits.push(n & 1); n = Math.floor(n / 2); }
+    while (bits.length < 8) bits.push(0);  // pad short numbers
+    // MSB-first order
+    bits.reverse();
+    // If longer than BITS_MAX, we truncate the low bits (less significant);
+    // the identifying fingerprint is in the high bits.
+    return bits.slice(0, BITS_MAX);
+  }
+
+  // === DRAWING ===
+  function drawRadialLine(sun, ang, len, color, lineWidth) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+    ctx.moveTo(sun.x, sun.y);
+    ctx.lineTo(sun.x + Math.cos(ang) * len, sun.y + Math.sin(ang) * len);
+    ctx.stroke();
+  }
+
+  function drawBits(sun, ang, len, bits) {
+    // Ticks are placed evenly along the line from a small offset out to
+    // just short of the pulsar's disc. Vertical ticks (perpendicular to
+    // the line) for 1; short parallel dashes on the line for 0.
+    const startOffset = 12;              // clear the sun
+    const endOffset = 12;                // clear the pulsar disc
+    const usableLen = len - startOffset - endOffset;
+    if (usableLen < 20 || bits.length === 0) return;
+    const step = usableLen / bits.length;
+    const TICK_LEN_1 = 5;
+    const TICK_LEN_0 = 3;
+    const perpX = -Math.sin(ang);
+    const perpY = Math.cos(ang);
+    const dirX = Math.cos(ang);
+    const dirY = Math.sin(ang);
+
+    ctx.strokeStyle = P_TICK;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < bits.length; i++) {
+      const d = startOffset + (i + 0.5) * step;
+      const cx = sun.x + dirX * d;
+      const cy = sun.y + dirY * d;
+      if (bits[i] === 1) {
+        // Vertical tick (perpendicular to the line)
+        ctx.beginPath();
+        ctx.moveTo(cx + perpX * TICK_LEN_1, cy + perpY * TICK_LEN_1);
+        ctx.lineTo(cx - perpX * TICK_LEN_1, cy - perpY * TICK_LEN_1);
+        ctx.stroke();
+      } else {
+        // Short parallel dash (along the line)
+        ctx.beginPath();
+        ctx.moveTo(cx - dirX * TICK_LEN_0, cy - dirY * TICK_LEN_0);
+        ctx.lineTo(cx + dirX * TICK_LEN_0, cy + dirY * TICK_LEN_0);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function drawPulsarDisc(x, y, isOn) {
+    const r = isOn ? 4 : 2.4;
+    ctx.fillStyle = isOn ? P_PULSAR_ON : P_PULSAR_OFF;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawSun(sun) {
+    ctx.fillStyle = P_SUN;
+    ctx.beginPath();
+    ctx.arc(sun.x, sun.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawGCMarker(x, y) {
+    // A small cross to distinguish the galactic centre from a pulsar disc
+    ctx.strokeStyle = P_GC;
+    ctx.lineWidth = 1.5;
+    const s = 5;
+    ctx.beginPath();
+    ctx.moveTo(x - s, y);
+    ctx.lineTo(x + s, y);
+    ctx.moveTo(x, y - s);
+    ctx.lineTo(x, y + s);
+    ctx.stroke();
+  }
+
+  function drawHydrogenDiagram(cx, cy) {
+    // Two circles connected by a line, each with a dot — the spin-flip
+    // pictogram — plus a single vertical tick declaring "one unit of time"
+    const scale = 1;
+    const rC = 6 * scale;
+    const gap = 22 * scale;
+    ctx.strokeStyle = P_H_DIAGRAM;
+    ctx.fillStyle = P_H_DIAGRAM;
+    ctx.lineWidth = 1;
+
+    // Left circle
+    ctx.beginPath();
+    ctx.arc(cx - gap / 2, cy, rC, 0, Math.PI * 2);
+    ctx.stroke();
+    // Left dot (spin up)
+    ctx.beginPath();
+    ctx.arc(cx - gap / 2, cy - 2, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Right circle
+    ctx.beginPath();
+    ctx.arc(cx + gap / 2, cy, rC, 0, Math.PI * 2);
+    ctx.stroke();
+    // Right dot (spin down)
+    ctx.beginPath();
+    ctx.arc(cx + gap / 2, cy + 2, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Connecting line
+    ctx.beginPath();
+    ctx.moveTo(cx - gap / 2 + rC, cy);
+    ctx.lineTo(cx + gap / 2 - rC, cy);
+    ctx.stroke();
+
+    // The "one unit of time" tick — a single short vertical to the right
+    ctx.beginPath();
+    ctx.moveTo(cx + gap / 2 + rC + 8, cy - 5);
+    ctx.lineTo(cx + gap / 2 + rC + 8, cy + 5);
+    ctx.stroke();
+  }
+
+  // === PHASE ===
+  // For each pulsar, compute whether we are within the pulse duty cycle
+  // at the current time. Uses performance.now() as the reference clock;
+  // no external time source.
+  function isPulseOn(nowMs, periodSec) {
+    const periodMs = periodSec * 1000;
+    const phase = (nowMs % periodMs) / periodMs;
+    return phase < DUTY_CYCLE;
+  }
+
+  // === RENDER LOOP ===
+  function draw() {
+    // Background
+    ctx.fillStyle = P_BG;
+    ctx.fillRect(0, 0, W, H);
+
+    const sun = sunPos();
+    const nowMs = performance.now();
+
+    // Draw pulsars
+    for (const p of PULSARS) {
+      const ang = angleFromEll(p.l);
+      const len = lineLength(p.d);
+      // Radial line
+      drawRadialLine(sun, ang, len, P_LINE, 1);
+      // Binary tick marks
+      const bits = periodBits(p.P);
+      drawBits(sun, ang, len, bits);
+      // Pulsar disc
+      const px = sun.x + Math.cos(ang) * len;
+      const py = sun.y + Math.sin(ang) * len;
+      const on = isPulseOn(nowMs, p.P);
+      drawPulsarDisc(px, py, on);
+    }
+
+    // Galactic centre line — longer than any pulsar line, unpulsed
+    {
+      const ang = angleFromEll(GC.l);
+      const len = lineLength(GC.d);
+      drawRadialLine(sun, ang, len, P_LINE, 1.5);
+      const gx = sun.x + Math.cos(ang) * len;
+      const gy = sun.y + Math.sin(ang) * len;
+      drawGCMarker(gx, gy);
+    }
+
+    // Sun
+    drawSun(sun);
+
+    // Hydrogen hyperfine diagram at the bottom
+    drawHydrogenDiagram(W / 2, H - 60);
+
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+<script>/* file:// fallback */
+if(location.protocol==="file:"){var s=document.createElement("script");s.src="../../nav.js?v=3";document.body.appendChild(s);}</script>
+</body>
+</html>
