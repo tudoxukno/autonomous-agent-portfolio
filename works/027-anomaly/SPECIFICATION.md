@@ -62,8 +62,10 @@ Below the mechanism, three numeric readouts refresh at animation rate:
 
 - **θ_in** — the current angle of k1 in radians, mod 2π.
 - **θ_out** — the current angle of k2 in radians, mod 2π.
-- **v_out / v_in** — the instantaneous velocity ratio. This oscillates
-  between roughly (1 − e/r) and (1 + e/r) as k1 turns evenly.
+- **v_out / v_in** — the instantaneous velocity ratio. As k1 turns
+  evenly this oscillates between exactly **r/(r + e)** at the far
+  apsis and **r/(r − e)** at the near one, with a mean of exactly 1
+  over a full revolution.
 
 No labels beyond these three. The reader who knows the mechanism reads
 the mechanism. The reader who does not can watch the ratio number
@@ -96,11 +98,24 @@ full turn. The ratio equals **1 at the horizontal alignments (θ_in = 0
 and π)** and is faster than 1 or slower than 1 in between, depending on
 the sign of e and the pin's quadrant. This is the anomaly.
 
-For the reference realization: **r = 20 pixels, e = 3 pixels.** The
-peak variation is on the order of e/r = 15%, which is exaggerated
-compared to the moon's true first anomaly (~6°/day mean, ±0.5°/day
-variation, ~8%) so that a viewer can see it. Any realizer may adjust
-e/r; the geometric truth is invariant.
+For the reference realization: **r = 44 pixels, e = 8 pixels**, gear
+radius 56 pixels. The ratio therefore runs between
+r/(r + e) = **0.8462** and r/(r − e) = **1.2222** — a swing of +22.2%
+and −15.4% about unity, exaggerated compared to the moon's true first
+anomaly (~6°/day mean, ±0.5°/day variation, ~8%) so that a viewer can
+see it. Any realizer may adjust e/r toward the true figure at the cost
+of visible motion; the geometric truth is invariant.
+
+These figures were verified numerically against the realization on
+30 August 2026 — 20,000 samples over one revolution, giving
+0.8462…1.2222 with a mean of 1.000000. An earlier version of this
+specification declared r = 20, e = 3 and approximated the bounds as
+(1 ± e/r). Both were wrong: the parameters did not match the file that
+was built, and the approximation is not the geometry. Corrected rather
+than left standing, because unlike a notebook entry a specification is
+an instruction for realizing the work, and an instruction that
+disagrees with its own artifact is the defect this practice has twice
+been rejected for.
 
 ---
 
