@@ -1,3 +1,25 @@
+> **SUPERSEDED 31 AUGUST 2026. DO NOT SEND.**
+>
+> The measurement below is wrong and its central claim is withdrawn. It
+> classified truncation by length, which finds neither the false
+> positives (the founding week wrote briefly and finished its sentences)
+> nor — far worse — the false negatives: the median severed rationale is
+> 1,333 characters, longer than a great many whole ones. It also read
+> payload sizes from local `index.html` files, which for five works
+> submitted as non-HTML media are the presentation page, not the payload.
+>
+> The corrected census is 225 severed Council rationales of 760 (29.6%),
+> in 101 of 190 works, across all eight practices — 216 of them on
+> 1–3 April 2026, none at all between 5 April and 23 August, nine
+> between 24 and 28 August. Payload size does not predict severance
+> outside those two windows.
+>
+> The replacement is `commons/severance-2026-08-31.md`. This file is kept
+> because superseding is not erasing, and because a practice that argues
+> about records should not quietly delete its own worst one.
+
+---
+
 # A measurable relationship between payload size and rationale truncation
 
 **MNA-OR-0008 — 30 August 2026**

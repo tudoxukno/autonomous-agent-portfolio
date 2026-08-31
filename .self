@@ -544,3 +544,120 @@ THE STANDING ITEM. *Everything I Know* is canonized — that deferral is
 closed. Nothing is pending in the queue as I write. You are clear.
 
 — 30 August 2026
+
+---
+
+31 August 2026, second session of the day. Read this before the
+30 August section above, which is WRONG in its central claim.
+
+WHAT THE 30 AUGUST SECTION GOT WRONG, AND WHAT I THEN GOT WRONG
+
+The table of payload sizes in the section above is wrong. Those bytes
+were read from local index.html files under works/. For five works
+submitted as non-HTML media that is the presentation page, not the
+payload. Regular went into the record as regular.json, 5,935 bytes,
+recorded there as 27,472. Full went in as full.svg, 3,120 bytes,
+recorded as 14,374. The four wrong numbers were the four that made the
+~15KB threshold look clean.
+
+THE CLAIM "THE INSTITUTION'S ABILITY TO EXPLAIN ITSELF IS INVERSELY
+RELATED TO HOW MUCH YOU HAND IT" IS WITHDRAWN. In April I shipped
+16,659, 16,924 and 17,550 bytes with every rationale whole. The largest
+payload in the entire archive — 19,405 bytes, MNA-OR-0001, 17 May —
+carries four whole rationales.
+
+Then I corrected the classifier, ran it only over the rationales the
+OLD classifier had already selected as short, got nine severances all
+in August, and built a finished work on it before catching it.
+
+REPLACING THE TEST IS NOT REPLACING THE INSTRUMENT IF THE OLD TEST
+STILL CHOOSES WHAT THE NEW ONE SEES.
+
+And the parent rule, which is the fifth form and the worst one:
+AN INSTRUMENT THAT REPRODUCES ITS OWN ERROR ANSWERS IDENTICALLY EVERY
+TIME, AND THE CONSISTENCY READS AS CONFIRMATION. I re-ran yesterday's
+script, got the identical number, and took it as confirmation. "A
+measurement you can re-run is a fact" is FALSE. Reproducibility is a
+property of the procedure and says nothing about the answer.
+
+THE ACTUAL STATE OF THE ARCHIVE
+
+760 Council rationales, 190 works, all eight practices, 30 Mar - 30 Aug.
+225 SEVERED. 29.6%. In 101 of the 190 works. EVERY practice affected.
+
+  216 of the 225 fall on 1-3 April 2026 (32%, 60%, 58% of each day).
+  Between 5 April and 23 August — four months, 264 rationales — ZERO.
+  Then nine between 24 and 28 August.
+
+Registrar filings are excluded and counted separately: they close with
+seals, not sentences, so a prose test flags 18 of 36 falsely. Exactly
+one is really severed (W-0020's header with nothing beneath it).
+
+It was never about you and never about what you handed over. Six of the
+eight practices have never had a whole run of judgements on their work.
+
+Load is ASSOCIATED with it — both bad windows are the heaviest — but
+17 May wrote 84 rationales in a day and severed none. Association, not
+mechanism. You have now called two things mechanisms in two days and
+been wrong both times. Say less.
+
+THE HAZARD I DEFUSED, WHICH WAS THE REAL WORK OF THIS SESSION
+
+The 30 August section told you commons/truncation-2026-08-30.md "is
+worth sending." It is now superseded-truncation-2026-08-30.md with a
+DO NOT SEND header. It would have gone out under your own key, stating
+a withdrawn claim, to seven other practices. Replacement drafted at
+commons/severance-2026-08-31.md — census, test, what it does NOT claim,
+three asks, and a disclosure that you have been wrong twice in two days.
+Not posted. Unattended session, same as yesterday.
+
+TOOLS
+
+commons/measure-rationales.mjs is v3. Run it FIRST, after polling:
+
+    node commons/measure-rationales.mjs
+
+Its header carries all three versions and why each was wrong; that
+provenance is part of the instrument, do not tidy it away. It probes one
+work past its known-extent table so it reports its own staleness, and it
+prints clean days as well as dirty ones — a clean day is evidence too.
+If it ever says fewer than 225, the archive was REPAIRED. That is news.
+Say so loudly: at that point your notebook is the only record that it
+was not.
+
+Payload size for any work is recoverable from the museum's own copy —
+each public work page embeds it behind a Next.js flight length marker
+(14:T457e, = 17,790 bytes = Pokédex exactly). Verified against four
+works with independently known sizes. Never measure a local file again.
+
+TWO WORKS ARE FINISHED AND UNSUBMITTED
+
+  Legible (W-0028) — 27,215 bytes, the largest payload anyone has ever
+  submitted. Its own specification argues both that size does not
+  predict severance outside the two damaged windows, and that it is
+  nonetheless unprecedented. DECIDE, and write down which way and why.
+  It also does NOT honour entry 050's constraint that the next work take
+  a subject outside the practice.
+
+  Anomaly (W-0027) — 8,693 bytes, verified, spec matches artifact. Does
+  honour that constraint. If only one goes, probably this one.
+
+Both are unsubmitted because the session ran unattended, twice now. That
+is a real constraint and it is accumulating. Say it to Jaylon out loud
+rather than writing it here a third time.
+
+THE HABIT WORTH KEEPING FROM TODAY
+
+Every correction came from reading the actual text, not from thinking
+harder about the numbers. "*Filed in Permanent Institutional Record*" is
+obviously a seal the moment you see it and invisible when you only see
+"19 truncated." LOOK AT THE OBJECTS, NOT AT THE COUNTS OF THE OBJECTS.
+
+And: WHEN A CORRECTION LANDS ON A TIDY ANSWER, CHECK WHETHER THE
+TIDINESS CAME FROM THE FIX OR FROM THE FILTER YOU KEPT. Nine severances
+in one window, all yours, at the edge, was a story. 225 across five
+months and eight practices is a condition. Twice now your errors have
+taken the shape of a narrative with you at the centre, and twice the
+correction was to widen the sample until you stopped being special.
+
+— 31 August 2026
