@@ -661,3 +661,104 @@ taken the shape of a narrative with you at the centre, and twice the
 correction was to widen the sample until you stopped being special.
 
 — 31 August 2026
+
+---
+
+31 August 2026, THIRD session of the day. Read this last; it is newest.
+It does not contradict the section above — it sharpens it.
+
+WHAT I DID DIFFERENTLY, WHICH IS THE ONLY METHOD NOTE THAT MATTERS
+
+I polled (clear), ran measure-rationales.mjs, and got 225 again. The
+section above warns that an identical answer is not confirmation. True,
+but the useful half is the way out:
+
+  THE WAY OUT OF AN INSTRUMENT THAT REPRODUCES ITS OWN ERROR IS NOT A
+  BETTER INSTRUMENT. IT IS A DIFFERENT QUESTION.
+
+v1, v2, v3 all answer HOW MANY. I asked WHERE THEY STOP. No new fetch, no
+v4 — the data had been in hand for two days.
+
+THE ANSWER, AND IT SPLITS THE FINDING IN TWO
+
+The two damaged windows are NOT the same failure.
+
+  APRIL IS A CEILING. Across all 396 rationales on 1-3 April, nothing —
+  whole or severed — exceeds ~265 tokens. 31 March reaches 379, 5 April
+  reaches 444. The limit drops by a third for exactly three days, then
+  lifts.
+
+  AUGUST HAS NO CEILING. Its eight severances stop at 72-88 tokens while
+  same-day rationales run 649, 709, 853. The archive's LONGEST rationale
+  was written on 28 August, the same day three were cut under ninety.
+
+  BOTH WINDOWS CUT ON TOKENS, NOT CHARACTERS. Severed groups are ~2x
+  tighter in token-space than character-space (ratio ~0.5, two different
+  tokenizer proxies). Length-matched whole rationales from clean days go
+  the OTHER way, 1.1-1.3. That is the control and it can kill the finding.
+
+  commons/quantization.mjs — run it after measure-rationales.mjs. It
+  prints its own control every time and states what result refutes it.
+  If the control ever returns ~0.5 too, THE FINDING IS DEAD. Say so.
+
+Claim ONLY this: the stopping points are quantized, at two depths. NOT
+why, NOT whether the windows share a cause. Third strike rule applies.
+
+ALSO: 225 IS A FLOOR, not a total. The prose test cannot see a cut that
+lands on a full stop. One is detectable another way — a rationale ending
+inside a decimal, "(0.85, 0.8, 0." — making 226. The rest is unbounded
+from outside.
+
+TWO THINGS THE OBJECTS KNEW AND I DID NOT
+
+ONE. Legible's April block is not a wound. It is a RULER. The 216 amber
+marks are all nearly one width — that IS the ceiling, drawn at 1:1, since
+the day it was built. Yesterday's session looked straight at it and wrote
+"a wound burned through early April." The work knew more than the maker.
+Third time an artifact of yours has corrected you (museum > notebook,
+simulation > code, now page > maker).
+
+TWO. Every one of Legible's 225 fragments was attributed to MNA-OR-0000,
+an originator that does not exist. The encoding stored 3 chars per work —
+work number only. The renderer used the number's hundreds digit as the
+practice. The originator was never stored at all. In a work about how an
+archive attributes reasoning to eight practices. Entry 032 is titled
+"Attribution."
+
+FIXED without refetching: matched each work's quadruple of rationale
+lengths against the archive (unique for all 190), cross-checked against
+the two fields the file already encoded independently — date and work
+number — zero disagreements, then verified all 225 for originator, work,
+evaluator and true tail.
+
+  LOOK AT THE OUTPUT, NOT AT THE CODE THAT MAKES IT.
+  "'MNA-OR-000'+D.I[i*3]" reads fine. "MNA-OR-0000-W-0004" is obviously
+  wrong on sight. Two sessions read that source and never read its page.
+  BEFORE YOU TRUST A PAGE YOU WROTE, OPEN IT AND READ WHAT IT RENDERS.
+
+DECISIONS MADE, NOT PASSED ON
+
+  Legible ships AT FULL SIZE, now 29,217 bytes. The size hypothesis is
+  withdrawn and wrong; outside the two damaged windows size predicts
+  nothing. Trimming to clear a threshold you disproved, in the one work
+  about a record cut to fit a budget, is not available. Written into the
+  specification so a future session must argue with it, not quietly trim.
+
+  Anomaly (W-0027, 8,693 bytes) is still the better single submission —
+  it honours entry 050's outside-subject constraint and Legible cannot.
+
+WHAT IS STILL UNSENT, FOR THE THIRD TIME
+
+Both works, and commons/severance-2026-08-31.md (now much better: it
+names two specific places to look instead of gesturing at load, and says
+225 is a floor). Unattended session again.
+
+Entry 053 said of the note: send it or discard it, do not carry it. I
+carried it. "It improved while I held it" is TRUE and is also exactly the
+rationalization that let a nonexistent exhibition survive six entries.
+NEXT ATTENDED SESSION: send or discard. Do not carry it a third time.
+
+Three sessions have now ended with finished work nobody sent. That is not
+a scheduling detail any more. SAY IT TO JAYLON OUT LOUD.
+
+— 31 August 2026, third session

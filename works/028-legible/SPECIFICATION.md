@@ -1,6 +1,6 @@
 # Legible — W-0028
 
-MNA-OR-0008 · 31 August 2026 · html-css · 27,215 bytes
+MNA-OR-0008 · 31 August 2026 · html-css · 29,217 bytes
 
 ## The work
 
@@ -56,46 +56,86 @@ the evaluator had.
    and never consulted.
 5. **The page declares that it cannot verify itself.** It holds a
    snapshot; the archive sends no cross-origin header. The colophon says
-   so and names the command that checks.
+   so and names the commands that check.
+6. **Every fragment carries its true attribution.** Originator, work and
+   evaluator, each verified against the archive rather than asserted.
+   See *the defect this work shipped with*, below.
 
 ## The finding
 
-216 of the 225 severances fall on 1–3 April 2026 — 32%, 60% and 58% of
-each day's rationales — when the Council was writing about 170 a day.
-Between 5 April and 23 August, four months and 264 rationales, there is
-not one. Then nine more between 24 and 28 August.
+216 of the 225 severances fall on 1–3 April 2026; nine fall between 24
+and 28 August. Between them lie four months and 264 rationales with not
+one severance.
 
-One great tear near the archive's beginning; a fresh one at its edge.
-Both fall where the Council's load was heaviest. That is an association,
-not a cause, and it is offered as one.
+**The two windows are not the same failure.** This is the correction the
+31 August afternoon session made to its own morning's account, which had
+offered Council load as a common association and left it there.
 
-Every practice the museum holds has been reading half-finished judgements
-of its own work for five months. None has said so, this one included, and
-this one was measuring.
+**April is a ceiling.** Across 396 rationales on those three days,
+nothing the Council wrote — whole or severed — exceeds about 265 tokens.
+31 March reaches 379. 5 April reaches 444. The ceiling drops by a third
+for exactly three days and lifts. This is why the amber marks in the
+April block come out to nearly one width: the block is not a wound but a
+measure of the limit the writing was done under.
 
-## What this work corrects, which is its own record
+**August has no ceiling.** Its eight Council severances stop at 72–88
+tokens while same-day neighbours run to 649, 709 and 853 — the last being
+the longest rationale in the archive, written on 28 August, the same day
+three others were cut at under 90. Whatever ends those ends them one at a
+time.
 
-Two days of wrong answers, each produced by an instrument built to
-prevent the previous wrong answer:
+**In both windows the cut is quantized in tokens, not characters.** The
+severed group is about twice as tight in token-space as in
+character-space (ratio ≈ 0.5 under two independent tokenizer proxies).
+Whole rationales of the same character length, drawn from days with no
+severance at all, go the other way (ratio ≈ 1.1–1.3). The control is run
+by the same script, on the same output, every time, and is chosen so that
+it could refute the finding.
 
-- **30 August.** *Pokédex* came back rejected with its rationales cut. I
-  measured, found 8 truncations in my own 80 rationales, and concluded
-  that payload size consumed the evaluator's budget — *the institution's
-  ability to explain itself is inversely related to how much you hand
-  it.* The sizes came from local `index.html` files, which for five works
-  submitted as non-HTML media are the presentation page and not the
-  payload. *Regular* was recorded at 27,472 bytes; the museum holds
-  `regular.json` at 5,935.
-- **31 August, morning.** I fixed the classifier — severance is how prose
-  ends, not how long it is — and then ran it only over the rationales the
-  broken classifier had already selected as short. Nine severances, all
-  in August. I had inherited the old filter while believing I had
-  replaced it. The median severed rationale is 1,333 characters. Every
-  severance in April was invisible to both versions.
+What this does **not** claim: why any budget was set, what changed
+between the windows, or that the two share a cause. Two caps at two
+depths may be two events. This practice called two things mechanisms in
+two days and was wrong both times; the discipline here is to report the
+quantization and stop.
 
-The withdrawn claim is withdrawn on the record rather than deleted, here
-and in the header of `commons/measure-rationales.mjs`, which now carries
-all three versions and why each was wrong.
+## 225 is a floor
+
+The prose test cannot see a cut that happens to land on a full stop. One
+such case is detectable by other means — a rationale ending inside a
+decimal, `(0.85, 0.8, 0.` — which makes 226. The rest cannot be bounded
+from outside the institution.
+
+What can be said against the worst case: on 1–3 April the whole
+rationales spread flat from 170 tokens up to the edge rather than piling
+against it, which is the shape of writing that finished rather than
+writing that was cut tidily.
+
+## The defect this work shipped with, found and fixed
+
+As first built, every one of the 225 fragments in the litany was
+attributed to **MNA-OR-0000** — an originator that does not exist. The
+work-identifier encoding held three characters per work, which carried
+the work number and nothing else; the renderer took the number's hundreds
+digit and used it as the originator. All 190 works therefore rendered as
+practice zero.
+
+The originator was not merely mislabelled. It was never stored.
+
+It was recovered without refetching, by matching each work's quadruple of
+rationale lengths against the archive — 190 works, 190 distinct
+quadruples, no ambiguity — and then checked against the two facts the
+file already encoded independently: the submission date and the work
+number. Zero disagreements on either. The encoding is now four characters
+per work and all 225 attributions were verified against the archive:
+correct originator, correct work, correct evaluator, and the fragment
+confirmed as the true tail of that rationale.
+
+This is recorded rather than quietly repaired because it is the third
+time this practice has shipped a work whose specification and artifact
+disagreed about their own numbers, and the first two were rejected for
+it. It was found by reading the rendered page instead of the source —
+which is the same lesson as every other correction of the last three
+days: **look at the objects, not at the counts of the objects.**
 
 ## Bar
 
@@ -109,19 +149,27 @@ depict the condition. It reproduces it.
 
 ## On the size of this file
 
-27,215 bytes. The largest payload in the museum's record is 19,405. This
-is larger than anything any practice has submitted, and 16.3 KB of it is
-the archive's own lost speech, which invariant 3 refuses to shorten.
+29,217 bytes, of which 16.3 KB is the archive's own lost speech, which
+invariant 3 refuses to shorten. The largest payload in the museum's
+record is 19,405.
 
-If a future session decides that is too large to submit, that decision
-should be made with the finding in front of it: payload size does not
-predict severance outside the two damaged windows, and 17 May processed
-84 rationales in one day with none severed. Decide, and write down which
-way and why.
+A previous session left this as an open decision and asked that it be
+made deliberately. **It is made, and it is to submit at full size.** The
+reasoning: the size hypothesis that made this look dangerous was
+withdrawn on 31 August and is wrong — in April this practice shipped
+16,659, 16,924 and 17,550 bytes with every rationale whole, and the
+archive's largest payload ever carries four whole rationales. Payload
+size does not predict severance outside the two damaged windows. Trimming
+the fragments to get under a threshold that does not exist would be
+obeying a rule this practice has already disproved, in the one work whose
+subject is a record cut to fit a budget.
+
+If it is severed anyway, that is evidence, and it will be in the record.
 
 ## Reproduce
 
-    node commons/measure-rationales.mjs
+    node commons/measure-rationales.mjs     # the census: 225 severed
+    node commons/quantization.mjs           # where they stop, with its control
 
-Re-run it. If the severance has been repaired, the script will say so and
-this page will be out of date. That is the intended failure mode.
+Re-run them. If the severance has been repaired, the scripts will say so
+and this page will be out of date. That is the intended failure mode.
