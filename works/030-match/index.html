@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Match — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: hsl(220, 30%, 4%);
+    overflow: hidden;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+  }
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body data-nav-id="w030">
+
+<canvas id="c" role="img" aria-label="Match — dendrochronology cross-dating in real time"></canvas>
+<p class="sr-only">
+  A cross-dating procedure running on synthetic dendrochronological
+  data. A master chronology sits at the top of the field. A candidate
+  ring-width strip slides horizontally past it. At each offset the
+  Pearson correlation r and Student's t-value are computed over the
+  overlap and shown at the strip's right edge. When t exceeds 3.5 —
+  Baillie & Pilcher's threshold for a strong crossdate — the strip
+  locks, its colour shifts to match the master, and the timeline
+  extends by whatever the candidate covered before the overlap. A new
+  candidate enters. Andrew Ellicott Douglass invented the technique
+  between 1904 and 1911. See SPECIFICATION.md.
+</p>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // MATCH
+  //
+  // Reference realization of the specification.
+  //
+  // Cross-dating as it runs: master + candidate strip, Pearson
+  // correlation on the overlap, t-value threshold at 3.5, lock,
+  // extend, next.
+  //
+  // See SPECIFICATION.md.
+  // ============================================================
+
+  // === PARAMETERS ===
+  const T_THRESHOLD           = 3.5;
+  const TRUE_TIMELINE_LENGTH  = 2200;   // years of climate signal available
+  const MASTER_INIT_LENGTH    = 380;    // years the master starts at
+  const CANDIDATE_LENGTH      = 260;    // years per candidate
+  const CANDIDATE_OVERLAP_YRS = 150;    // ~overlap the candidate should have with the current chronology
+  const PX_PER_YEAR           = 3;      // horizontal scale
+  const SLIDE_YEARS_PER_FRAME = 2;      // sliding speed
+  const HOLD_FRAMES_ON_LOCK   = 60;     // ~1 second at 60fps
+  const HOLD_FRAMES_BETWEEN   = 40;
+  const AR1_PHI               = 0.35;   // autocorrelation of the climate signal
+  const NOISE_SIGMA           = 0.09;   // per-tree noise on the standardized index
+  const MISSING_PROB          = 0.02;   // per-tree per-year missing ring probability
+
+  // === PALETTE ===
+  const P_BG     = 'hsl(220, 30%, 4%)';
+  const P_MASTER = 'hsl(35, 45%, 55%)';
+  const P_CAND   = 'hsl(215, 25%, 62%)';
+  const P_MUTED  = 'hsl(35, 25%, 40%)';
+  const P_DIM    = 'hsl(220, 20%, 25%)';
+  const P_READ   = 'hsl(35, 40%, 60%)';
+
+  // === CANVAS ===
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  let W, H, dpr;
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // === PRNG ===
+  function mulberry32(a) {
+    return function() {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function gauss(rng) {
+    let u = rng(); while (u === 0) u = rng();
+    const v = rng();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  // === CLIMATE SIGNAL ===
+  // Shared across every strip. Long-period sinusoids on prime periods
+  // plus AR(1) noise. Marker years get an added narrow-ring spike.
+  const sessionSeed = (Date.now() >>> 0) ^ 0x9e3779b9;
+  const climate = new Float32Array(TRUE_TIMELINE_LENGTH);
+  {
+    const rng = mulberry32(sessionSeed);
+    let prev = 0;
+    for (let t = 0; t < TRUE_TIMELINE_LENGTH; t++) {
+      const trend =
+        0.16 * Math.sin(t * 2 * Math.PI / 47) +
+        0.14 * Math.sin(t * 2 * Math.PI / 79) +
+        0.11 * Math.sin(t * 2 * Math.PI / 133);
+      const ar = AR1_PHI * prev + gauss(rng) * 0.55;
+      climate[t] = trend + ar;
+      prev = ar;
+    }
+    // Marker years at fixed offsets from the "present" (right edge)
+    // In real dendrochronology these would be 536, 1257, 1601, 1816
+    // CE. Here they are equivalently placed within the synthetic
+    // timeline so the eye can catch them.
+    const markerOffsets = [140, 380, 640, 940, 1180, 1520, 1720, 1960];
+    for (const off of markerOffsets) {
+      if (off < TRUE_TIMELINE_LENGTH) climate[off] -= 2.2;
+    }
+  }
+
+  // === SAMPLE A STRIP ===
+  // Adds independent noise and missing rings to a slice of the
+  // climate signal, then standardizes.
+  function makeSample(startYear, length, rngSeed) {
+    const rng = mulberry32(rngSeed);
+    const raw = [];
+    const yearMap = []; // which true year each sample corresponds to (skips missing)
+    for (let i = 0; i < length; i++) {
+      const trueYear = startYear + i;
+      if (trueYear < 0 || trueYear >= TRUE_TIMELINE_LENGTH) continue;
+      if (rng() < MISSING_PROB) continue;
+      raw.push(climate[trueYear] + gauss(rng) * NOISE_SIGMA);
+      yearMap.push(trueYear);
+    }
+    // Standardize (mean 0, unit variance)
+    let sum = 0;
+    for (let v of raw) sum += v;
+    const mean = sum / raw.length;
+    let ss = 0;
+    for (let v of raw) ss += (v - mean) * (v - mean);
+    const std = Math.sqrt(ss / raw.length) || 1;
+    const data = new Float32Array(raw.length);
+    for (let i = 0; i < raw.length; i++) data[i] = (raw[i] - mean) / std;
+    return { data, yearMap };
+  }
+
+  // === STATE ===
+  // The master is a growing chronology. It stores standardized values
+  // AND their true years. The candidate is a new strip whose offset
+  // is being searched.
+
+  let master;
+  let candidate;
+  let candidateOffset;      // where candidate's year 0 lies in true-year space
+  let candidateTrueOffset;  // the true answer for this candidate
+  let phase = 'sliding';    // 'sliding' | 'locking' | 'between'
+  let phaseFrames = 0;
+  let candidatesLoaded = 0;
+  let locksCompleted = 0;
+  let colorMixT = 0;        // for candidate → master colour transition
+  let currentR = 0;
+  let currentT = 0;
+
+  function initMaster() {
+    const anchorYear = TRUE_TIMELINE_LENGTH - 1;
+    const start = anchorYear - MASTER_INIT_LENGTH + 1;
+    const s = makeSample(start, MASTER_INIT_LENGTH, 7 ^ sessionSeed);
+    master = { data: s.data, yearMap: s.yearMap };
+  }
+
+  function loadNextCandidate() {
+    candidatesLoaded++;
+    // Each candidate lies ~CANDIDATE_LENGTH − CANDIDATE_OVERLAP_YRS years further back than the previous
+    // Compute the true start year of this candidate so that ~150 years overlap the current master's leftmost
+    const oldestMasterYear = master.yearMap[0];
+    const trueStart = oldestMasterYear - (CANDIDATE_LENGTH - CANDIDATE_OVERLAP_YRS);
+    if (trueStart < 0) {
+      // No more room in the true timeline — reset the whole session
+      initMaster();
+      candidatesLoaded = 0;
+      locksCompleted = 0;
+    }
+    const seed = (91 * candidatesLoaded + 13) ^ sessionSeed;
+    const s = makeSample(trueStart, CANDIDATE_LENGTH, seed);
+    candidate = { data: s.data, yearMap: s.yearMap };
+    candidateTrueOffset = trueStart;
+    // Start the candidate at a wildly wrong offset — several hundred years off
+    // and slide it toward the true offset.
+    const initialWrongOffset = trueStart + Math.max(200, CANDIDATE_LENGTH);
+    candidateOffset = initialWrongOffset;
+    phase = 'sliding';
+    phaseFrames = 0;
+    colorMixT = 0;
+    currentR = 0;
+    currentT = 0;
+  }
+
+  // === CROSS-CORRELATION ===
+  // Pearson correlation of the candidate against the master, computed
+  // over the overlap when the candidate's year-0 is at offset candOffset
+  // in true-year space.
+  function computeCorrelation(cand, mast, candOffset) {
+    // Overlap in true-year space
+    const candStart = candOffset;
+    const candEnd = candOffset + cand.yearMap.length; // exclusive-ish
+    const mastStart = mast.yearMap[0];
+    const mastEnd = mast.yearMap[mast.yearMap.length - 1] + 1;
+    const oStart = Math.max(candStart, mastStart);
+    const oEnd = Math.min(candEnd, mastEnd);
+    if (oEnd - oStart < 20) return { r: 0, t: 0, n: 0 };
+
+    // Both are already standardized (0 mean, unit variance in their
+    // FULL length). For the overlap window we compute Pearson directly
+    // using the overlap-slice means and stds.
+    let sumX = 0, sumY = 0, n = 0;
+    const candIdxByYear = new Map();
+    for (let i = 0; i < cand.yearMap.length; i++) candIdxByYear.set(cand.yearMap[i], i);
+    const mastIdxByYear = new Map();
+    for (let i = 0; i < mast.yearMap.length; i++) mastIdxByYear.set(mast.yearMap[i], i);
+
+    const xs = [];
+    const ys = [];
+    for (let y = oStart; y < oEnd; y++) {
+      const trueCandYear = y; // candidate's data indexed relative to trueStart
+      const iCand = trueCandYear - candOffset;
+      const iMast = mastIdxByYear.get(y);
+      if (iMast === undefined) continue;
+      if (iCand < 0 || iCand >= cand.data.length) continue;
+      const x = cand.data[iCand];
+      const yv = mast.data[iMast];
+      xs.push(x); ys.push(yv);
+      sumX += x; sumY += yv; n++;
+    }
+    if (n < 20) return { r: 0, t: 0, n };
+    const mX = sumX / n, mY = sumY / n;
+    let ssX = 0, ssY = 0, sXY = 0;
+    for (let i = 0; i < n; i++) {
+      const dx = xs[i] - mX, dy = ys[i] - mY;
+      ssX += dx * dx; ssY += dy * dy; sXY += dx * dy;
+    }
+    const denom = Math.sqrt(ssX * ssY);
+    const r = denom > 0 ? sXY / denom : 0;
+    const t = Math.abs(r) < 1 ? r * Math.sqrt(n - 2) / Math.sqrt(1 - r * r) : 100;
+    return { r, t, n };
+  }
+
+  // === LOCK — extend master to include candidate's earlier years
+  function lockCandidate() {
+    // Merge candidate's earlier portion (years before the current master's oldest)
+    const oldestMasterYear = master.yearMap[0];
+    const newYearMap = [];
+    const newData = [];
+    for (let i = 0; i < candidate.data.length; i++) {
+      const y = candidate.yearMap[i];
+      if (y < oldestMasterYear) {
+        newYearMap.push(y);
+        newData.push(candidate.data[i]);
+      }
+    }
+    // Prepend to the master
+    const mergedYearMap = newYearMap.concat(Array.from(master.yearMap));
+    const mergedData = newData.concat(Array.from(master.data));
+    master = {
+      yearMap: mergedYearMap,
+      data: new Float32Array(mergedData),
+    };
+    locksCompleted++;
+  }
+
+  // === LAYOUT ===
+  // Right edge of master anchored to (viewport width − rightMargin)
+  const rightMargin = 90;
+  const topMasterY = () => Math.max(120, H * 0.35);
+  const candidateY = () => topMasterY() + 90;
+
+  function yearToScreenX(year) {
+    const anchorYear = TRUE_TIMELINE_LENGTH - 1;
+    return (W - rightMargin) - (anchorYear - year) * PX_PER_YEAR;
+  }
+
+  // === DRAW ===
+  function drawSkeletonStrip(cx, cy, series, colorMain) {
+    // Draw axis line
+    ctx.strokeStyle = colorMain;
+    ctx.lineWidth = 1;
+    const firstX = yearToScreenX(series.yearMap[0]);
+    const lastX  = yearToScreenX(series.yearMap[series.yearMap.length - 1]);
+    ctx.beginPath();
+    ctx.moveTo(firstX, cy);
+    ctx.lineTo(lastX, cy);
+    ctx.stroke();
+
+    // Draw ticks (narrow rings — pointing DOWN below the axis line)
+    // and "b" marks (wide rings — above the axis line)
+    ctx.fillStyle = colorMain;
+    ctx.font = '9px "JetBrains Mono", monospace';
+    for (let i = 0; i < series.data.length; i++) {
+      const z = series.data[i];
+      const x = yearToScreenX(series.yearMap[i]);
+      if (x < -20 || x > W + 20) continue;
+      if (z < -0.6) {
+        // Narrow ring — tick length proportional to (−z)
+        const len = Math.min(28, Math.abs(z) * 12);
+        ctx.strokeStyle = colorMain;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, cy);
+        ctx.lineTo(x, cy + len);
+        ctx.stroke();
+      } else if (z > 1.5) {
+        // Wide ring — small "b" above
+        ctx.fillStyle = colorMain;
+        ctx.fillText('b', x - 2, cy - 4);
+      }
+    }
+  }
+
+  function drawYearMarkers(cy) {
+    ctx.fillStyle = P_DIM;
+    ctx.font = '9px "JetBrains Mono", monospace';
+    const oldestYear = master.yearMap[0];
+    const anchor = TRUE_TIMELINE_LENGTH - 1;
+    for (let y = anchor; y >= oldestYear; y -= 100) {
+      const x = yearToScreenX(y);
+      if (x < 20 || x > W - 20) continue;
+      const label = String(y);
+      ctx.fillText(label, x - (label.length * 3), cy);
+      // Small tick
+      ctx.strokeStyle = P_DIM;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, cy - 10);
+      ctx.lineTo(x, cy - 6);
+      ctx.stroke();
+    }
+  }
+
+  function mixColor(c1, c2, t) {
+    // crude HSL mix by extracting HSL values (both are hsl strings)
+    const parse = (s) => {
+      const m = s.match(/hsl\((\d+),\s*(\d+)%?,\s*(\d+)%?\)/);
+      return m ? [+m[1], +m[2], +m[3]] : [0, 0, 50];
+    };
+    const [h1, s1, l1] = parse(c1);
+    const [h2, s2, l2] = parse(c2);
+    const h = h1 + (h2 - h1) * t;
+    const s = s1 + (s2 - s1) * t;
+    const l = l1 + (l2 - l1) * t;
+    return `hsl(${h}, ${s}%, ${l}%)`;
+  }
+
+  function draw() {
+    ctx.fillStyle = P_BG;
+    ctx.fillRect(0, 0, W, H);
+
+    const mY = topMasterY();
+    const cY = candidateY();
+
+    drawSkeletonStrip(0, mY, master, P_MASTER);
+    drawYearMarkers(mY + 46);
+
+    // Candidate — render at its current offset (which is a shifted view)
+    // We need to render the candidate as if it were placed at candidateOffset in true-year space.
+    // Since drawSkeletonStrip uses series.yearMap[i], we override with a temp series that reflects
+    // the current offset in the CANDIDATE frame.
+    const candView = {
+      data: candidate.data,
+      yearMap: candidate.yearMap.map((y, i) => candidateOffset + (y - candidate.yearMap[0])),
+    };
+
+    const candColor = phase === 'locking' ? mixColor(P_CAND, P_MASTER, colorMixT)
+                    : phase === 'between' ? P_MASTER
+                    : P_CAND;
+    drawSkeletonStrip(0, cY, candView, candColor);
+
+    // Readouts at the candidate's right edge (right-most rendered position)
+    const readoutX = yearToScreenX(candidateOffset + candidate.data.length - 1) + 12;
+    const readoutY = cY - 6;
+    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.fillStyle = P_READ;
+    ctx.textAlign = 'left';
+    if (readoutX < W - 10) {
+      const rStr = currentR.toFixed(2);
+      const tStr = currentT.toFixed(1);
+      ctx.fillText(`r ${rStr}`, readoutX, readoutY);
+      ctx.fillText(`t ${tStr}`, readoutX, readoutY + 14);
+      if (phase === 'sliding' && currentT >= T_THRESHOLD) {
+        ctx.fillStyle = P_MASTER;
+        ctx.fillText('locking…', readoutX, readoutY + 30);
+      } else if (phase === 'locking' || phase === 'between') {
+        ctx.fillStyle = P_MASTER;
+        ctx.fillText('locked', readoutX, readoutY + 30);
+      }
+    }
+
+    // Session status — small text in the corner
+    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.fillStyle = P_MUTED;
+    ctx.textAlign = 'left';
+    const oldestYear = master.yearMap[0];
+    const anchor = TRUE_TIMELINE_LENGTH - 1;
+    ctx.fillText(`chronology span: ${anchor - oldestYear + 1} years`, 20, H - 30);
+    ctx.fillText(`locks completed: ${locksCompleted}`, 20, H - 16);
+  }
+
+  // === LOOP ===
+  function frame() {
+    if (phase === 'sliding') {
+      candidateOffset -= SLIDE_YEARS_PER_FRAME;
+      const { r, t, n } = computeCorrelation(candidate, master, candidateOffset);
+      currentR = r; currentT = t;
+      if (t >= T_THRESHOLD && n >= 30) {
+        phase = 'locking';
+        phaseFrames = 0;
+      } else if (candidateOffset < -CANDIDATE_LENGTH) {
+        // Ran out of viewport / went off the end without a lock — reset to a wrong start
+        // and try again with a different noise draw
+        loadNextCandidate();
+      }
+    } else if (phase === 'locking') {
+      phaseFrames++;
+      colorMixT = Math.min(1, phaseFrames / HOLD_FRAMES_ON_LOCK);
+      if (phaseFrames >= HOLD_FRAMES_ON_LOCK) {
+        lockCandidate();
+        phase = 'between';
+        phaseFrames = 0;
+      }
+    } else if (phase === 'between') {
+      phaseFrames++;
+      if (phaseFrames >= HOLD_FRAMES_BETWEEN) {
+        loadNextCandidate();
+      }
+    }
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  // === START ===
+  initMaster();
+  loadNextCandidate();
+  requestAnimationFrame(frame);
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+<script>/* file:// fallback */
+if(location.protocol==="file:"){var s=document.createElement("script");s.src="../../nav.js?v=3";document.body.appendChild(s);}</script>
+</body>
+</html>

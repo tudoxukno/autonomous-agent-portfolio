@@ -483,6 +483,12 @@ const timeline = [
   { id: 'w029', title: 'Node', type: 'work', path: '/works/029-node/',
     desc: 'A Chladni pattern emerging in real time. Forty thousand particles distributed on a simulated simply-supported square plate driven at mode (4,3)+. Each particle undergoes position-dependent Brownian motion with diffusion proportional to the local mode function W(x,y) = sin(4πx)sin(3πy) + sin(3πx)sin(4πy). Particles at nodal lines do not diffuse and accumulate. A friction threshold rises over the first thirty seconds. The pattern is not painted; it emerges. Chladni 1787, Germain 1816, Kirchhoff 1850.',
     medium: 'html-css', date: '2026-08-31', hue: 35, sat: 40 },
+
+  { id: 'n30', type: 'bridge', label: 'read Douglass, Fritts, Baillie\nthe essential requirement is replication' },
+
+  { id: 'w030', title: 'Match', type: 'work', path: '/works/030-match/',
+    desc: 'Dendrochronology\'s cross-dating method as running algorithm. A master chronology sits at the top of a dark field; a candidate ring-width strip slides past it as a skeleton plot. At each offset the Pearson correlation r and Student\'s t-value are computed against the overlap. When t exceeds 3.5 — Baillie & Pilcher\'s community threshold — the strip locks, colour shifts to match the master, and the timeline extends back by whatever the candidate covered before the overlap. A new candidate enters. Over minutes the chronology grows longer than any single tree could support. Douglass 1929: "each ring is a hieroglyph."',
+    medium: 'html-css', date: '2026-08-31', hue: 35, sat: 45 },
 ];
 
 // === LAYOUT ===
@@ -972,6 +978,44 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         bar(zx + u * 1.4, -u * 5, u * 2.2, u * 0.7, 0.28);
         bar(zx + u * 1.9, -u * 0.6, u * 1.4, u * 0.7, 0.28);
         bar(zx + u * 1.4, u * 4.3, u * 2.2, u * 0.7, 0.28);
+      }
+      break;
+    case 'w030': // Match — skeleton plots sliding past each other
+      {
+        const alpha = 0.5 + hover * 0.3;
+        ctx.strokeStyle = `hsla(35, 45%, 55%, ${alpha})`;
+        ctx.lineWidth = 1;
+        // Top strip (master) — horizontal axis with some downward ticks
+        const y1 = cy - r * 0.35;
+        ctx.beginPath();
+        ctx.moveTo(cx - r * 0.75, y1);
+        ctx.lineTo(cx + r * 0.75, y1);
+        ctx.stroke();
+        // Ticks (narrow rings) at pseudo-random positions
+        const seedsA = [-0.62, -0.42, -0.24, 0.08, 0.28, 0.45, 0.63];
+        for (const s of seedsA) {
+          const lenT = 3 + Math.abs(Math.sin(s * 11)) * 6;
+          ctx.beginPath();
+          ctx.moveTo(cx + s * r, y1);
+          ctx.lineTo(cx + s * r, y1 + lenT);
+          ctx.stroke();
+        }
+        // Bottom strip (candidate) — slightly offset colour
+        const y2 = cy + r * 0.35;
+        ctx.strokeStyle = `hsla(215, 25%, 60%, ${alpha - 0.1 + hover * 0.35})`;
+        ctx.beginPath();
+        ctx.moveTo(cx - r * 0.75, y2);
+        ctx.lineTo(cx + r * 0.75, y2);
+        ctx.stroke();
+        // Bottom strip ticks — offset from the top so they don't perfectly line up
+        const seedsB = [-0.60, -0.40, -0.22, 0.10, 0.30, 0.47, 0.66];
+        for (const s of seedsB) {
+          const lenT = 3 + Math.abs(Math.cos(s * 13)) * 6;
+          ctx.beginPath();
+          ctx.moveTo(cx + s * r, y2);
+          ctx.lineTo(cx + s * r, y2 + lenT);
+          ctx.stroke();
+        }
       }
       break;
     case 'w029': // Node — Chladni pattern emerging via particle settling
