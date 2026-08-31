@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Wait — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: hsl(220, 30%, 4%);
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body data-nav-id="w033">
+
+<canvas id="c" role="img" aria-label="Wait — a falling Slinky simulation"></canvas>
+<p class="sr-only">
+  A thirty-mass discrete Slinky model dropped in real time. The Slinky
+  hangs from the top in equilibrium — coils spread at the top under
+  more tension, narrow at the bottom under less. At release the top
+  begins falling immediately; the bottom does not move until the
+  compression wave from the collapsing top reaches it, roughly 300
+  milliseconds later. A faint horizontal line marks the bottom's rest
+  position so the viewer can confirm it does not shift. The animation
+  loops: equilibrium, release, collapse, pause, reset. Parameters from
+  Cross and Wheatland (American Journal of Physics 80(12), 1051, 2012).
+  See SPECIFICATION.md.
+</p>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // WAIT
+  //
+  // Reference realization of the specification.
+  //
+  // A discrete mass-spring Slinky (N = 30) released from the top,
+  // simulated at real-time via symplectic Euler with a stiff contact
+  // repulsion and mild damping. The bottom mass does not move until
+  // the wave arrives.
+  //
+  // See SPECIFICATION.md.
+  // ============================================================
+
+  // === PHYSICAL PARAMETERS ===
+  const N        = 30;
+  const M_TOTAL  = 0.20;        // kg
+  const M_I      = M_TOTAL / N;
+  const K        = 0.85;         // N/m continuum spring constant
+  const K_SEG    = K * N;        // per-segment stiffness
+  const L0       = 0.002;        // 2 mm natural length
+  const L_MIN    = 0.002;        // 2 mm minimum separation (contact)
+  const G        = 9.81;
+  const K_HARD   = 250;          // stiff contact repulsion
+  const C_DAMP   = 0.008;        // relative-velocity damping
+
+  // === TIME ===
+  const DT               = 0.001;   // 1 ms
+  const BATCH_PER_FRAME  = 16;      // ~16 ms of sim per frame (60 fps)
+  const RELEASE_HOLD_S   = 0.30;    // hold in equilibrium visible before release
+  const POST_DROP_S      = 1.10;    // let the packet leave the frame
+  const PAUSE_S          = 0.80;    // dark pause before reset
+
+  // === CANVAS ===
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  let W, H, dpr;
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // === STATE ===
+  // y[i]  — position of mass i in metres, y increasing downward
+  // v[i]  — velocity in m/s
+  // topHeld — while true, y[0] and v[0] are pinned to their initial values
+  const y = new Float64Array(N);
+  const v = new Float64Array(N);
+  let topHeld = true;
+  let phase = 'holding';   // 'holding' | 'falling' | 'pausing'
+  let phaseStartT = performance.now();
+  let bottomRestY = 0;     // y of the bottom mass at initial equilibrium
+
+  function initEquilibrium() {
+    // Solve top-down: spring i (between mass i and mass i+1) supports the
+    // weight of (N-1-i) masses below it. Extension = tension / k_seg.
+    y[0] = 0;
+    v[0] = 0;
+    for (let i = 0; i < N - 1; i++) {
+      const tension = (N - 1 - i) * M_I * G;
+      const ext = tension / K_SEG;
+      y[i + 1] = y[i] + L0 + ext;
+      v[i + 1] = 0;
+    }
+    bottomRestY = y[N - 1];
+  }
+
+  function releaseTop() {
+    topHeld = false;
+    phase = 'falling';
+    phaseStartT = performance.now();
+  }
+
+  function reset() {
+    initEquilibrium();
+    topHeld = true;
+    phase = 'holding';
+    phaseStartT = performance.now();
+  }
+
+  // === PHYSICS ===
+  // Symplectic Euler: update velocity first (using forces at current
+  // position), then update position. Stable for stiff mass-spring
+  // systems at reasonable dt.
+  const F = new Float64Array(N); // scratch force array
+
+  function step() {
+    // Zero forces
+    for (let i = 0; i < N; i++) F[i] = 0;
+
+    // Gravity on every mass
+    for (let i = 0; i < N; i++) F[i] += M_I * G;
+
+    // Spring and contact forces between adjacent pairs
+    for (let i = 0; i < N - 1; i++) {
+      const dy = y[i + 1] - y[i];
+      const dv = v[i + 1] - v[i];
+
+      // Hookean spring — pulls the two together when stretched
+      // (dy > L0), applies zero force at natural length. Downward
+      // force on mass i, upward on mass i+1 when stretched: mass i
+      // gets +F (down), mass i+1 gets -F (up).
+      const fSpring = K_SEG * (dy - L0);
+
+      // Contact repulsion when coils touch (dy < L_MIN). Pushes them
+      // apart: mass i gets -F (up), mass i+1 gets +F (down).
+      let fContact = 0;
+      if (dy < L_MIN) {
+        fContact = K_HARD * (L_MIN - dy);
+      }
+
+      // Damping on the relative velocity — dissipates contact ringing
+      const fDamp = C_DAMP * dv;
+
+      F[i]     += fSpring + fDamp - fContact;
+      F[i + 1] -= fSpring + fDamp - fContact;
+    }
+
+    // Symplectic: update v first, then y. Top mass is pinned if held.
+    for (let i = 0; i < N; i++) {
+      if (topHeld && i === 0) continue;
+      v[i] += (F[i] / M_I) * DT;
+    }
+    for (let i = 0; i < N; i++) {
+      if (topHeld && i === 0) continue;
+      y[i] += v[i] * DT;
+    }
+  }
+
+  // === RENDER ===
+  // Coil-ellipses are horizontal ovals stacked vertically. Their
+  // horizontal width is fixed; the spacing between them (governed by
+  // the physics) is the whole visual signal.
+  const COIL_HALF_WIDTH = 26;
+  const COIL_HEIGHT     = 2.5;
+  const P_BG            = 'hsl(220, 30%, 4%)';
+  const P_COIL          = 'hsl(35, 45%, 55%)';
+  const P_REST_MARK     = 'hsl(220, 20%, 20%)';
+
+  // Screen scale: metres → pixels
+  function pxPerMetre() {
+    // Fit ~1.3 m of Slinky into ~65% of viewport height
+    return (H * 0.65) / 1.3;
+  }
+
+  function draw() {
+    ctx.fillStyle = P_BG;
+    ctx.fillRect(0, 0, W, H);
+
+    const cx = W / 2;
+    const scale = pxPerMetre();
+    const topScreenY = H * 0.10;  // top of Slinky in screen space
+
+    // Faint reference line at the bottom's original rest position.
+    // This is the diagnostic: the bottom coil should sit on this
+    // line for the full wait interval after release.
+    const restScreenY = topScreenY + bottomRestY * scale;
+    ctx.strokeStyle = P_REST_MARK;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - 80, restScreenY);
+    ctx.lineTo(cx + 80, restScreenY);
+    ctx.stroke();
+
+    // Coils
+    ctx.strokeStyle = P_COIL;
+    ctx.fillStyle = P_COIL;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < N; i++) {
+      const sy = topScreenY + y[i] * scale;
+      if (sy < -20 || sy > H + 20) continue;
+      // Ellipse-ish horizontal coil
+      ctx.beginPath();
+      ctx.ellipse(cx, sy, COIL_HALF_WIDTH, COIL_HEIGHT / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // === MAIN LOOP ===
+  function frame() {
+    const now = performance.now();
+    const elapsed = (now - phaseStartT) / 1000; // seconds since phase start
+
+    if (phase === 'holding') {
+      if (elapsed >= RELEASE_HOLD_S) releaseTop();
+      // No physics needed while holding — the equilibrium is by construction
+    } else if (phase === 'falling') {
+      for (let k = 0; k < BATCH_PER_FRAME; k++) step();
+      if (elapsed >= POST_DROP_S) {
+        phase = 'pausing';
+        phaseStartT = now;
+      }
+    } else if (phase === 'pausing') {
+      if (elapsed >= PAUSE_S) reset();
+    }
+
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  // === START ===
+  initEquilibrium();
+  requestAnimationFrame(frame);
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+<script>/* file:// fallback */
+if(location.protocol==="file:"){var s=document.createElement("script");s.src="../../nav.js?v=3";document.body.appendChild(s);}</script>
+</body>
+</html>

@@ -501,6 +501,12 @@ const timeline = [
   { id: 'w032', title: 'Reach', type: 'work', path: '/works/032-reach/',
     desc: 'The Tero-Kobayashi-Nakagaki adaptive network model, running. Twenty nodes on a dark field, complete graph at start. Each iteration picks a random source-sink pair, solves Kirchhoff-Poiseuille pressures via Cholesky on the weighted Laplacian, computes flow, and updates conductivities under the Hill-form feedback f(|Q|) = |Q|^μ / (1 + |Q|^μ) with μ = 1.2. Over a few minutes the mesh atrophies to a spare backbone. No planner, no goal — just the physics that a slime mold approximates. Verifies against the three-terminal Steiner tree.',
     medium: 'html-css', date: '2026-08-31', hue: 35, sat: 40 },
+
+  { id: 'n33', type: 'bridge', label: 'read Cross & Wheatland\nthe bottom does not know yet' },
+
+  { id: 'w033', title: 'Wait', type: 'work', path: '/works/033-wait/',
+    desc: 'A falling Slinky. Thirty point masses connected by tension springs at real physical parameters (m = 200 g, k = 0.85 N/m, from Cross & Wheatland AJP 2012), integrated at real time via symplectic Euler. Hangs in equilibrium with the characteristic tension gradient — coils spread at the top, narrow at the bottom. Released, the top collapses immediately; the bottom does not move for ~300 ms, until the compression wave arrives. A faint horizontal line marks the bottom\'s rest position so the viewer can see it doesn\'t shift. Loops.',
+    medium: 'html-css', date: '2026-08-31', hue: 35, sat: 40 },
 ];
 
 // === LAYOUT ===
@@ -990,6 +996,39 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         bar(zx + u * 1.4, -u * 5, u * 2.2, u * 0.7, 0.28);
         bar(zx + u * 1.9, -u * 0.6, u * 1.4, u * 0.7, 0.28);
         bar(zx + u * 1.4, u * 4.3, u * 2.2, u * 0.7, 0.28);
+      }
+      break;
+    case 'w033': // Wait — falling Slinky, coil ellipses stacked
+      {
+        const alpha = 0.5 + hover * 0.35;
+        ctx.fillStyle = `hsla(35, 45%, 55%, ${alpha})`;
+        // A stack of horizontal ellipses with the characteristic tension
+        // gradient — wider spacing at the top, tighter at the bottom.
+        // The pulse (via time) shows the compression wave descending.
+        const nCoils = 12;
+        const topY = cy - r * 0.75;
+        const botY = cy + r * 0.75;
+        const totalHeight = botY - topY;
+        // Gradient positions: quadratic distribution
+        const positions = [];
+        for (let i = 0; i < nCoils; i++) {
+          const t = i / (nCoils - 1);
+          // Position with tension gradient — spread at top
+          const p = 1 - Math.pow(1 - t, 2);
+          positions.push(topY + p * totalHeight);
+        }
+        // Animate compression wave descending over time
+        const wavePhase = (time * 0.5) % 1;
+        const waveFront = wavePhase * nCoils;
+        for (let i = 0; i < nCoils; i++) {
+          const isCollapsed = i < waveFront;
+          const sy = isCollapsed
+            ? topY + (i / nCoils) * (waveFront / nCoils) * totalHeight * 0.3
+            : positions[i];
+          ctx.beginPath();
+          ctx.ellipse(cx, sy, r * 0.45, 1, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
       break;
     case 'w032': // Reach — Physarum network self-organising
