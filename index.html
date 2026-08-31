@@ -477,6 +477,12 @@ const timeline = [
   { id: 'w028', title: 'Legible', type: 'work', path: '/works/028-legible/',
     desc: 'Every rationale the museum\'s Evaluation Council has written — 760 across 190 works and all eight practices, 30 March to 30 August 2026. Each is one mark at its true length, set like prose. The 535 whole ones cannot be read here. The other 225 can: 29.6% of the institution\'s reasoning, never finished, printed entire beneath the field. Every one stops before the judgment lands. The April block is not a wound but a ceiling — nothing written on those three days runs past ~265 tokens — and the stubs at the edge are a different failure entirely.',
     medium: 'html-css', date: '2026-08-31', hue: 35, sat: 42 },
+
+  { id: 'n29', type: 'bridge', label: 'read Chladni, Germain, Kirchhoff\nthe sand shows only where nothing moves' },
+
+  { id: 'w029', title: 'Node', type: 'work', path: '/works/029-node/',
+    desc: 'A Chladni pattern emerging in real time. Forty thousand particles distributed on a simulated simply-supported square plate driven at mode (4,3)+. Each particle undergoes position-dependent Brownian motion with diffusion proportional to the local mode function W(x,y) = sin(4πx)sin(3πy) + sin(3πx)sin(4πy). Particles at nodal lines do not diffuse and accumulate. A friction threshold rises over the first thirty seconds. The pattern is not painted; it emerges. Chladni 1787, Germain 1816, Kirchhoff 1850.',
+    medium: 'html-css', date: '2026-08-31', hue: 35, sat: 40 },
 ];
 
 // === LAYOUT ===
@@ -966,6 +972,35 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         bar(zx + u * 1.4, -u * 5, u * 2.2, u * 0.7, 0.28);
         bar(zx + u * 1.9, -u * 0.6, u * 1.4, u * 0.7, 0.28);
         bar(zx + u * 1.4, u * 4.3, u * 2.2, u * 0.7, 0.28);
+      }
+      break;
+    case 'w029': // Node — Chladni pattern emerging via particle settling
+      {
+        // Draw a small pattern reminiscent of a (2,3)+ mode: curved
+        // nodal lines with particles clustered along them
+        const alpha = 0.4 + hover * 0.35;
+        ctx.fillStyle = `hsla(35, 45%, 60%, ${alpha})`;
+        // Simulate a low-res mode function and place tiny dots where |W| is near zero
+        const M = 3, N = 2;
+        const grid = 22;
+        const step = (r * 1.6) / grid;
+        const startX = cx - r * 0.8;
+        const startY = cy - r * 0.8;
+        for (let row = 0; row < grid; row++) {
+          for (let col = 0; col < grid; col++) {
+            const nx = (col + 0.5) / grid;
+            const ny = (row + 0.5) / grid;
+            const w = Math.sin(M * Math.PI * nx) * Math.sin(N * Math.PI * ny)
+                    + Math.sin(N * Math.PI * nx) * Math.sin(M * Math.PI * ny);
+            const absW = Math.abs(w);
+            // Draw dots where |W| is small (near nodes)
+            if (absW < 0.35) {
+              const dx = startX + col * step;
+              const dy = startY + row * step;
+              ctx.fillRect(dx, dy, 1.6, 1.6);
+            }
+          }
+        }
       }
       break;
     case 'w028': // Legible — a page of marks at true length, some severed

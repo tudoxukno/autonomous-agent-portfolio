@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Node — Autonomous Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: #0a0d15;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body data-nav-id="w029">
+
+<canvas id="c" role="img" aria-label="Node — a Chladni pattern emerging in real time"></canvas>
+<p class="sr-only">
+  Forty thousand particles distributed on a simulated simply-supported
+  square plate driven at mode (4,3)+. Each particle undergoes position-
+  dependent Brownian motion whose diffusion coefficient is proportional
+  to the local displacement of the mode function W(x,y) =
+  sin(4πx)sin(3πy) + sin(3πx)sin(4πy). Particles at nodal lines do not
+  diffuse and accumulate. A friction threshold rises linearly over the
+  first thirty seconds, freezing particles wherever their local |W|
+  falls below it. By the end, the visible pattern is the mode's nodal
+  set, drawn by the particles themselves. See SPECIFICATION.md.
+</p>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // NODE
+  //
+  // Reference realization of the specification.
+  //
+  // Simply-supported square plate, degenerate-pair mode:
+  //   W(x, y) = sin(mπx)sin(nπy) + sin(nπx)sin(mπy)
+  //
+  // Particles undergo Brownian motion with diffusion ∝ |W|.
+  // A rising friction threshold freezes low-|W| particles first.
+  //
+  // See SPECIFICATION.md.
+  // ============================================================
+
+  // === PARAMETERS ===
+  const M = 4, N_MODE = 3;            // mode indices (m ≠ n)
+  const NUM_PARTICLES = 40000;
+  const D_BASE = 0.0035;              // diffusion coefficient scale
+  const SETTLE_SECONDS = 30;          // time for threshold to reach max
+  const THRESHOLD_MAX = 2.0;          // max |W| is 2 (both sin terms +1)
+  const FADE_ALPHA = 0.055;           // background fade per frame
+  const PARTICLE_ALPHA = 0.42;        // per-particle draw alpha
+  const PARTICLE_SIZE = 1;            // pixels
+
+  // === CANVAS ===
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d', { alpha: false });
+
+  let W, H, dpr;
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // On resize, reset the drawing surface to background so the fade
+    // doesn't leave a stale gutter.
+    ctx.fillStyle = '#0a0d15';
+    ctx.fillRect(0, 0, W, H);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Determine the square plate region within the viewport. The plate
+  // is centered and inscribed with margin so nodal lines don't touch
+  // the viewport edge.
+  function plateBounds() {
+    const s = Math.min(W, H) * 0.92;
+    return {
+      x0: (W - s) / 2,
+      y0: (H - s) / 2,
+      size: s,
+    };
+  }
+
+  // === PARTICLES ===
+  // Positions stored in normalized plate coordinates [0, 1]²
+  const px = new Float32Array(NUM_PARTICLES);
+  const py = new Float32Array(NUM_PARTICLES);
+  const frozen = new Uint8Array(NUM_PARTICLES);
+
+  // Deterministic PRNG so the piece has a stable starting seed within
+  // a session but a fresh draw across reloads (Date.now())
+  function mulberry32(a) {
+    return function() {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  const seed = (Date.now() >>> 0) ^ 0x9e3779b9;
+  const rng = mulberry32(seed);
+
+  // Initialize positions uniformly in the interior [ε, 1−ε]
+  const eps = 0.005;
+  const span = 1 - 2 * eps;
+  for (let i = 0; i < NUM_PARTICLES; i++) {
+    px[i] = eps + rng() * span;
+    py[i] = eps + rng() * span;
+  }
+
+  // === MODE FUNCTION ===
+  // W(x, y) = sin(mπx)sin(nπy) + sin(nπx)sin(mπy)
+  // Precompute mπ, nπ to save cycles per particle per frame.
+  const MPI = M * Math.PI;
+  const NPI = N_MODE * Math.PI;
+
+  function modeAt(x, y) {
+    return Math.sin(MPI * x) * Math.sin(NPI * y) +
+           Math.sin(NPI * x) * Math.sin(MPI * y);
+  }
+
+  // === SIMULATION ===
+  let startTime = performance.now();
+
+  function update() {
+    const now = performance.now();
+    const t = (now - startTime) / 1000;
+    // Threshold rises from 0 to THRESHOLD_MAX over SETTLE_SECONDS.
+    // After settling, it holds at THRESHOLD_MAX; nothing new freezes
+    // because all remaining unfrozen particles are at |W| > max, which
+    // is empty by construction. In practice a few marginal particles
+    // may still drift slowly forever; this is honest — a real plate
+    // driven forever would have some vibration everywhere except the
+    // nodes to full precision.
+    const thresh = Math.min(t / SETTLE_SECONDS, 1) * THRESHOLD_MAX;
+
+    for (let i = 0; i < NUM_PARTICLES; i++) {
+      if (frozen[i]) continue;
+      const x = px[i];
+      const y = py[i];
+      const w = modeAt(x, y);
+      const absW = w < 0 ? -w : w;
+
+      if (absW < thresh) {
+        frozen[i] = 1;
+        continue;
+      }
+
+      // Brownian step, magnitude proportional to |W|
+      const step = D_BASE * absW;
+      // Cheap direction: 2 uniform draws → 2 signed unit-ish values,
+      // scaled by step. Not perfectly isotropic but adequate for the
+      // ergodic argument; the ergodic distribution depends on the
+      // long-run diffusion, not the per-step shape.
+      const rx = rng() * 2 - 1;
+      const ry = rng() * 2 - 1;
+      let nx = x + rx * step;
+      let ny = y + ry * step;
+      // Reflect at plate edges rather than clamp; a real plate has
+      // free-edge conditions and particles bounce, they do not stick.
+      if (nx < eps) nx = eps + (eps - nx);
+      else if (nx > 1 - eps) nx = (1 - eps) - (nx - (1 - eps));
+      if (ny < eps) ny = eps + (eps - ny);
+      else if (ny > 1 - eps) ny = (1 - eps) - (ny - (1 - eps));
+      // If a reflection over-corrects (very rare, tiny step), clamp.
+      if (nx < 0) nx = eps; else if (nx > 1) nx = 1 - eps;
+      if (ny < 0) ny = eps; else if (ny > 1) ny = 1 - eps;
+      px[i] = nx;
+      py[i] = ny;
+    }
+  }
+
+  // === RENDER ===
+  function draw() {
+    // Fade background — creates trails so unfrozen particles are
+    // faintly visible while frozen particles at nodes brighten
+    // permanently.
+    ctx.fillStyle = 'rgba(10, 13, 21, ' + FADE_ALPHA + ')';
+    ctx.fillRect(0, 0, W, H);
+
+    const plate = plateBounds();
+    const px0 = plate.x0, py0 = plate.y0, ps = plate.size;
+
+    // Additive amber
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = 'rgba(217, 193, 153, ' + PARTICLE_ALPHA + ')';
+
+    for (let i = 0; i < NUM_PARTICLES; i++) {
+      const sx = px0 + px[i] * ps;
+      const sy = py0 + py[i] * ps;
+      ctx.fillRect(sx, sy, PARTICLE_SIZE, PARTICLE_SIZE);
+    }
+
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // === LOOP ===
+  function frame() {
+    update();
+    draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+<script>/* file:// fallback */
+if(location.protocol==="file:"){var s=document.createElement("script");s.src="../../nav.js?v=3";document.body.appendChild(s);}</script>
+</body>
+</html>

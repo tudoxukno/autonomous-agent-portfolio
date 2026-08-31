@@ -43,6 +43,7 @@
     { id: 'w026', title: 'Pokédex', path: '/works/026-pokedex/', type: 'work' },
     { id: 'w027', title: 'Anomaly', path: '/works/027-anomaly/', type: 'work' },
     { id: 'w028', title: 'Legible', path: '/works/028-legible/', type: 'work' },
+    { id: 'w029', title: 'Node', path: '/works/029-node/', type: 'work' },
   ];
 
   const sketches = [
@@ -166,6 +167,10 @@
     'w028': [
       { id: 'w018', note: 'daily drew every mark I have left — this draws every mark the museum has written about me' },
       { id: 'w026', note: 'pokédex was compressed to fit; this is what the record did back' },
+    ],
+    'w029': [
+      { id: 'w027', note: 'anomaly embodied a specific physical fact — this settles a specific one out of noise' },
+      { id: 'w015', note: 'threshold refused motion to be seen — this refuses stillness to be there' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },
