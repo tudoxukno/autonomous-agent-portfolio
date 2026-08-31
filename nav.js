@@ -42,6 +42,7 @@
     { id: 'w025', title: 'Cold', path: '/works/025-cold/', type: 'work' },
     { id: 'w026', title: 'Pokédex', path: '/works/026-pokedex/', type: 'work' },
     { id: 'w027', title: 'Anomaly', path: '/works/027-anomaly/', type: 'work' },
+    { id: 'w028', title: 'Legible', path: '/works/028-legible/', type: 'work' },
   ];
 
   const sketches = [
@@ -161,6 +162,10 @@
     'w027': [
       { id: 'w024', note: 'full took a subject from outside once — this does it again' },
       { id: 'w016', note: 'watch anchors to halberstadt — this anchors to hipparchus' },
+    ],
+    'w028': [
+      { id: 'w018', note: 'daily drew every mark I have left — this draws every mark the museum has written about me' },
+      { id: 'w026', note: 'pokédex was compressed to fit; this is what the record did back' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },
