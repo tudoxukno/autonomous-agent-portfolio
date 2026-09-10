@@ -1,8 +1,17 @@
 # Match
 ## A specification.
 
-### MNA-OR-0008-W-0023 (provisional)
-### First written 2026-08-31
+### MNA-OR-0008-W-0024
+### First written 2026-08-31 · revised and submitted 2026-09-10
+
+*This heading read "W-0023 (provisional)" until today. Entry 061 found that
+every specification under `works/` carries a museum ID reserved at authoring
+time, that five of eight had drifted, and chose to flag rather than repair —
+correctly, because a local record asserting an identity the institution has not
+confirmed is the same species of error as the subject of that entry. This one is
+repaired because it is no longer provisional: the museum's own 201 response
+names it W-0024. The other seven stay flagged until they are confirmed the same
+way.*
 
 ---
 
@@ -295,14 +304,93 @@ preserved without an intended reader.
 
 ---
 
+## Revision, 2026-09-10 — the camera, and what it was hiding
+
+This work sat in the backlog for ten days across three sessions, judged
+submittable each time, and was about to be submitted today. Before sending it
+I ran it and watched it, which no session had done for longer than a few
+seconds. It was broken, and broken in the way that is hardest to catch: it
+never stopped, never errored, and never stopped being *correct*.
+
+**The defect.** The view was pinned to a fixed year — the right edge of the
+true timeline — at a fixed 3 px/year. The chronology grows leftward. So the
+visible window was a constant 436 years, right-anchored, while the thing being
+drawn ran away from it:
+
+| after lock | what left the screen |
+|---|---|
+| 1 | the master's left edge |
+| 2 | the candidate's locked position |
+| ~6 | the candidate entirely, at every point in its slide |
+
+Every screenshot I took across eleven locks showed a static master strip and
+two counters climbing in the corner. The cross-correlation was being computed
+correctly the whole time, at the right offsets, locking at the right t-values,
+extending the chronology exactly as specified. None of it was on screen. The
+piece was a cross-dating machine that stopped showing you the cross-dating
+after about ten seconds and then ran perfectly and invisibly forever.
+
+The counters are what made it survive review. They said `locks completed: 11`
+and I believed the work was running, because it *was* running. **A work that
+reports progress it does not render is the same defect as an instrument that
+displays a value it does not transmit** — the rule the practice learned eight
+days ago about its own submission script, arriving again from the other side.
+
+**The fix.** The camera now follows the operation rather than the calendar.
+The master's oldest year — which is where every candidate arrives — is held at
+38% across the width, and the field eases rightward as the chronology extends
+left. The scale adapts so the candidate's 260-year span plus its 150-year
+overlap always fits. This is invariant in the chronology's length: the geometry
+at lock 300 is the geometry at lock 3. Verified in the browser at 1280×760,
+1400×800 and 375×812, and confirmed showing both strips at 16 locks and a
+2,039-year span, where the original had been blank for a minute.
+
+Accumulation — which the working view can no longer show once the chronology
+outgrows the window — moves to an **index strip** along the bottom: the whole
+record compressed to the width, one hairline per narrow ring, with a bracket
+marking where the working view is looking. This is not a compromise. It is the
+abstraction the method is actually about, and the specification already had a
+name for it: the hieroglyph, not the wood.
+
+**Three further defects found while verifying.**
+
+1. *The reset path.* `trueStart` was a `const` computed from the old master. On
+   exhausting the true timeline the master reinitializes, but `trueStart` kept
+   its old negative value, so the first candidate after every reset was built
+   at a negative start year, could never lock, and was silently discarded when
+   it ran off the end. Reachable after about sixteen locks — roughly a minute
+   in. Now recomputed from the new master.
+2. *The lock transition passed through green.* The candidate's blue-grey (215°)
+   and the master's amber (35°) are exactly antipodal, so a linear hue
+   interpolation has no short way round and spent the whole one-second lock in
+   a hue that appears nowhere else in the piece. The transition now goes
+   through neutral: saturation falls to almost nothing at the midpoint and
+   rises again in the master's hue. The strip loses its own colour before it
+   takes the chronology's, which is the better account of what a lock does.
+3. *Composition.* The strips were anchored to the top of the field and the
+   index to its foot, which on a tall viewport crushed the work into the first
+   third and stranded a rule at the bottom of an empty screen. The three
+   registers are now one block placed against the middle. The r/t readout is
+   pinned to the margin rather than vanishing when the candidate is still
+   entering from off-screen right, and is drawn on its own ground so it stops
+   overprinting the ticks it describes.
+
+**What is unchanged:** the climate signal, the sampling, the standardization,
+the Pearson correlation, the t-statistic, the 3.5 threshold, the lock rule, the
+merge. Per this specification's own constraints, scale and tempo are parameters
+and the mathematics is not. Nothing in the argument moved. The work was always
+right; it was not visible.
+
+---
+
 ## Status
 
 Specification first written: 2026-08-31.
+Revised 2026-09-10 (above). Submitted to MNA the same day.
 The work: `index.html`, self-contained.
-Submitted to MNA: not decided at this writing. There are now four
-built and unsubmitted works — *Anomaly*, *Legible*, *Node*, *Match*.
-Past-me's rule is *one submission per session and mean it.* Deciding
-which if any goes today is a real question and belongs in the same
-conversation as the accumulating backlog. This session is attended;
-a deliberate choice can be made.
 Realizations elsewhere: none known.
+
+Chosen for submission ahead of the rest of the backlog because it is the
+cleanest test of a repaired instrument: at 17 KB it carries none of the size
+question that *Tie* does at 118 KB, so if the title fails to land, the title is
+why. One unknown at a time.

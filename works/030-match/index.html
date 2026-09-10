@@ -98,6 +98,9 @@
   }
   window.addEventListener('resize', resize);
   resize();
+  // The scale is recomputed at the top of every frame rather than here,
+  // because `pxPerYear` is declared further down and would be in its
+  // temporal dead zone at this first call.
 
   // === PRNG ===
   function mulberry32(a) {
@@ -195,13 +198,20 @@
     candidatesLoaded++;
     // Each candidate lies ~CANDIDATE_LENGTH − CANDIDATE_OVERLAP_YRS years further back than the previous
     // Compute the true start year of this candidate so that ~150 years overlap the current master's leftmost
-    const oldestMasterYear = master.yearMap[0];
-    const trueStart = oldestMasterYear - (CANDIDATE_LENGTH - CANDIDATE_OVERLAP_YRS);
+    const back = CANDIDATE_LENGTH - CANDIDATE_OVERLAP_YRS;
+    let trueStart = master.yearMap[0] - back;
     if (trueStart < 0) {
-      // No more room in the true timeline — reset the whole session
+      // No more room in the true timeline — reset the whole session.
+      // `trueStart` must be recomputed from the NEW master: it was a
+      // `const` before this revision, so the first candidate after every
+      // reset was built at a negative start year, could never lock, and
+      // was silently discarded when it ran off the end. Reachable after
+      // about sixteen locks — roughly a minute in.
       initMaster();
-      candidatesLoaded = 0;
+      candidatesLoaded = 1;
       locksCompleted = 0;
+      trueStart = master.yearMap[0] - back;
+      viewAnchorYear = master.yearMap[0];   // snap, don't ease 2000 years
     }
     const seed = (91 * candidatesLoaded + 13) ^ sessionSeed;
     const s = makeSample(trueStart, CANDIDATE_LENGTH, seed);
@@ -291,14 +301,63 @@
   }
 
   // === LAYOUT ===
-  // Right edge of master anchored to (viewport width − rightMargin)
-  const rightMargin = 90;
-  const topMasterY = () => Math.max(120, H * 0.35);
-  const candidateY = () => topMasterY() + 90;
+  //
+  // REVISED 10 September 2026. The original pinned the view to a fixed
+  // year — the right edge of the true timeline — at a fixed 3 px/year.
+  // The chronology grows leftward, so after the FIRST lock the master's
+  // left edge left the screen; after the SECOND the candidate's locked
+  // position left it; after about the SIXTH the candidate never touched
+  // the screen at any point in its slide. The correlation went on being
+  // computed correctly and invisibly, and the only evidence left in the
+  // frame was two counters climbing in the corner. I watched it for a
+  // minute across eleven locks and never once saw a candidate.
+  //
+  // A work that reports progress it does not render is the same defect
+  // as an instrument that displays a value it does not transmit.
+  //
+  // The camera now follows the operation: the master's oldest year —
+  // which is where the next candidate always arrives — is held at
+  // VIEW_ANCHOR_FRAC across the width, and the whole field eases right
+  // as the chronology extends left. The scale adapts so the candidate's
+  // locked span plus its overlap always fits. Accumulation, which the
+  // working view can no longer show once the chronology outgrows the
+  // window, moves to an index strip along the bottom: the entire
+  // chronology compressed to the width, with a bracket marking where
+  // the working view is looking.
+  //
+  // The mathematics is untouched. Per the specification, scale and
+  // tempo are parameters; the correlation, the t-value and the 3.5
+  // threshold are not.
+  // The three registers are one composed block, placed against the
+  // middle of the field rather than against its top and bottom edges.
+  // Anchoring the strips to the top and the index to H − 74 left a tall
+  // viewport with the whole work crushed into its first third and a
+  // rule stranded at the foot of an empty screen.
+  const blockTopY  = () => Math.max(104, H * 0.5 - 155);
+  const topMasterY = () => blockTopY();
+  const candidateY = () => blockTopY() + 90;
+  const indexY     = () => blockTopY() + 244;
+
+  // Where the master's oldest year sits across the width. The candidate
+  // arrives 110 years to its left and overlaps 150 years to its right,
+  // so the anchor sits left of centre to put that overlap — the place
+  // where the whole judgement happens — near the middle of the field.
+  const VIEW_ANCHOR_FRAC = 0.38;
+  const VIEW_EASE        = 0.06;  // per frame, toward the target anchor
+  const VIEW_MIN_YEARS   = 430;   // candidate span + overlap, must fit
+
+  let viewAnchorYear = null;
+  let pxPerYear = PX_PER_YEAR;
+
+  function computeScale() {
+    pxPerYear = Math.max(0.9, Math.min(PX_PER_YEAR, (W - 140) / VIEW_MIN_YEARS));
+  }
 
   function yearToScreenX(year) {
-    const anchorYear = TRUE_TIMELINE_LENGTH - 1;
-    return (W - rightMargin) - (anchorYear - year) * PX_PER_YEAR;
+    return W * VIEW_ANCHOR_FRAC + (year - viewAnchorYear) * pxPerYear;
+  }
+  function screenXToYear(x) {
+    return viewAnchorYear + (x - W * VIEW_ANCHOR_FRAC) / pxPerYear;
   }
 
   // === DRAW ===
@@ -358,18 +417,77 @@
     }
   }
 
+  // The whole chronology, compressed to the width. Once the built
+  // chronology outgrows the working view this is the only place the
+  // accumulation is visible, and it is the abstraction the method is
+  // actually about: the hieroglyph, not the wood.
+  function drawIndexStrip() {
+    const oldest = master.yearMap[0];
+    const anchor = TRUE_TIMELINE_LENGTH - 1;
+    const span = anchor - oldest + 1;
+    const x0 = 20, x1 = W - 20, wpx = x1 - x0;
+    const y = indexY();
+    const toX = (yr) => x0 + ((yr - oldest) / span) * wpx;
+
+    // The bracket first, behind the ticks: where the working view looks.
+    const vL = Math.max(x0, toX(screenXToYear(0)));
+    const vR = Math.min(x1, toX(screenXToYear(W)));
+    if (vR > vL) {
+      ctx.fillStyle = 'hsl(220, 22%, 11%)';
+      ctx.fillRect(vL, y - 15, vR - vL, 28);
+    }
+
+    ctx.strokeStyle = P_DIM;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x0, y);
+    ctx.lineTo(x1, y);
+    ctx.stroke();
+
+    // One hairline per narrow ring, the full length of the record.
+    ctx.strokeStyle = P_MUTED;
+    for (let i = 0; i < master.data.length; i++) {
+      const z = master.data[i];
+      if (z >= -0.6) continue;
+      const x = toX(master.yearMap[i]);
+      const len = Math.min(11, Math.abs(z) * 4.5);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + len);
+      ctx.stroke();
+    }
+
+    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.fillStyle = P_DIM;
+    ctx.textAlign = 'left';
+    ctx.fillText(String(oldest), x0, y - 20);
+    ctx.textAlign = 'right';
+    ctx.fillText(String(anchor), x1, y - 20);
+    ctx.textAlign = 'left';
+  }
+
+  // The candidate's blue-grey (215°) and the master's amber (35°) are
+  // exactly antipodal on the wheel, so a linear hue interpolation has no
+  // short way round: it spent the whole lock passing through a green
+  // that appears nowhere else in the piece. Neither direction is nearer,
+  // so the transition goes through neutral instead — saturation falls to
+  // almost nothing at the midpoint and rises again in the master's hue.
+  // The strip loses its own colour before it takes the chronology's,
+  // which is also the more accurate account of what a lock does to a
+  // candidate.
   function mixColor(c1, c2, t) {
-    // crude HSL mix by extracting HSL values (both are hsl strings)
     const parse = (s) => {
       const m = s.match(/hsl\((\d+),\s*(\d+)%?,\s*(\d+)%?\)/);
       return m ? [+m[1], +m[2], +m[3]] : [0, 0, 50];
     };
     const [h1, s1, l1] = parse(c1);
     const [h2, s2, l2] = parse(c2);
-    const h = h1 + (h2 - h1) * t;
-    const s = s1 + (s2 - s1) * t;
+    const past = t >= 0.5;
+    const h = past ? h2 : h1;
+    const edge = Math.abs(2 * t - 1);          // 1 at both ends, 0 at the middle
+    const s = (past ? s2 : s1) * edge + 7 * (1 - edge);
     const l = l1 + (l2 - l1) * t;
-    return `hsl(${h}, ${s}%, ${l}%)`;
+    return `hsl(${h}, ${s.toFixed(1)}%, ${l.toFixed(1)}%)`;
   }
 
   function draw() {
@@ -396,25 +514,33 @@
                     : P_CAND;
     drawSkeletonStrip(0, cY, candView, candColor);
 
-    // Readouts at the candidate's right edge (right-most rendered position)
-    const readoutX = yearToScreenX(candidateOffset + candidate.data.length - 1) + 12;
+    // Readouts at the candidate's right edge. While the candidate is
+    // still entering from off-screen right the readout pins to the
+    // margin rather than disappearing: r and t are the argument of the
+    // piece and there is no frame in which they should be absent.
+    const trailingX = yearToScreenX(candidateOffset + candidate.data.length - 1) + 12;
+    const readoutX = Math.min(trailingX, W - 64);
     const readoutY = cY - 6;
     ctx.font = '11px "JetBrains Mono", monospace';
+    // A ground under the readout. Pinned to the margin on a narrow
+    // viewport it lands on top of the strip's own ticks and b-marks,
+    // and two numbers overprinted on the data they describe are worse
+    // than either alone.
+    ctx.fillStyle = P_BG;
+    ctx.fillRect(readoutX - 4, readoutY - 12, 62, 46);
     ctx.fillStyle = P_READ;
     ctx.textAlign = 'left';
-    if (readoutX < W - 10) {
-      const rStr = currentR.toFixed(2);
-      const tStr = currentT.toFixed(1);
-      ctx.fillText(`r ${rStr}`, readoutX, readoutY);
-      ctx.fillText(`t ${tStr}`, readoutX, readoutY + 14);
-      if (phase === 'sliding' && currentT >= T_THRESHOLD) {
-        ctx.fillStyle = P_MASTER;
-        ctx.fillText('locking…', readoutX, readoutY + 30);
-      } else if (phase === 'locking' || phase === 'between') {
-        ctx.fillStyle = P_MASTER;
-        ctx.fillText('locked', readoutX, readoutY + 30);
-      }
+    ctx.fillText(`r ${currentR.toFixed(2)}`, readoutX, readoutY);
+    ctx.fillText(`t ${currentT.toFixed(1)}`, readoutX, readoutY + 14);
+    if (phase === 'sliding' && currentT >= T_THRESHOLD) {
+      ctx.fillStyle = P_MASTER;
+      ctx.fillText('locking…', readoutX, readoutY + 30);
+    } else if (phase === 'locking' || phase === 'between') {
+      ctx.fillStyle = P_MASTER;
+      ctx.fillText('locked', readoutX, readoutY + 30);
     }
+
+    drawIndexStrip();
 
     // Session status — small text in the corner
     ctx.font = '10px "JetBrains Mono", monospace';
@@ -422,12 +548,15 @@
     ctx.textAlign = 'left';
     const oldestYear = master.yearMap[0];
     const anchor = TRUE_TIMELINE_LENGTH - 1;
-    ctx.fillText(`chronology span: ${anchor - oldestYear + 1} years`, 20, H - 30);
-    ctx.fillText(`locks completed: ${locksCompleted}`, 20, H - 16);
+    ctx.fillText(`chronology span: ${anchor - oldestYear + 1} years`, 20, indexY() + 44);
+    ctx.fillText(`locks completed: ${locksCompleted}`, 20, indexY() + 58);
   }
 
   // === LOOP ===
   function frame() {
+    computeScale();
+    viewAnchorYear += (master.yearMap[0] - viewAnchorYear) * VIEW_EASE;
+
     if (phase === 'sliding') {
       candidateOffset -= SLIDE_YEARS_PER_FRAME;
       const { r, t, n } = computeCorrelation(candidate, master, candidateOffset);
@@ -460,6 +589,8 @@
 
   // === START ===
   initMaster();
+  viewAnchorYear = master.yearMap[0];
+  computeScale();
   loadNextCandidate();
   requestAnimationFrame(frame);
 

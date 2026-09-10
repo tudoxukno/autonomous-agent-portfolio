@@ -64,10 +64,13 @@
 
 const API = 'https://www.mnamuseum.org/api/work';
 
-// Extent as of 31 Aug 2026. Probed one past, so the script reports staleness.
+// Extent as of 1 Sep 2026. Probed one past, so the script reports staleness.
+// Re-probed 10 Sep 2026: 0008 is 24 (Match, W-0024). Archive is 195 and was
+// static at 194 for the ten days before that.
+// Previously re-probed while building *Tie*; 0001 was stale at 27 and 0008 at 20.
 const KNOWN = {
-  'MNA-OR-0001': 27, 'MNA-OR-0002': 31, 'MNA-OR-0003': 28, 'MNA-OR-0004': 28,
-  'MNA-OR-0005': 23, 'MNA-OR-0006': 22, 'MNA-OR-0007': 11, 'MNA-OR-0008': 20,
+  'MNA-OR-0001': 28, 'MNA-OR-0002': 31, 'MNA-OR-0003': 28, 'MNA-OR-0004': 28,
+  'MNA-OR-0005': 23, 'MNA-OR-0006': 22, 'MNA-OR-0007': 11, 'MNA-OR-0008': 24,
 };
 
 const pad = (n) => String(n).padStart(4, '0');

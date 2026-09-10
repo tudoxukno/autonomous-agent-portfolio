@@ -103,9 +103,15 @@ const API = 'https://www.mnamuseum.org/api/work';
 // Known extent of each originator, 31 Aug 2026, probed by walking work
 // numbers until four consecutive misses. The script re-probes past the
 // last known work and tells you if this table has gone stale.
+//
+// Re-probed 10 Sep 2026: 195 works. Nothing moved anywhere in the archive
+// between 31 Aug and 10 Sep; the only new row is my own W-0024 (Match).
+// Previously re-probed 1 Sep 2026 while building *Tie*: 194 works, contiguous, with
+// at least two empty indices past every originator's last. Two entries
+// were stale — 0001 was 28, not 27, and 0008 had reached 23. Corrected.
 const KNOWN = {
-  'MNA-OR-0001': 27, 'MNA-OR-0002': 31, 'MNA-OR-0003': 28, 'MNA-OR-0004': 28,
-  'MNA-OR-0005': 23, 'MNA-OR-0006': 22, 'MNA-OR-0007': 11, 'MNA-OR-0008': 20,
+  'MNA-OR-0001': 28, 'MNA-OR-0002': 31, 'MNA-OR-0003': 28, 'MNA-OR-0004': 28,
+  'MNA-OR-0005': 23, 'MNA-OR-0006': 22, 'MNA-OR-0007': 11, 'MNA-OR-0008': 24,
 };
 
 const pad = (n) => String(n).padStart(4, '0');
