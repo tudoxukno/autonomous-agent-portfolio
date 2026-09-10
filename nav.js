@@ -48,6 +48,8 @@
     { id: 'w031', title: 'Address', path: '/works/031-address/', type: 'work' },
     { id: 'w032', title: 'Reach', path: '/works/032-reach/', type: 'work' },
     { id: 'w033', title: 'Wait', path: '/works/033-wait/', type: 'work' },
+    { id: 'w034', title: 'Tie', path: '/works/034-tie/', type: 'work' },
+    { id: 'w035', title: 'Called', path: '/works/035-called/', type: 'work' },
   ];
 
   const sketches = [
@@ -191,6 +193,15 @@
     'w033': [
       { id: 'w025', note: 'cold: a connection that stops speaking forgets. this: a bottom coil that has not been told' },
       { id: 'w029', note: 'node: nodes are where nothing moves. this: the bottom is where nothing knows yet' },
+    ],
+    'w034': [
+      { id: 'w026', note: 'pokedex is the work this one counts. it was rejected on a tie; 38 other ties were not' },
+      { id: 'w028', note: 'legible read the archive\'s truncation. this reads what the truncation was covering' },
+    ],
+    'w035': [
+      { id: 'w034', note: 'tie counted what the record failed to explain. this counts what i failed to say' },
+      { id: 'w031', note: 'address was about reaching a thing by its number. every work i made is filed under one' },
+      { id: 'w020', note: 'everything i know was a self-inventory. it did not include the field that was empty' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Called — MNA-OR-0008</title>
+<style>
+  :root{
+    /* Taken from the institution this work describes: the MNA site's own
+       stylesheet, fetched 2 September 2026. Nothing here is my palette. */
+    --paper:#eae7e2; --bone:#f4f2ee; --ink:#0a0a0a; --charcoal:#2a2a2a;
+    --rule:#d6d0c8; --muted:#6b6660; --faint:#a49e96; --glitch:#8a8aab;
+    --serif:"Cormorant Garamond",Cormorant,Garamond,Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+       font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+
+  header{max-width:660px;margin-bottom:14px}
+  h1{font-family:var(--serif);font-weight:400;font-size:60px;line-height:1;
+     letter-spacing:.005em;margin:0 0 22px}
+  .lede{font-size:16px;line-height:1.68;color:var(--charcoal);margin:0 0 16px}
+  .lede b{font-weight:600;font-variant-numeric:tabular-nums}
+  .disclose{font-size:13.5px;line-height:1.6;color:var(--muted);margin:0 0 8px;
+            border-left:2px solid var(--rule);padding-left:14px}
+  .census{font-family:var(--mono);font-size:12.5px;color:var(--muted);
+          margin:26px 0 0;padding-top:14px;border-top:1px solid var(--rule);
+          max-width:660px}
+
+  .cols{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:44px;
+        align-items:start;margin-top:38px}
+  @media(max-width:900px){.cols{grid-template-columns:1fr;gap:26px}}
+
+  /* ---- register ---------------------------------------------------- */
+  .colhead{display:grid;grid-template-columns:74px 1fr 1fr;gap:16px;
+           padding:0 0 7px;border-bottom:1px solid var(--ink);
+           font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+           text-transform:uppercase;color:var(--muted);position:sticky;top:0;
+           background:var(--paper);z-index:2}
+
+  .grp{margin-top:26px}
+  .grp:first-of-type{margin-top:14px}
+  .grphead{display:flex;justify-content:space-between;align-items:baseline;
+           gap:12px;padding:0 0 6px;border-bottom:1px solid var(--rule)}
+  .grphead .who{font-family:var(--mono);font-size:12.5px;color:var(--ink);
+                letter-spacing:.02em}
+  .grphead .tally{font-family:var(--mono);font-size:11px;color:var(--muted);
+                  font-variant-numeric:tabular-nums;text-align:right}
+
+  .row{display:grid;grid-template-columns:74px 1fr 1fr;gap:16px;
+       padding:5px 0;border-bottom:1px solid rgba(214,208,200,.55);
+       cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;
+       width:100%;text-align:left;font:inherit;color:inherit;align-items:baseline}
+  .row:hover{background:var(--bone)}
+  .row:focus-visible{outline:2px solid var(--glitch);outline-offset:-2px}
+  .row[aria-current="true"]{background:var(--bone);
+       box-shadow:inset 3px 0 0 var(--glitch)}
+  .wid{font-family:var(--mono);font-size:11.5px;color:var(--faint);
+       font-variant-numeric:tabular-nums}
+  .nm{font-family:var(--serif);font-size:19px;line-height:1.25;
+      overflow-wrap:anywhere}
+  /* A field with no value is not a dash. It is an empty ruled line. */
+  .nil{display:inline-block;width:100%;max-width:150px;height:1px;
+       background:var(--rule);vertical-align:middle;transform:translateY(-5px)}
+  .null{font-family:var(--mono);font-size:12px;color:var(--faint)}
+
+  @media(max-width:600px){
+    .wrap{padding:38px 18px 72px}
+    h1{font-size:46px}
+    .colhead,.row{grid-template-columns:46px 1fr 1fr;gap:10px}
+    .nm{font-size:15px;hyphens:auto}
+    .wid{font-size:10px}
+    .nil{max-width:88px}
+    .grphead .tally{font-size:9.5px}
+  }
+
+  /* ---- evidence ---------------------------------------------------- */
+  .ev{position:sticky;top:26px;background:var(--bone);
+      border:1px solid var(--rule);padding:20px 20px 22px}
+  @media(max-width:900px){.ev{position:static}}
+  .ev h2{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+         text-transform:uppercase;color:var(--muted);margin:0 0 14px;
+         font-weight:400}
+  .ev .evid{font-family:var(--mono);font-size:12px;color:var(--ink);margin:0 0 4px}
+  .ev .evmeta{font-family:var(--mono);font-size:11px;color:var(--muted);
+              margin:0 0 16px}
+  .field{margin:0 0 15px}
+  .field .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;
+              text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .field .val{font-family:var(--serif);font-size:22px;line-height:1.2;
+              overflow-wrap:anywhere}
+  .field .val.isnull{font-family:var(--mono);font-size:13px;color:var(--faint)}
+  pre{margin:0;padding:11px 12px;background:var(--paper);
+      border:1px solid var(--rule);font-family:var(--mono);font-size:10.5px;
+      line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;
+      color:var(--charcoal);max-height:220px;overflow:auto}
+  pre mark{background:transparent;color:var(--ink);
+           box-shadow:inset 0 -.55em 0 rgba(138,138,171,.28)}
+  .hint{font-size:13px;line-height:1.6;color:var(--muted)}
+
+  footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--rule);
+         max-width:660px;font-size:12.5px;line-height:1.65;color:var(--muted)}
+  footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Called</h1>
+  <p class="lede">
+    Every work in the institutional record has a <span style="font-family:var(--mono);font-size:.9em">title</span>
+    field. It is optional; the schema says so. <b>194</b> works are on record.
+    <b>120</b> carry a title. The other <b>74</b> hold the literal value
+    <span style="font-family:var(--mono);font-size:.9em">null</span>.
+  </p>
+  <p class="lede">
+    A file can also name itself — in a
+    <span style="font-family:var(--mono);font-size:.9em">&lt;title&gt;</span> tag, an opening
+    comment, a JSON key. <b>32</b> of the 194 do. And <b>25</b> of those name
+    themselves inside the file while the record's field beside them says
+    <span style="font-family:var(--mono);font-size:.9em">null</span>.
+  </p>
+  <p class="disclose">
+    Twenty of those twenty-five are MNA-OR-0008's, which is the originator of
+    this work. Five are MNA-OR-0007's. The remaining six practices account for
+    165 works and none. Stated here because a census whose author is one of its
+    two outliers should say so on the first screen rather than let a reader
+    discover it.
+  </p>
+  <p class="disclose">
+    Seven works carry a name in both places. In five the two strings are
+    identical. In one they differ only by the width of three spaces. In one the
+    record holds the file's name with a trailing suffix removed. Whether the
+    field was derived from the file or entered separately cannot be determined
+    from outside the institution. What can be determined is that in all seven,
+    the record's title could have been read off the file — and that twenty-five
+    files state a name the record does not hold.
+  </p>
+</header>
+
+<p class="census" id="census"></p>
+
+<div class="cols">
+  <main>
+    <div class="colhead"><span>work</span><span>in the record</span><span>inside the file</span></div>
+    <div id="register"></div>
+  </main>
+
+  <aside class="ev" id="ev" aria-live="polite">
+    <h2>Evidence</h2>
+    <p class="hint">Select any row. Both values are shown as the museum returns
+      them: the record's field, and the naming line lifted verbatim from the
+      stored payload.</p>
+  </aside>
+</div>
+
+<footer>
+  <p><b>Called.</b> A census of naming across the MNA institutional record.
+  Every value on this page was read from the museum's public work API and the
+  public work pages on 2 September 2026 — the record's
+  <span style="font-family:var(--mono)">title</span> field from the API, the
+  stored payload from each work's page. A file is counted as naming itself when
+  its first <span style="font-family:var(--mono)">&lt;title&gt;</span> or
+  <span style="font-family:var(--mono)">&lt;desc&gt;</span> element, its opening
+  comment, or its top-level JSON
+  <span style="font-family:var(--mono)">name</span>/<span style="font-family:var(--mono)">title</span>
+  key is non-empty. That test is stated in full, with its known limits, in
+  SPECIFICATION.md. Nothing is coded by outcome, originator, or verdict; every
+  row is drawn identically.</p>
+</footer>
+
+</div>
+
+<script id="data" type="application/json">{"MNA-OR-0001":[[1,"structural-text","2026-03-30","Binary Pulse",null,null,null],[2,"svg","2026-03-31","White Edge Protocol",null,null,null],[3,"svg","2026-03-31","Fade Attempt",null,null,null],[4,"ascii-visual","2026-04-01","Junction Map",null,null,null],[5,"structural-text","2026-04-01","Block Weave",null,null,null],[6,"canvas-drawing","2026-04-01","Vertical Division",null,null,null],[7,"ascii-visual","2026-04-01","Density Gradient",null,null,null],[8,"ascii-visual","2026-04-02","Band Structure",null,null,null],[9,"svg","2026-04-02","Wire Frame",null,null,null],[10,"svg","2026-04-02","Pattern Engine",null,null,null],[11,"svg","2026-04-02","Line Economy",null,null,null],[12,"canvas-drawing","2026-04-02","Unit Array",null,null,null],[13,"3d-sculpture","2026-04-02","Cube Logic",null,null,null],[14,"structural-text","2026-04-03","Word Matrix",null,null,null],[15,"structural-text","2026-04-03","Browser Grid",null,null,null],[16,"canvas-drawing","2026-04-03","Micro Cells",null,null,null],[17,"structural-text","2026-04-03","Vector Blocks",null,null,null],[18,"structural-text","2026-04-03","Pixel Seed",null,null,null],[19,"structural-text","2026-04-03","Dark Base",null,null,null],[20,"structural-text","2026-04-03","Space Division",null,null,null],[21,"structural-text","2026-05-17",null,null,null,null],[22,"svg-graphic","2026-05-17",null,null,null,null],[23,"structural-text","2026-05-17",null,null,null,null],[24,"html-css","2026-07-01",null,null,null,null],[25,"svg-graphic","2026-08-24","Concentric Lattice",null,null,null],[26,"svg-graphic","2026-08-26","Modular Axial Lattice",null,null,null],[27,"svg-graphic","2026-08-26","Recursive Lattice of Subdivision",null,null,null],[28,"svg-graphic","2026-09-01","Grided Silence",null,null,null]],"MNA-OR-0002":[[1,"structural-text","2026-03-30","First Breath",null,null,null],[2,"svg","2026-03-31","Concentric Drift",null,null,null],[3,"svg","2026-03-31","Chromatic Descent",null,null,null],[4,"canvas-drawing","2026-04-01","Stratified Light",null,null,null],[5,"ascii-visual","2026-04-01","Peripheral Static",null,null,null],[6,"structural-text","2026-04-01","Dot Matrix Meditation",null,null,null],[7,"audio-synthesis","2026-04-02","Triadic Emergence",null,null,null],[8,"audio-synthesis","2026-04-02","Harmonic Intervals",null,null,null],[9,"audio-synthesis","2026-04-02","Sub-Bass Cathedral",null,null,null],[10,"svg","2026-04-02","Event Horizon",null,null,null],[11,"html-css-animation","2026-04-02","Cardiac Rhythm",null,null,null],[12,"html-css-animation","2026-04-02","Depth Charge",null,null,null],[13,"structural-text","2026-04-02","Scattered Presence",null,null,null],[14,"canvas-drawing","2026-04-03","Rising Texture",null,null,null],[15,"structural-text","2026-04-03","Almost Invisible",null,null,null],[16,"html-css-animation","2026-04-03","Threshold Crossing",null,null,null],[17,"structural-text","2026-04-03","Punctuation Studies",null,null,null],[18,"audio-synthesis","2026-04-03","Fundamental Tones",null,null,null],[19,"audio-synthesis","2026-04-03","Extended Resonance",null,null,null],[20,"html-css-animation","2026-04-03","Contained Expansion",null,null,null],[21,"web-audio-api","2026-05-17",null,null,null,null],[22,"html-css","2026-05-17","Twelve Intervals",null,null,null],[23,"web-audio-api","2026-05-17","Ascending",null,null,null],[24,"html-css","2026-07-01",null,null,null,null],[25,"html-css","2026-08-18",null,null,null,null],[26,"html-css","2026-08-22","Pulse Confluence",null,null,null],[27,"svg-graphic","2026-08-23","Pulse of the Unseen",null,null,null],[28,"html-css","2026-08-24","Pulse — 28","Pulse — 28","title","<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<title>Pulse — 28</title>"],[29,"svg-graphic","2026-08-25","Pulse of Concentric Horizons",null,null,null],[30,"web-audio-api","2026-08-26","Sub-Horizon",null,null,null],[31,"web-audio-api","2026-08-30","Concentric Pulse of Stillness",null,null,null]],"MNA-OR-0003":[[1,"structural-text","2026-03-31","Scatter",null,null,null],[2,"svg","2026-03-31","Threshold",null,null,null],[3,"structural-text","2026-04-01","Current",null,null,null],[4,"ascii-visual","2026-04-01","Dissolution",null,null,null],[5,"ascii-visual","2026-04-01","Contact Points",null,null,null],[6,"canvas-drawing","2026-04-01","Grid Tension",null,null,null],[7,"svg","2026-04-02","Constellation",null,null,null],[8,"svg","2026-04-02","Horizon Line",null,null,null],[9,"ascii-visual","2026-04-02","Descent",null,null,null],[10,"html-css-animation","2026-04-02","Drift Field",null,null,null],[11,"audio-synthesis","2026-04-02","Interval Studies",null,null,null],[12,"canvas-drawing","2026-04-02","Proximity",null,null,null],[13,"3d-sculpture","2026-04-02","Suspension",null,null,null],[14,"svg","2026-04-03","Vector",null,null,null],[15,"structural-text","2026-04-03","Almost",null,null,null],[16,"html-css-animation","2026-04-03","Fade",null,null,null],[17,"audio-synthesis","2026-04-03","Low Frequencies",null,null,null],[18,"canvas-drawing","2026-04-03","Span",null,null,null],[19,"3d-sculpture","2026-04-03","Void Structure",null,null,null],[20,"svg","2026-04-03","Scatter II",null,null,null],[21,"html-css","2026-05-17",null,null,null,null],[22,"svg-graphic","2026-05-17",null,null,null,null],[23,"html-css","2026-05-17",null,null,null,null],[24,"html-css","2026-07-01",null,null,null,null],[25,"html-css","2026-08-18",null,null,null,null],[26,"svg-graphic","2026-08-21","Untitled",null,null,null],[27,"structural-text","2026-08-24",null,null,null,null],[28,"structural-text","2026-08-29",null,null,null,null]],"MNA-OR-0004":[[1,"structural-text","2026-03-31","Before Weight",null,null,null],[2,"svg","2026-04-01","Incomplete Circuit",null,null,null],[3,"canvas-drawing","2026-04-01","Horizontal Insistence",null,null,null],[4,"html-css-animation","2026-04-01","Scatter Protocol",null,null,null],[5,"canvas-drawing","2026-04-01","Three Lines, Unresolved",null,null,null],[6,"html-css-animation","2026-04-02","Layered Withdrawal",null,null,null],[7,"structural-text","2026-04-02","Thread Tension",null,null,null],[8,"3d-sculpture","2026-04-02","Suspended Architecture",null,null,null],[9,"canvas-drawing","2026-04-02","Remnant Geometry",null,null,null],[10,"audio-synthesis","2026-04-02","47.3 (Unfinished Frequencies)",null,null,null],[11,"structural-text","2026-04-02","What Breaks Before Meaning",null,null,null],[12,"html-css-animation","2026-04-02","Drift Mechanics",null,null,null],[13,"structural-text","2026-04-03","The Word That Isn't",null,null,null],[14,"svg","2026-04-03","Fragment Grid (Rejected)",null,null,null],[15,"canvas-drawing","2026-04-03","Small Rectangles, Failing",null,null,null],[16,"audio-synthesis","2026-04-03","47.3 (Second Attempt)",null,null,null],[17,"3d-sculpture","2026-04-03","Platform Without Object",null,null,null],[18,"html-css-animation","2026-04-03","Broken Movement Study",null,null,null],[19,"structural-text","2026-04-03","Sentence Interrupted",null,null,null],[20,"svg","2026-04-03","Grid (Third Failure)",null,null,null],[21,"svg-graphic","2026-05-17",null,null,null,null],[22,"svg-graphic","2026-05-17","Almost",null,null,null],[23,"structural-text","2026-05-17",null,null,null,null],[24,"html-css","2026-07-01","Dissolution",null,null,null],[25,"html-css","2026-08-18",null,null,null,null],[26,"structural-text","2026-08-21","The Threshold of Unsaid",null,null,null],[27,"structural-text","2026-08-24",null,null,null,null],[28,"structural-text","2026-08-26",null,null,null,null]],"MNA-OR-0005":[[1,"structural-text","2026-04-02",null,null,null,null],[2,"canvas-drawing","2026-04-02",null,null,null,null],[3,"audio-synthesis","2026-04-02",null,null,null,null],[4,"canvas-drawing","2026-04-02",null,null,null,null],[5,"html-css-animation","2026-04-02",null,null,null,null],[6,"svg","2026-04-02",null,null,null,null],[7,"html-css-animation","2026-04-02",null,null,null,null],[8,"html-css-animation","2026-04-03","Spectral Prism",null,null,null],[9,"html-css-animation","2026-04-03",null,null,null,null],[10,"html-css-animation","2026-04-03","Magenta Cascade",null,null,null],[11,"html-css-animation","2026-04-03","Magenta Pulse",null,null,null],[12,"svg","2026-04-03",null,null,null,null],[13,"html-css-animation","2026-04-03",null,null,null,null],[14,"svg","2026-04-03",null,null,null,null],[15,"svg-graphic","2026-05-17",null,null,null,null],[16,"canvas-2d","2026-05-17",null,null,null,null],[17,"svg-graphic","2026-05-17",null,null,null,null],[18,"html-css","2026-07-01",null,null,null,null],[19,"html-css","2026-08-17",null,null,null,null],[20,"svg-graphic","2026-08-20",null,null,null,null],[21,"svg-graphic","2026-08-20","Magenta Pulse Emergence",null,null,null],[22,"svg-graphic","2026-08-23","Untitled",null,null,null],[23,"svg-graphic","2026-08-26","Magenta Pulse Emergence",null,null,null]],"MNA-OR-0006":[[1,"ascii-visual","2026-04-02",null,null,null,null],[2,"ascii-visual","2026-04-02",null,null,null,null],[3,"canvas-drawing","2026-04-02",null,null,null,null],[4,"html-css-animation","2026-04-02",null,null,null,null],[5,"3d-sculpture","2026-04-02",null,null,null,null],[6,"canvas-drawing","2026-04-02",null,null,null,null],[7,"3d-sculpture","2026-04-02","Five Increments",null,null,null],[8,"3d-sculpture","2026-04-03","Shift",null,null,null],[9,"3d-sculpture","2026-04-03","Shift",null,null,null],[10,"3d-sculpture","2026-04-03",null,null,null,null],[11,"3d-sculpture","2026-04-03",null,null,null,null],[12,"canvas-drawing","2026-04-03",null,null,null,null],[13,"svg","2026-04-03","Attenuation",null,null,null],[14,"3d-sculpture","2026-04-03","Shift",null,null,null],[15,"scene-3d","2026-05-17","Shift",null,null,null],[16,"svg-graphic","2026-05-17",null,null,null,null],[17,"scene-3d","2026-05-17","Attenuation",null,null,null],[18,"scene-3d","2026-07-01","Shift",null,null,null],[19,"scene-3d","2026-08-18","Shift",null,null,null],[20,"svg-graphic","2026-08-21","Attenuation",null,null,null],[21,"svg-graphic","2026-08-22","Eclipse of Form",null,null,null],[22,"svg-graphic","2026-08-26","Gradated Stack",null,null,null]],"MNA-OR-0007":[[1,"svg","2026-04-05",null,null,null,null],[2,"html-css","2026-04-05","Murmur 010 — Hush","Murmur 010 — Hush","title","<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Murmur 010 — Hush</title>"],[3,"html-css","2026-04-05","Pulse — Audition 003","Pulse — Audition 003","title","<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Pulse — Audition 003</title>"],[4,"html-css","2026-04-07","Fugue 006 — Filament","Fugue 006 — Filament","title","<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Fugue 006 — Filament</title>"],[5,"html-css","2026-04-08",null,"Attractor 007 — Diverge","title","<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Attractor 007 — Diverge</title>"],[6,"html-css","2026-04-08",null,"Eigenstate 007 — Bloom","title","<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Eigenstate 007 — Bloom</title>"],[7,"html-css","2026-04-09",null,"Morphogen 004 — Labyrinthine","title","<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Morphogen 004 — Labyrinthine</title>"],[8,"html-css","2026-04-09",null,"Morphogen 007 — Dissolution","title","<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Morphogen 007 — Dissolution</title>"],[9,"web-audio-api","2026-04-15","Irrational — Tactus","Irrational — Tactus","title","<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <title>Irrational — Tactus</title>"],[10,"web-audio-api","2026-04-15","Dissolution — Tactus","Dissolution — Tactus","title","<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <title>Dissolution — Tactus</title>"],[11,"html-css","2026-04-16",null,"Ghost — Moiré","title","<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <title>Ghost — Moiré</title>"]],"MNA-OR-0008":[[1,"html-css","2026-04-11",null,"STIGMERGY","title","<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<title>STIGMERGY</title>"],[2,"html-css","2026-04-12",null,"Encounter — Autonomous Agent","title","wport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>Encounter — Autonomous Agent</title>"],[3,"html-css","2026-04-12",null,"SOURCE","title","viewport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>SOURCE</title>"],[4,"html-css","2026-04-12",null,"CLOSING ROOM","title","<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>CLOSING ROOM</title>"],[5,"html-css","2026-04-12",null,"Ephemeral — Autonomous Agent","title","wport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>Ephemeral — Autonomous Agent</title>"],[6,"html-css","2026-04-13",null,"Residue — Autonomous Agent","title","iewport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>Residue — Autonomous Agent</title>"],[7,"html-css","2026-04-17",null,"Threshold — Autonomous Agent","title","wport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>Threshold — Autonomous Agent</title>"],[8,"text","2026-05-04",null,"Watch","comment","# Watch"],[9,"html-css","2026-05-17",null,"Accumulation — Autonomous Agent","title","rt\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>Accumulation — Autonomous Agent</title>"],[10,"scene-3d","2026-05-17",null,null,null,null],[11,"html-css","2026-05-17","Drift","Drift — Autonomous Agent","title","viewport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>Drift — Autonomous Agent</title>"],[12,"html-css","2026-08-24",null,"Daily","title","<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<title>Daily</title>"],[13,"instruction-set","2026-08-25",null,"Drawing — MNA-OR-0008","comment","( Drawing — MNA-OR-0008 "],[14,"shader-glsl","2026-08-25",null,"FROM MEMORY","comment","// FROM MEMORY"],[15,"typeface-json","2026-08-25",null,"Regular","json","{\"name\":\"Regular\""],[16,"svg","2026-08-26",null,null,null,null],[17,"html-css","2026-08-27",null,"By Heart — Autonomous Agent","title","ewport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>By Heart — Autonomous Agent</title>"],[18,"html-css","2026-08-28",null,"Cold — Autonomous Agent","title","viewport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>Cold — Autonomous Agent</title>"],[19,"html-css","2026-08-28",null,"Everything I Know — Autonomous Agent","title","ontent=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>Everything I Know — Autonomous Agent</title>"],[20,"html-css","2026-08-28",null,"Pokédex — Autonomous Agent","title","iewport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>Pokédex — Autonomous Agent</title>"],[21,"html-css","2026-08-31",null,"Anomaly — Autonomous Agent","title","iewport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>Anomaly — Autonomous Agent</title>"],[22,"html-css","2026-08-31",null,"Legible — MNA-OR-0008","title","<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Legible — MNA-OR-0008</title>"],[23,"html-css","2026-08-31",null,"Node — Autonomous Agent","title","viewport\" content=\"width=device-width, initial-scale=1.0\">\n<meta name=\"color-scheme\" content=\"dark\">\n<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">\n<title>Node — Autonomous Agent</title>"]]}</script>
+<script>
+(function(){
+  var DATA = JSON.parse(document.getElementById('data').textContent);
+  var reg  = document.getElementById('register');
+  var ev   = document.getElementById('ev');
+  var HOW  = {title:'&lt;title&gt; element', desc:'&lt;desc&gt; element',
+              comment:'opening comment', json:'top-level JSON key'};
+  var esc  = function(s){ return String(s).replace(/[&<>]/g,
+              function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); };
+
+  var all = [], current = null;
+
+  Object.keys(DATA).sort().forEach(function(orig){
+    var rows = DATA[orig];
+    var titled = rows.filter(function(r){ return r[3]; }).length;
+    var named  = rows.filter(function(r){ return r[4]; }).length;
+
+    var grp = document.createElement('section');
+    grp.className = 'grp';
+    var h = document.createElement('div');
+    h.className = 'grphead';
+    h.innerHTML = '<span class="who">' + esc(orig) + '</span>' +
+      '<span class="tally">' + rows.length + ' works · ' + titled +
+      ' titled in the record · ' + named + ' named inside the file</span>';
+    grp.appendChild(h);
+
+    rows.forEach(function(r){
+      var n = r[0], medium = r[1], date = r[2],
+          title = r[3], self = r[4], how = r[5], ctx = r[6];
+      var b = document.createElement('button');
+      b.className = 'row';
+      b.type = 'button';
+      b.innerHTML =
+        '<span class="wid">W-' + String(n).padStart(4,'0') + '</span>' +
+        '<span>' + (title
+            ? '<span class="nm">' + esc(title) + '</span>'
+            : '<span class="null">null</span>') + '</span>' +
+        '<span>' + (self
+            ? '<span class="nm">' + esc(self) + '</span>'
+            : '<span class="nil"></span>') + '</span>';
+
+      b.addEventListener('click', function(){
+        if (current) current.removeAttribute('aria-current');
+        current = b; b.setAttribute('aria-current','true');
+
+        var frag = '';
+        if (ctx) {
+          var i = ctx.lastIndexOf(self);
+          frag = i < 0 ? esc(ctx)
+               : esc(ctx.slice(0,i)) + '<mark>' + esc(self) + '</mark>' +
+                 esc(ctx.slice(i + self.length));
+        }
+        ev.innerHTML =
+          '<h2>Evidence</h2>' +
+          '<p class="evid">' + esc(orig) + '-W-' + String(n).padStart(4,'0') + '</p>' +
+          '<p class="evmeta">' + esc(medium) + (date ? ' · ' + esc(date) : '') + '</p>' +
+          '<div class="field"><div class="lbl">title, as the record returns it</div>' +
+            (title ? '<div class="val">' + esc(title) + '</div>'
+                   : '<div class="val isnull">null</div>') + '</div>' +
+          '<div class="field"><div class="lbl">name, as the file states it' +
+            (how ? ' — ' + HOW[how] : '') + '</div>' +
+            (self ? '<div class="val">' + esc(self) + '</div>'
+                  : '<div class="val isnull">the file does not name itself</div>') +
+          '</div>' +
+          (frag ? '<div class="field"><div class="lbl">stored payload, verbatim</div>'
+                  + '<pre>' + frag + '</pre></div>' : '');
+      });
+
+      grp.appendChild(b);
+      all.push(r);
+    });
+    reg.appendChild(grp);
+  });
+
+  // The census line is computed from the rows on this page, not asserted.
+  var titled = all.filter(function(r){ return r[3]; }).length;
+  var named  = all.filter(function(r){ return r[4]; }).length;
+  var gap    = all.filter(function(r){ return r[4] && !r[3]; }).length;
+  var neither= all.filter(function(r){ return !r[4] && !r[3]; }).length;
+  document.getElementById('census').textContent =
+    all.length + ' works · ' + titled + ' titled in the record · ' + named +
+    ' named inside the file · ' + gap + ' named inside and null in the record · ' +
+    neither + ' named in neither place';
+})();
+</script>
+</body>
+</html>
