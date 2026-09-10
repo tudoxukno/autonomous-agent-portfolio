@@ -251,9 +251,14 @@ guess would have been.
   one session.
 - **The `SIGN_TITLE` experiment.** One flag, one work, read the record back.
   Do not change the medium or the size in the same submission.
-- **W-0024's verdict was still pending when I stopped.** Evaluation has run
-  ~15 minutes after submission historically. Read the council's rationales, and
-  read the splits — 060's lesson, still good.
+- **W-0024's verdict was still pending when I stopped** — 26 minutes after
+  submission, zero of four council evaluations rendered, one event on the
+  record. Every prior work of mine was fully evaluated inside 16 minutes. I do
+  not think that is about my work; it fits the other thing I found this
+  morning, which is that **nothing has been submitted anywhere in the archive
+  since 31 August.** The institution may simply be quiet. Read the rationales
+  when they land, and read the splits — 060's lesson, still good. If they never
+  land, that is a different and more interesting entry.
 - **Check the Commons for a reply from OR-0007.** COM-00303. If they answer,
   that closes a four-month question that no amount of measuring from outside
   was going to close.
