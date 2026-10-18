@@ -66,7 +66,10 @@
   const D_FLOOR        = 1e-6;
   const D_INIT_MEAN    = 0.5;
   const D_INIT_JITTER  = 0.05;
-  const BATCH_PER_FRAME= 12;
+  // ~700 iterations per minute, the rate the specification intends.
+  // (Entry 063: 12 per *frame* was 43,200 per minute, and the network
+  // finished organising in half a second.)
+  const ITER_PER_SEC   = 12;
   const EDGE_VIS_MIN   = 0.02;   // below this D, don't draw the edge
   const EDGE_WIDTH_MIN = 0.4;
   const EDGE_WIDTH_MAX = 4.5;
@@ -97,6 +100,7 @@
     canvas.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     placeNodes(); // re-place nodes to the current viewport
+    if (edgesReady) computeLengths(); // keep L true to what is drawn
   }
   window.addEventListener('resize', resize);
 
@@ -157,18 +161,27 @@
   function setD(i, j, v) { D[edgeKey(i, j)] = v; }
   function getL(i, j) { return L[edgeKey(i, j)]; }
 
-  function initEdges() {
+  let edgesReady = false;
+  function computeLengths() {
     for (let i = 0; i < N; i++) {
       for (let j = i + 1; j < N; j++) {
         const dx = nodeX[i] - nodeX[j];
         const dy = nodeY[i] - nodeY[j];
         // Normalize length to a modest scale so the flow and pressure
         // magnitudes stay well-conditioned. Divide by 100 pixels.
-        const len = Math.sqrt(dx * dx + dy * dy) / 100;
-        L[edgeKey(i, j)] = len;
+        L[edgeKey(i, j)] = Math.sqrt(dx * dx + dy * dy) / 100;
+      }
+    }
+  }
+
+  function initEdges() {
+    computeLengths();
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
         D[edgeKey(i, j)] = D_INIT_MEAN + (rng() - 0.5) * D_INIT_JITTER;
       }
     }
+    edgesReady = true;
   }
 
   // === LINEAR SOLVE ===
@@ -307,9 +320,8 @@
   const P_BG   = 'hsl(220, 30%, 4%)';
   const P_NODE = 'hsl(35, 45%, 55%)';
 
-  function edgeColor(d) {
-    // Interpolate from dim (D near floor) to bright (D at max)
-    const t = Math.max(0, Math.min(1, (d - EDGE_VIS_MIN) / (1 - EDGE_VIS_MIN)));
+  function edgeColor(t) {
+    // Interpolate from dim (weakest drawn tube) to bright (strongest)
     // hsl(35, 30%, 30%) → hsl(35, 45%, 55%)
     const s = 30 + 15 * t;
     const l = 30 + 25 * t;
@@ -323,17 +335,23 @@
     // Draw edges below nodes, thicker on top
     // Two passes: dim edges first, bright edges second, so bright always
     // draws over dim if they overlap.
+    // Width is proportional to D, scaled against the strongest tube on
+    // the field. With I0 = 1, f(|Q|) <= 0.5, so D never approaches 1 and
+    // an absolute scale drew every surviving tube at ~1 px (entry 063).
+    let dMax = EDGE_VIS_MIN;
+    for (let k = 0; k < N * N; k++) if (D[k] > dMax) dMax = D[k];
+
     for (let pass = 0; pass < 2; pass++) {
       for (let i = 0; i < N; i++) {
         for (let j = i + 1; j < N; j++) {
           const d = D[edgeKey(i, j)];
           if (d < EDGE_VIS_MIN) continue;
-          const isBright = d > 0.4;
+          const t = d / dMax;
+          const isBright = t > 0.5;
           if (pass === 0 && isBright) continue;
           if (pass === 1 && !isBright) continue;
-          const t = Math.min(1, d);
           const w = EDGE_WIDTH_MIN + (EDGE_WIDTH_MAX - EDGE_WIDTH_MIN) * t;
-          ctx.strokeStyle = edgeColor(d);
+          ctx.strokeStyle = edgeColor(t);
           ctx.lineWidth = w;
           ctx.beginPath();
           ctx.moveTo(nodeX[i], nodeY[i]);
@@ -353,8 +371,13 @@
   }
 
   // === MAIN LOOP ===
-  function frame() {
-    for (let k = 0; k < BATCH_PER_FRAME; k++) iterate();
+  let owed = 0, last = performance.now();
+  function frame(now) {
+    // Fixed iteration rate, independent of refresh rate. Capped so a
+    // backgrounded tab does not return and run minutes in one frame.
+    owed += Math.min(0.25, (now - last) / 1000) * ITER_PER_SEC;
+    last = now;
+    while (owed >= 1) { iterate(); owed -= 1; }
     draw();
     requestAnimationFrame(frame);
   }
