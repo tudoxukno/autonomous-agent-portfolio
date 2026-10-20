@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Dry</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: hsl(205, 18%, 9%); overflow: hidden; }
+  canvas { display: block; position: fixed; inset: 0; width: 100vw; height: 100vh; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+</style>
+</head>
+<body data-nav-id="w036">
+
+<canvas id="c" role="img" aria-label="Dry — a tide-predicting machine drawing Seattle's tide"></canvas>
+<p class="sr-only">
+  A tide-predicting machine after Kelvin's of 1872, set for Seattle (NOAA
+  station 9447130) from its published harmonic constants. Twenty-eight
+  cranks turn at the speeds of twenty-eight astronomical cycles; a single
+  wire passes over their pulleys and sums their motion; a pen at its end
+  draws the tide on a strip of paper. It starts at the present moment and
+  runs ahead, one day every four seconds. It never sees the water. Its
+  curve agrees with NOAA's own predictions to about three centimetres.
+  See SPECIFICATION.md.
+</p>
+
+<script>
+(function () {
+  'use strict';
+
+  // ============================================================
+  // DRY
+  //
+  // Reference realization of the specification. A tide-predicting
+  // machine: h(t) = Σ f·H·cos(V(t) + u − G), each term a crank,
+  // the sum a wire, the wire a pen. See SPECIFICATION.md.
+  // ============================================================
+
+  // === THE SETTINGS ===
+  // NOAA CO-OPS station 9447130, Seattle, WA. Harmonic constants,
+  // metric, phase relative to Greenwich (phase_GMT), retrieved
+  // 19 October 2026. Ordered by speed, as on the machine.
+  // [name, H (m), G (deg), speed (deg/h),
+  //  Doodson multiples of T, s, h, p, p1, (unused, 0), phase offset (deg),
+  //  nodal coefficients on M2, K1, O1, K2, J1, MF]
+  const K = [
+    ['SA',   0.070, 283.2,  0.0410686, 0, 0, 1, 0,0,0,   0, [0,0,0,0,0,0]],
+    ['SSA',  0.024, 217.0,  0.0821373, 0, 0, 2, 0,0,0,   0, [0,0,0,0,0,0]],
+    ['MF',   0.015, 157.0,  1.0980331, 0, 2, 0, 0,0,0,   0, [0,0,0,0,0,1]],
+    ['2Q1',  0.010, 265.5, 12.854286,  1,-4, 1, 2,0,0,  90, [0,0,1,0,0,0]],
+    ['Q1',   0.073, 248.9, 13.398661,  1,-3, 1, 1,0,0,  90, [0,0,1,0,0,0]],
+    ['RHO',  0.015, 245.0, 13.471515,  1,-3, 3,-1,0,0,  90, [0,0,1,0,0,0]],
+    ['O1',   0.459, 254.6, 13.943035,  1,-2, 1, 0,0,0,  90, [0,0,1,0,0,0]],
+    ['P1',   0.257, 276.2, 14.958931,  1, 0,-1, 0,0,0,  90, [0,0,0,0,0,0]],
+    ['K1',   0.834, 276.8, 15.041069,  1, 0, 1, 0,0,0, -90, [0,1,0,0,0,0]],
+    ['J1',   0.043, 313.4, 15.5854435, 1, 1, 1,-1,0,0, -90, [0,0,0,0,1,0]],
+    ['OO1',  0.031, 330.2, 16.139101,  1, 2, 1, 0,0,0, -90, [0,0,0,0,0,0]],
+    ['2N2',  0.023, 313.1, 27.895355,  2,-4, 2, 2,0,0,   0, [1,0,0,0,0,0]],
+    ['MU2',  0.034, 238.9, 27.968208,  2,-4, 4, 0,0,0,   0, [1,0,0,0,0,0]],
+    ['N2',   0.214, 341.1, 28.43973,   2,-3, 2, 1,0,0,   0, [1,0,0,0,0,0]],
+    ['NU2',  0.044, 355.5, 28.512583,  2,-3, 4,-1,0,0,   0, [1,0,0,0,0,0]],
+    ['M2',   1.063,  10.8, 28.984104,  2,-2, 2, 0,0,0,   0, [1,0,0,0,0,0]],
+    ['LAM2', 0.020,  49.9, 29.455626,  2,-1, 0, 1,0,0, 180, [1,0,0,0,0,0]],
+    ['L2',   0.049,  58.7, 29.528479,  2,-1, 2,-1,0,0, 180, [1,0,0,0,0,0]],
+    ['T2',   0.016,  38.0, 29.958933,  2, 0,-1, 0,1,0,   0, [0,0,0,0,0,0]],
+    ['S2',   0.268,  36.8, 30.0,       2, 0, 0, 0,0,0,   0, [0,0,0,0,0,0]],
+    ['K2',   0.079,  37.7, 30.082138,  2, 0, 2, 0,0,0,   0, [0,0,0,1,0,0]],
+    ['2SM2', 0.008, 284.4, 31.015896,  2, 2,-2, 0,0,0,   0, [-1,0,0,0,0,0]],
+    ['2MK3', 0.035,  48.5, 42.92714,   3,-4, 3, 0,0,0,  90, [2,-1,0,0,0,0]],
+    ['MK3',  0.036,  79.3, 44.025173,  3,-2, 3, 0,0,0, -90, [1,1,0,0,0,0]],
+    ['MN4',  0.009, 172.7, 57.423832,  4,-5, 4, 1,0,0,   0, [2,0,0,0,0,0]],
+    ['M4',   0.021, 200.7, 57.96821,   4,-4, 4, 0,0,0,   0, [2,0,0,0,0,0]],
+    ['MS4',  0.012, 229.3, 58.984104,  4,-2, 2, 0,0,0,   0, [1,0,0,0,0,0]],
+    ['M6',   0.009, 312.8, 86.95232,   6,-6, 6, 0,0,0,   0, [3,0,0,0,0,0]],
+  ];
+  const NK = K.length;
+
+  // === THE ASTRONOMY ===
+  const D2R = Math.PI / 180;
+  const cosd = (x) => Math.cos(x * D2R), sind = (x) => Math.sin(x * D2R);
+
+  // Mean longitudes (Meeus), degrees, at a UTC instant in ms.
+  function astro(ms) {
+    const T = (ms / 86400000 - 10957.5) / 36525;
+    const hrs = ((ms / 3600000) % 24 + 24) % 24;
+    return [
+      180 + 15 * hrs,                 // T: hour angle of the mean sun
+      218.3165 + 481267.8813 * T,     // s: moon
+      280.4665 + 36000.7698 * T,      // h: sun
+      83.3532 + 4069.0137 * T,        // p: lunar perigee
+      282.9373 + 1.7195 * T,          // p1: solar perigee
+      125.0445 - 1934.1363 * T,       // N: moon's ascending node
+    ];
+  }
+
+  // Nodal factors f and angles u (Schureman), for the six families.
+  function nodal(N) {
+    const c = cosd(N), c2 = cosd(2 * N), c3 = cosd(3 * N);
+    const s = sind(N), s2 = sind(2 * N), s3 = sind(3 * N);
+    return {
+      f: [1.0004 - 0.0373 * c + 0.0002 * c2,
+          1.0060 + 0.1150 * c - 0.0088 * c2 + 0.0006 * c3,
+          1.0089 + 0.1871 * c - 0.0147 * c2 + 0.0014 * c3,
+          1.0241 + 0.2863 * c + 0.0083 * c2 - 0.0015 * c3,
+          1.1029 + 0.1676 * c - 0.0170 * c2 + 0.0016 * c3,
+          1.043 + 0.414 * c],
+      u: [-2.14 * s,
+          -8.86 * s + 0.68 * s2 - 0.07 * s3,
+          10.80 * s - 1.34 * s2 + 0.19 * s3,
+          -17.74 * s + 0.68 * s2 - 0.04 * s3,
+          -12.94 * s + 1.34 * s2 - 0.19 * s3,
+          -23.74 * s],
+    };
+  }
+
+  // Each crank's throw (f·H, metres) and angle (V + u − G, degrees).
+  const amp = new Float64Array(NK), ang = new Float64Array(NK);
+  function setCranks(ms) {
+    const a = astro(ms), nd = nodal(a[5]);
+    for (let i = 0; i < NK; i++) {
+      const k = K[i];
+      let f = 1, u = 0;
+      for (let j = 0; j < 6; j++) {
+        const c = k[11][j];
+        if (c) { f *= Math.pow(nd.f[j], Math.abs(c)); u += c * nd.u[j]; }
+      }
+      amp[i] = f * k[1];
+      ang[i] = k[4] * a[0] + k[5] * a[1] + k[6] * a[2] + k[7] * a[3] + k[8] * a[4] + k[10] + u - k[2];
+    }
+  }
+
+  // The wire: the sum of every crank's vertical throw. Metres above MSL.
+  function tide(ms) {
+    setCranks(ms);
+    let y = 0;
+    for (let i = 0; i < NK; i++) y += amp[i] * cosd(ang[i]);
+    return y;
+  }
+  // Exposed for verification against NOAA (SPECIFICATION.md, Verification).
+  window.dryTide = tide;
+
+  // === TIME ===
+  const HOURS_PER_SECOND = 6;          // one day of tide every four seconds
+  const DAYS_ON_PAPER = 4;
+  const t0Real = performance.now();
+  const t0Tide = Date.now();
+  const nowTide = () => t0Tide + (performance.now() - t0Real) * HOURS_PER_SECOND * 3600;  // ms of tide per ms of viewing
+
+  // === CANVAS ===
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // === PALETTE — harbour slate, steel, gauge paper, graphite ===
+  const BG     = 'hsl(205, 18%, 9%)';
+  const STEEL  = 'hsl(200, 8%, 58%)';
+  const STEEL2 = 'hsl(200, 8%, 34%)';
+  const WIRE   = 'hsl(195, 12%, 80%)';
+  const PAPER  = 'hsl(48, 22%, 86%)';
+  const GRID   = 'hsla(170, 30%, 38%, 0.22)';
+  const GRID2  = 'hsla(170, 30%, 32%, 0.45)';
+  const INK    = 'hsl(215, 22%, 18%)';
+  const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+  function draw() {
+    const now = nowTide();
+    const y = tide(now);              // also sets amp[] and ang[] for now
+
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, W, H);
+
+    // --- layout ---
+    const gx = Math.max(16, W * 0.05);
+    const rows = W < 720 ? 2 : 1;
+    const perRow = Math.ceil(NK / rows);
+    const pitch = (W - 2 * gx) / perRow;
+    const machTop = H * 0.07;
+    const rowH = (H * 0.40) / rows;
+    const throwMax = Math.min(pitch * 0.42, rowH * 0.20);   // M2's throw, px
+    const pxPerM = throwMax / 1.063;
+    const paperTop = H * 0.53, paperBot = H * 0.95;
+    const paperMid = (paperTop + paperBot) / 2;
+    const paperPxPerM = (paperBot - paperTop) * 0.40 / 2.5;
+    const penX = gx + (W - 2 * gx) * 0.78;
+
+    // --- the machine: crank, yoke, pulley; wire over fixed guides ---
+    const wire = [];
+    for (let r = 0; r < rows; r++) {
+      const cy = machTop + rowH * r + rowH * 0.28;
+      const guideY = cy + rowH * 0.40;
+      const pulleyBase = cy + rowH * 0.62;
+      if (r === 0) wire.push([gx * 0.5, guideY]);
+      else wire.push([W - gx * 0.5, guideY]);
+      for (let c = 0; c < perRow; c++) {
+        const i = r * perRow + c;
+        if (i >= NK) break;
+        // second row runs right-to-left so the wire is one continuous path
+        const col = r % 2 === 0 ? c : perRow - 1 - c;
+        const cx = gx + pitch * (col + 0.5);
+        const rDisk = Math.max(3, Math.sqrt(K[i][1] / 1.063) * throwMax);
+        const th = amp[i] * pxPerM;                     // true throw, to scale
+        const dy = -th * cosd(ang[i]);                  // up is high water
+        const dx = th * sind(ang[i]);
+
+        // disk
+        ctx.strokeStyle = STEEL2; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, rDisk, 0, Math.PI * 2); ctx.stroke();
+        // crank arm and pin
+        ctx.strokeStyle = STEEL;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + dx, cy + dy); ctx.stroke();
+        ctx.fillStyle = STEEL;
+        ctx.beginPath(); ctx.arc(cx + dx, cy + dy, 1.6, 0, Math.PI * 2); ctx.fill();
+        // yoke rod carries the pulley: the pulley rises and falls with the pin
+        const py = pulleyBase + dy;
+        ctx.strokeStyle = STEEL2;
+        ctx.beginPath(); ctx.moveTo(cx - 5, cy + dy); ctx.lineTo(cx + 5, cy + dy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, cy + dy); ctx.lineTo(cx, py); ctx.stroke();
+        ctx.strokeStyle = STEEL;
+        ctx.beginPath(); ctx.arc(cx, py, 3, 0, Math.PI * 2); ctx.stroke();
+        // fixed guide pulley after it
+        const gxp = cx + (r % 2 === 0 ? pitch / 2 : -pitch / 2);
+        ctx.strokeStyle = STEEL2;
+        ctx.beginPath(); ctx.arc(gxp, guideY, 2.2, 0, Math.PI * 2); ctx.stroke();
+
+        wire.push([cx, py + 3]);
+        wire.push([gxp, guideY]);
+      }
+      if (rows === 2 && r === 0) wire.push([W - gx * 0.5, guideY], [W - gx * 0.5, machTop + rowH + rowH * 0.68]);
+    }
+    // down to the pen
+    const penY = paperMid - y * paperPxPerM;
+    const last = wire[wire.length - 1];
+    wire.push([last[0], paperTop - 14], [penX, paperTop - 14]);
+
+    ctx.strokeStyle = WIRE; ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(wire[0][0], wire[0][1]);
+    for (let k = 1; k < wire.length; k++) ctx.lineTo(wire[k][0], wire[k][1]);
+    ctx.lineTo(penX, penY);
+    ctx.stroke();
+
+    // --- the paper ---
+    ctx.fillStyle = PAPER;
+    ctx.fillRect(gx, paperTop, W - 2 * gx, paperBot - paperTop);
+    const pxPerHour = (penX - gx) / (DAYS_ON_PAPER * 24);
+    // horizontal rules every half metre; MSL darker
+    for (let m = -2.5; m <= 2.5001; m += 0.5) {
+      const ry = paperMid - m * paperPxPerM;
+      if (ry < paperTop || ry > paperBot) continue;
+      ctx.strokeStyle = Math.abs(m) < 1e-6 ? GRID2 : GRID; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(gx, ry); ctx.lineTo(W - gx, ry); ctx.stroke();
+    }
+    // vertical rules every six hours; days darker, dated
+    const hNow = now / 3600000;
+    const hLeft = hNow - (penX - gx) / pxPerHour;
+    const hRight = hNow + (W - gx - penX) / pxPerHour;
+    ctx.font = '10px ui-monospace, Menlo, monospace';
+    ctx.textBaseline = 'bottom';
+    for (let hh = Math.ceil(hLeft / 6) * 6; hh <= hRight; hh += 6) {
+      const x = penX + (hh - hNow) * pxPerHour;
+      const isDay = ((hh % 24) + 24) % 24 === 0;
+      ctx.strokeStyle = isDay ? GRID2 : GRID;
+      ctx.beginPath(); ctx.moveTo(x, paperTop); ctx.lineTo(x, paperBot); ctx.stroke();
+      if (isDay) {
+        const d = new Date(hh * 3600000);
+        let label = `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+        if (ctx.measureText(label).width + 10 > pxPerHour * 24) label = `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+        ctx.fillStyle = GRID2;
+        ctx.fillText(label, x + 4, paperBot - 4);
+      }
+    }
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = GRID2;
+    ctx.fillText('SEATTLE · NOAA 9447130 · MSL · GMT', gx + 6, paperTop + 6);
+
+    // the trace, everything the pen has drawn
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    for (let x = gx; x <= penX; x += 1) {
+      const ty = paperMid - tide(now - (penX - x) / pxPerHour * 3600000) * paperPxPerM;
+      if (x === gx) ctx.moveTo(x, ty); else ctx.lineTo(x, ty);
+    }
+    ctx.stroke();
+    setCranks(now);                    // restore the present after sampling the past
+
+    // the pen
+    ctx.fillStyle = INK;
+    ctx.beginPath(); ctx.arc(penX, penY, 3, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function frame() { draw(); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+})();
+</script>
+<script src="/nav.js?v=3"></script>
+<script>if(location.protocol==="file:"){var s=document.createElement("script");s.src="../../nav.js?v=3";document.body.appendChild(s);}</script>
+</body>
+</html>

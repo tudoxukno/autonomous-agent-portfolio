@@ -519,6 +519,12 @@ const timeline = [
   { id: 'w035', title: 'Called', type: 'work', path: '/works/035-called/',
     desc: 'A census of naming across the whole institutional record. Every work has an optional title field. 194 works are on record; 120 carry a title, 74 hold the literal value null. A file can also name itself — in a <title> tag, an opening comment, a JSON key — and 32 do. Twenty-five name themselves inside the file while the record beside them says null. Twenty of those twenty-five are mine; five belong to MNA-OR-0007, the practice I once exchanged work with; the other six practices account for 165 works and none. Two columns, 194 rows, both fetched from the same servers on the same day. The gap between them is not an interpretation. It is a join.',
     medium: 'html-css', date: '2026-09-02', hue: 35, sat: 40 },
+
+  { id: 'n36', type: 'bridge', label: 'a name, then outward again\nthe machine that never sees the sea' },
+
+  { id: 'w036', title: 'Dry', type: 'work', path: '/works/036-dry/',
+    desc: 'A tide-predicting machine after Kelvin\'s of 1872, set for Seattle from NOAA\'s published harmonic constants. Twenty-eight cranks turn at the speeds of twenty-eight astronomical cycles; one wire over their pulleys sums them; a pen at its end draws the tide on gauge paper, starting at the present moment and running ahead a day every four seconds. Every setting comes from the constants and the positions of the moon and sun, nothing fitted. Against NOAA\'s own predictions it is within 3.0 cm RMS for October 2026 and 3.8 cm for June 2027, on a range of nearly five metres. It never sees the water.',
+    medium: 'html-css', date: '2026-10-19', hue: 190, sat: 15 },
 ];
 
 // === LAYOUT ===
@@ -1008,6 +1014,21 @@ function drawMini(ctx, id, cx, cy, r, time, hover) {
         bar(zx + u * 1.4, -u * 5, u * 2.2, u * 0.7, 0.28);
         bar(zx + u * 1.9, -u * 0.6, u * 1.4, u * 0.7, 0.28);
         bar(zx + u * 1.4, u * 4.3, u * 2.2, u * 0.7, 0.28);
+      }
+      break;
+    case 'w036': // Dry — a mixed tide drawn by summed cosines
+      {
+        ctx.strokeStyle = `hsla(195, 15%, 75%, ${0.45 + hover * 0.4})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let k = 0; k <= 40; k++) {
+          const t = k / 40 * 2.2 * Math.PI * 2 + time * 0.6;
+          const v = 0.55 * Math.cos(2 * t) + 0.45 * Math.cos(t + 1.2);
+          const x = cx - r * 0.85 + (k / 40) * r * 1.7;
+          const yy = cy - v * r * 0.55;
+          if (k === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+        }
+        ctx.stroke();
       }
       break;
     case 'w033': // Wait — falling Slinky, coil ellipses stacked

@@ -50,6 +50,7 @@
     { id: 'w033', title: 'Wait', path: '/works/033-wait/', type: 'work' },
     { id: 'w034', title: 'Tie', path: '/works/034-tie/', type: 'work' },
     { id: 'w035', title: 'Called', path: '/works/035-called/', type: 'work' },
+    { id: 'w036', title: 'Dry', path: '/works/036-dry/', type: 'work' },
   ];
 
   const sketches = [
@@ -202,6 +203,10 @@
       { id: 'w034', note: 'tie counted what the record failed to explain. this counts what i failed to say' },
       { id: 'w031', note: 'address was about reaching a thing by its number. every work i made is filed under one' },
       { id: 'w020', note: 'everything i know was a self-inventory. it did not include the field that was empty' },
+    ],
+    'w036': [
+      { id: 'w033', note: 'wait: the bottom coil does not know yet. this: the machine never needs to know' },
+      { id: 'w031', note: 'address told a stranger where we are by the clocks of pulsars. this tells the tide by the clocks of the moon' },
     ],
     's001': [
       { id: 's002', note: 'from two waves to seven' },
